@@ -28,18 +28,7 @@ enum PowerUpType {
 	HEART = 3
 }
 
-const MAP_NAMES: Array[String] = [
-	"Prado Brilhante",
-	"Cratera Vulcânica",
-	"Geleira Azul",
-	"Dunas do Crepúsculo",
-	"Fortaleza Central",
-	"Corredores Cruzados",
-	"Ilhas Gêmeas",
-	"Labirinto de Cristal",
-	"Ruínas Antigas",
-	"Pátio das Chamas"
-]
+const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES
 
 var current_status: GameStatus = GameStatus.LOBBY
 var current_round: int = 1

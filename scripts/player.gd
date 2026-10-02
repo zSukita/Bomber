@@ -7,9 +7,9 @@ extends CharacterBody2D
 ## - Servidor executa a física de colisão (move_and_slide) e replica o estado.
 ## - Clientes usam interpolação suave (lerp) na posição recebida do servidor.
 
-signal bomb_drop_requested(player: CharacterBody2D, world_pos: Vector2)
-signal died(player: CharacterBody2D)
-signal powerup_changed(player: CharacterBody2D)
+signal bomb_drop_requested(player: Player, world_pos: Vector2)
+signal died(player: Player)
+signal powerup_changed(player: Player)
 
 const PLAYER_COLORS: Array[Color] = [
 	Color(0.25, 0.65, 1.0, 1.0),   # Jogador 1: Azul Celeste

@@ -5,12 +5,12 @@ extends StaticBody2D
 ## Gerencia o pavio (tempo até detonação), pulsação visual,
 ## reação em cadeia e colisão inteligente (permite que o jogador saia de cima dela antes de bloquear).
 
-signal exploded(bomb_node: StaticBody2D, cell: Vector2i, range: int)
+signal exploded(bomb_node: Bomb, cell: Vector2i, range: int)
 
 @export var fuse_time: float = 2.5
 var bomb_range: int = 2
 var grid_position: Vector2i = Vector2i.ZERO
-var owner_player: CharacterBody2D = null
+var owner_player: Player
 
 var is_detonated: bool = false
 var overlapping_players: Array[CharacterBody2D] = []

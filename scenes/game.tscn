@@ -3,11 +3,15 @@
 [ext_resource type="Script" uid="uid://cvttyccrkvuks" path="res://scripts/game.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dgridmap001" path="res://scenes/grid_map.tscn" id="2_gridmap"]
 [ext_resource type="PackedScene" uid="uid://dhud0001" path="res://scenes/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/bomb_system.gd" id="4_bomb_system"]
 
 [node name="Game" type="Node2D" unique_id=11581371]
 script = ExtResource("1_script")
 
 [node name="GridMap" parent="." unique_id=373620146 instance=ExtResource("2_gridmap")]
+
+[node name="BombSystem" type="Node" parent="."]
+script = ExtResource("4_bomb_system")
 
 [node name="EnemiesContainer" type="Node2D" parent="."]
 

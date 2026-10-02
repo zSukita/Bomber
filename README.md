@@ -41,3 +41,16 @@ A imagem exige o executável exportado e o `.pck` na pasta `builds/server/`; a c
 ## Exportações
 
 O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e Linux Dedicated Server. Os arquivos exportados vão para `builds/`, que não precisa ser incluída no controle de versão; gere-os novamente antes de executar os scripts de servidor ou construir a imagem Docker.
+
+## Estrutura do código
+
+- `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.
+- `scripts/bomb_system.gd` concentra colocação, explosões, coleta de itens e sincronização de bombas.
+- `scripts/match_round_controller.gd` mantém o estado da rodada e usa `scripts/match_clock.gd` para o cronômetro.
+- `scripts/player_spawner.gd` configura jogadores e conecta os sinais autoritativos.
+- `scripts/grid_map.gd` representa a arena ativa; `scripts/arena_map_generator.gd` calcula o layout e `scripts/arena_map_styles.gd` guarda nomes, padrões e cores dos mapas. `scripts/arena_map_layout.gd` define o resultado tipado do gerador.
+- `scripts/campaign_rules.gd` concentra balanceamento e rotas da campanha. `scripts/campaign_enemy_spawner.gd` escolhe posições alcançáveis para os inimigos.
+- `scripts/campaign_enemy.gd` cuida do comportamento dos monstros; `scripts/campaign_enemy_appearance.gd` desenha os personagens.
+- `autoload/` contém os serviços que precisam sobreviver à troca de cenas: rede, estado global e áudio.
+
+Os dicionários enviados por RPC continuam sendo o formato de comunicação entre jogadores. Dentro da partida, jogadores, bombas e itens usam referências tipadas para reduzir erros de propriedade.

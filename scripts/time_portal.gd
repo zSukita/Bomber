@@ -24,5 +24,5 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 5.5, Color(portal_color.r, portal_color.g, portal_color.b, 0.38))
 
 func _on_body_entered(body: Node2D) -> void:
-	if body.is_in_group("players") and body.get("is_alive") == true:
+	if body is Player and body.is_alive:
 		selected.emit(self)

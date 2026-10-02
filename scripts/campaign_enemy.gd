@@ -38,6 +38,8 @@ var charge_cooldown: float = 0.0
 var charge_direction: Vector2 = Vector2.ZERO
 var stuck_time: float = 0.0
 
+@onready var appearance: Node2D = $Appearance
+
 func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype: int = Archetype.WANDERER) -> void:
 	target_player = target
 	arena_grid = grid
@@ -67,7 +69,7 @@ func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype
 func _ready() -> void:
 	add_to_group("enemies")
 	_choose_direction()
-	queue_redraw()
+	_update_appearance()
 
 func _physics_process(delta: float) -> void:
 	if not is_alive:
@@ -115,7 +117,10 @@ func _physics_process(delta: float) -> void:
 	var contact_distance: float = 43.0 if archetype == Archetype.BOSS else 35.0
 	if player_is_valid and global_position.distance_to(target_player.global_position) < contact_distance:
 		target_player.die()
-	queue_redraw()
+	_update_appearance()
+
+func _update_appearance() -> void:
+	appearance.call("show_enemy_state", self)
 
 func _update_regular_movement(player_is_valid: bool) -> void:
 	if direction_timer <= 0.0:
@@ -315,14 +320,14 @@ func _collect_imminent_danger() -> Dictionary:
 		return danger
 	for bomb_cell_variant in arena_grid.active_bombs.keys():
 		var bomb_cell: Vector2i = bomb_cell_variant
-		var bomb: StaticBody2D = arena_grid.get_bomb_at(bomb_cell)
-		if not is_instance_valid(bomb) or bomb.get("is_detonated") == true:
+		var bomb: Bomb = arena_grid.get_bomb_at(bomb_cell)
+		if not is_instance_valid(bomb) or bomb.is_detonated:
 			continue
-		var timer: Timer = bomb.get("fuse_timer") as Timer
+		var timer: Timer = bomb.fuse_timer
 		if timer == null or timer.time_left > DANGER_LOOKAHEAD:
 			continue
 		danger[bomb_cell] = true
-		var bomb_range: int = int(bomb.get("bomb_range"))
+		var bomb_range: int = bomb.bomb_range
 		for step in DIRECTIONS:
 			for distance in range(1, bomb_range + 1):
 				var flame_cell: Vector2i = bomb_cell + step * distance
@@ -348,102 +353,16 @@ func take_bomb_hit() -> void:
 		modulate = Color(1.8, 1.8, 1.8, 1.0)
 		var flash: Tween = create_tween()
 		flash.tween_property(self, "modulate", Color.WHITE, HURT_INVULNERABILITY)
-	queue_redraw()
+	_update_appearance()
 
 func die() -> void:
 	if not is_alive:
 		return
 	is_alive = false
 	velocity = Vector2.ZERO
+	_update_appearance()
 	$CollisionShape2D.set_deferred("disabled", true)
 	defeated.emit(self)
 	var tween: Tween = create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tween.tween_callback(queue_free)
-
-func _draw() -> void:
-	if not is_alive:
-		return
-	var bob: float = sin(animation_time * 5.5) * 1.7
-	var body_radius: float = 23.0 if archetype == Archetype.BOSS else 16.0
-	draw_circle(Vector2(0, 12), body_radius, Color(0.0, 0.0, 0.0, 0.3))
-	match archetype:
-		Archetype.WANDERER:
-			_draw_wanderer(bob)
-		Archetype.HUNTER:
-			_draw_hunter(bob)
-		Archetype.CHARGER:
-			_draw_charger(bob)
-		Archetype.BOSS:
-			_draw_boss(bob)
-	_draw_face(bob)
-	if is_winding_up:
-		draw_line(charge_direction * 22.0, charge_direction * 70.0, Color(1.0, 0.28, 0.08, 0.82), 5.0, true)
-	elif is_charging:
-		draw_line(-charge_direction * 28.0, charge_direction * 28.0, Color(1.0, 0.92, 0.42, 0.9), 6.0, true)
-	if max_health > 1:
-		var bar_rect: Rect2 = Rect2(-20.0, -34.0, 40.0, 5.0)
-		draw_rect(bar_rect, Color(0.12, 0.1, 0.16, 0.9))
-		var fill_rect: Rect2 = Rect2(-19.0, -33.0, 38.0 * float(health) / float(max_health), 3.0)
-		draw_rect(fill_rect, Color(1.0, 0.28, 0.22))
-
-func _draw_wanderer(bob: float) -> void:
-	var points := PackedVector2Array([Vector2(-10, -8 + bob), Vector2(-17, -21 + bob), Vector2(-4, -14 + bob)])
-	draw_colored_polygon(points, body_color.darkened(0.18))
-	points = PackedVector2Array([Vector2(5, -13 + bob), Vector2(15, -22 + bob), Vector2(13, -4 + bob)])
-	draw_colored_polygon(points, body_color.darkened(0.18))
-	draw_circle(Vector2(0, 2 + bob), 16.0, body_color.darkened(0.25))
-	draw_circle(Vector2(0, bob), 14.0, body_color)
-	draw_circle(Vector2(-5, -5 + bob), 4.0, accent_color)
-
-func _draw_hunter(bob: float) -> void:
-	var wing_color: Color = body_color.darkened(0.12)
-	var left_wing := PackedVector2Array([Vector2(-8, -4 + bob), Vector2(-23, -16 + bob), Vector2(-19, 5 + bob)])
-	var right_wing := PackedVector2Array([Vector2(8, -4 + bob), Vector2(23, -16 + bob), Vector2(19, 5 + bob)])
-	draw_colored_polygon(left_wing, wing_color)
-	draw_colored_polygon(right_wing, wing_color)
-	draw_circle(Vector2(0, 2 + bob), 14.0, body_color.darkened(0.22))
-	draw_circle(Vector2(0, bob), 12.0, body_color)
-	draw_arc(Vector2.ZERO + Vector2(0, bob), 9.0, deg_to_rad(195), deg_to_rad(345), 12, accent_color, 2.0, true)
-
-func _draw_charger(bob: float) -> void:
-	draw_circle(Vector2(0, 1 + bob), 18.0, body_color.darkened(0.32))
-	draw_circle(Vector2(0, -2 + bob), 15.0, body_color)
-	draw_arc(Vector2(0, -2 + bob), 12.5, deg_to_rad(195), deg_to_rad(345), 16, accent_color, 3.0, true)
-	var horn_direction: Vector2 = direction.normalized()
-	if horn_direction == Vector2.ZERO:
-		horn_direction = Vector2.DOWN
-	var side: Vector2 = Vector2(-horn_direction.y, horn_direction.x)
-	draw_colored_polygon(PackedVector2Array([
-		horn_direction * 9.0 + side * 7.0 + Vector2(0, bob),
-		horn_direction * 28.0 + Vector2(0, bob),
-		horn_direction * 9.0 - side * 7.0 + Vector2(0, bob)
-	]), accent_color)
-
-func _draw_boss(bob: float) -> void:
-	draw_circle(Vector2(0, 2 + bob), 24.0, body_color.darkened(0.32))
-	draw_circle(Vector2(0, bob), 21.0, body_color)
-	for side in [-1.0, 0.0, 1.0]:
-		var crown_points := PackedVector2Array([
-			Vector2(side * 12.0 - 5.0, -13.0 + bob),
-			Vector2(side * 12.0, -27.0 + bob),
-			Vector2(side * 12.0 + 5.0, -13.0 + bob)
-		])
-		draw_colored_polygon(crown_points, accent_color)
-	draw_arc(Vector2(0, bob), 17.0, deg_to_rad(200), deg_to_rad(340), 18, accent_color, 2.5, true)
-
-func _draw_face(bob: float) -> void:
-	var eye_y: float = -2.0 + bob
-	var eye_radius: float = 3.0 if archetype != Archetype.BOSS else 3.4
-	var eye_color: Color = Color(1.0, 0.96, 0.8)
-	if archetype == Archetype.BOSS:
-		for x in [-9.0, 0.0, 9.0]:
-			draw_circle(Vector2(x, eye_y), eye_radius, eye_color)
-			draw_circle(Vector2(x + 0.8, eye_y + 0.6), 1.4, Color(0.12, 0.08, 0.13))
-	else:
-		draw_circle(Vector2(-5.0, eye_y), eye_radius, eye_color)
-		draw_circle(Vector2(5.0, eye_y), eye_radius, eye_color)
-		draw_circle(Vector2(-4.2, eye_y + 0.7), 1.4, Color(0.12, 0.08, 0.13))
-		draw_circle(Vector2(5.8, eye_y + 0.7), 1.4, Color(0.12, 0.08, 0.13))
-	if archetype == Archetype.WANDERER or archetype == Archetype.BOSS:
-		draw_arc(Vector2(0, 4 + bob), 5.0, deg_to_rad(20), deg_to_rad(160), 8, Color(0.16, 0.08, 0.12), 1.8)
