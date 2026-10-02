@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://dgridmap001"]
+
+[ext_resource type="Script" path="res://scripts/grid_map.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/floor_renderer.gd" id="2_floor"]
+
+[node name="GridMap" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Floor" type="Node2D" parent="."]
+script = ExtResource("2_floor")
+
+[node name="WallsContainer" type="Node2D" parent="."]
+
+[node name="PowerupsContainer" type="Node2D" parent="."]
+
+[node name="BlocksContainer" type="Node2D" parent="."]
+
+[node name="BombsContainer" type="Node2D" parent="."]
+
+[node name="ExplosionsContainer" type="Node2D" parent="."]

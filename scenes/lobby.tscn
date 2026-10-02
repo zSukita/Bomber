@@ -1,0 +1,168 @@
+[gd_scene load_steps=2 format=3 uid="uid://dlobby0001"]
+
+[ext_resource type="Script" path="res://scripts/lobby.gd" id="1_script"]
+
+[node name="Lobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.035, 0.055, 0.095, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainPanel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(560, 710)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/MainPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="ContentVBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "💣 BOMBÁSTICO"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 14
+text = "AVENTURA SOLO  ·  BATALHA MULTIPLAYER"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+layout_mode = 2
+
+[node name="ConnectionSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 10
+
+[node name="NameLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+text = "Nome do Jogador:"
+
+[node name="NameInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+placeholder_text = "Seu apelido..."
+
+[node name="CampaignButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "✦  INICIAR CAMPANHA"
+
+[node name="HostButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "🏠 Criar Sala (Host)"
+
+[node name="HSeparator2" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+
+[node name="JoinLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+text = "Conectar a uma Sala:"
+
+[node name="IPInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+text = "127.0.0.1"
+placeholder_text = "IP do Host (ex: 127.0.0.1)"
+
+[node name="PortInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+layout_mode = 2
+text = "8910"
+placeholder_text = "Porta (Padrão: 8910)"
+
+[node name="JoinButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "🚀 Entrar na Sala"
+
+[node name="RoomSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RoomTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "SALA DE ESPERA  ·  0/4 JOGADORES"
+horizontal_alignment = 1
+
+[node name="PlayerList" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MapChoiceRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MapChoiceLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapChoiceRow"]
+custom_minimum_size = Vector2(126, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "MAPA DA ARENA"
+
+[node name="MapOption" type="OptionButton" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapChoiceRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator3" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+layout_mode = 2
+
+[node name="ReadyButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "ESTOU PRONTO"
+
+[node name="StartButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "🎮 INICIAR PARTIDA"
+
+[node name="LeaveButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "❌ Sair da Sala"
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -42.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+text = "Inicie ou entre em uma sala para jogar."
+horizontal_alignment = 1

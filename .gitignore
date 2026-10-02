@@ -1,0 +1,17 @@
+# Godot editor cache and generated files
+.godot/
+.import/
+
+# Exported builds
+/builds/
+/export.cfg
+/export_presets.cfg.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/editor files
+.vscode/
+.idea/

@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3 uid="uid://dexplosion001"]
+
+[ext_resource type="Script" path="res://scripts/explosion.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(58, 58)
+
+[node name="Explosion" type="Area2D" groups=["explosions"]]
+collision_layer = 16
+collision_mask = 8
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Outer" type="ColorRect" parent="Visuals"]
+offset_left = -30.0
+offset_top = -30.0
+offset_right = 30.0
+offset_bottom = 30.0
+color = Color(1, 0.35, 0.05, 0.9)
+
+[node name="Core" type="ColorRect" parent="Visuals"]
+offset_left = -18.0
+offset_top = -18.0
+offset_right = 18.0
+offset_bottom = 18.0
+color = Color(1, 0.92, 0.3, 0.95)
+
+[node name="SparkCenter" type="ColorRect" parent="Visuals"]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(1, 1, 1, 1)

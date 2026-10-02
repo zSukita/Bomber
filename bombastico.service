@@ -1,0 +1,17 @@
+[Unit]
+Description=Bombastico Game Dedicated Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/bombastico
+ExecStart=/opt/bombastico/Bombastico_Server.x86_64 --headless --server --port=8910
+Restart=always
+RestartSec=5s
+
+# Limites de recursos
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
