@@ -85,6 +85,8 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 	for flame_cell in flame_cells:
 		game.grid_map.spawn_explosion_segment(flame_cell)
 	AudioManager.play_explosion()
+	if not destroyed_blocks.is_empty() and GameState.is_enhanced():
+		AudioManager.play_block_break()
 	game.add_screen_shake(0.35)
 	for peer_id in hit_players:
 		if game.spawned_players.has(peer_id):
@@ -123,6 +125,8 @@ func apply_explosion_replica(center: Vector2i, flame_cells: Array, destroyed_blo
 		if powerup:
 			powerup.destroy_by_fire()
 	AudioManager.play_explosion()
+	if not destroyed_blocks.is_empty() and GameState.is_enhanced():
+		AudioManager.play_block_break()
 	game.add_screen_shake(0.35)
 	game._refresh_all_hud_cards()
 

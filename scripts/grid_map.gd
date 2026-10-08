@@ -42,6 +42,7 @@ var map_style: int = 0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var map_generator: ArenaMapGenerator = ArenaMapGenerator.new()
+var ambience_node: ArenaAmbience
 
 @onready var floor_node: Node2D = $Floor
 @onready var walls_container: Node2D = $WallsContainer
@@ -52,6 +53,9 @@ var map_generator: ArenaMapGenerator = ArenaMapGenerator.new()
 
 func _ready() -> void:
 	rng.randomize()
+	ambience_node = ArenaAmbience.new()
+	ambience_node.name = "Ambience"
+	add_child(ambience_node)
 
 ## Limpa todos os elementos existentes na arena.
 func clear_map() -> void:
@@ -78,6 +82,8 @@ func generate_map(map_seed: int = -1, map_style_override: int = -1) -> void:
 	map_style = layout.style
 	rng.state = layout.rng_state
 	floor_node.call("set_theme", map_style)
+	if ambience_node:
+		ambience_node.set_theme(map_style)
 	for cell in layout.wall_cells:
 		_spawn_wall(cell)
 	for cell in layout.block_cells:

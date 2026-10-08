@@ -14,6 +14,7 @@ var sfx_explosion: AudioStreamWAV
 var sfx_powerup: AudioStreamWAV
 var sfx_death: AudioStreamWAV
 var sfx_click: AudioStreamWAV
+var sfx_block_break: AudioStreamWAV
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -34,6 +35,7 @@ func _generate_all_sfx() -> void:
 	sfx_powerup = _create_powerup_sfx()
 	sfx_death = _create_death_sfx()
 	sfx_click = _create_click_sfx()
+	sfx_block_break = _create_block_break_sfx()
 
 func play_bomb_drop() -> void:
 	_play_stream(sfx_bomb_drop, -4.0)
@@ -50,20 +52,29 @@ func play_death() -> void:
 func play_click() -> void:
 	_play_stream(sfx_click, -6.0)
 
+func play_block_break() -> void:
+	_play_stream(sfx_block_break, -4.5)
+
 func _play_stream(stream: AudioStream, volume_db: float = 0.0) -> void:
 	if not stream:
 		return
+	
+	var pitch: float = 1.0
+	if GameState.is_enhanced() and GameState.sfx_pitch_variation:
+		pitch = randf_range(0.94, 1.06)
 	
 	for p in players_pool:
 		if not p.playing:
 			p.stream = stream
 			p.volume_db = volume_db
+			p.pitch_scale = pitch
 			p.play()
 			return
 	
 	# Se todos os canais estiverem ocupados, reutiliza o primeiro
 	players_pool[0].stream = stream
 	players_pool[0].volume_db = volume_db
+	players_pool[0].pitch_scale = pitch
 	players_pool[0].play()
 
 # ----------------- GERADORES DE ONDAS SINTETIZADAS -----------------
@@ -203,3 +214,31 @@ func _create_click_sfx() -> AudioStreamWAV:
 	wav.mix_rate = sample_rate
 	wav.data = data
 	return wav
+
+## Som de estalo seco de quebra de bloco
+func _create_block_break_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.12
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 99
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var envelope: float = pow(1.0 - progress, 2.5)
+		var noise: float = rng.randf_range(-1.0, 1.0)
+		var crack: float = sin(t * 320.0 * TAU) * 0.5
+		var val: float = (noise * 0.65 + crack) * envelope * 0.5
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+	
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+

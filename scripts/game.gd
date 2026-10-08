@@ -80,11 +80,23 @@ func _process(delta: float) -> void:
 	# Decaimento suave do screen shake na câmera
 	if shake_trauma > 0.0 and camera:
 		shake_trauma = maxf(0.0, shake_trauma - delta * 2.2)
-		var offset_x: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
-		var offset_y: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
-		camera.offset = Vector2(offset_x, offset_y)
-	elif camera and camera.offset != Vector2.ZERO:
+		if GameState.is_enhanced():
+			# Screen shake quadrático orgânico com amortecimento suave
+			var trauma: float = (shake_trauma * shake_trauma) * GameState.screen_shake_intensity
+			var offset_x: float = randf_range(-1.0, 1.0) * trauma * 16.0
+			var offset_y: float = randf_range(-1.0, 1.0) * trauma * 16.0
+			var rot_offset: float = randf_range(-0.012, 0.012) * trauma
+			camera.offset = Vector2(offset_x, offset_y)
+			camera.rotation = rot_offset
+		else:
+			# Modo Base original
+			var offset_x: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
+			var offset_y: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
+			camera.offset = Vector2(offset_x, offset_y)
+			camera.rotation = 0.0
+	elif camera and (camera.offset != Vector2.ZERO or camera.rotation != 0.0):
 		camera.offset = Vector2.ZERO
+		camera.rotation = 0.0
 
 ## Adiciona impacto à tela (0.0 a 1.0)
 func add_screen_shake(amount: float = 0.35) -> void:
@@ -566,6 +578,13 @@ func _on_leave_requested() -> void:
 	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F10:
+		var is_now_enhanced: bool = GameState.toggle_enhanced_mode()
+		if hud and hud.has_method("notify_mode_switch"):
+			hud.notify_mode_switch(is_now_enhanced)
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("pause_game"):
 		if event is InputEventKey and event.echo:
 			return

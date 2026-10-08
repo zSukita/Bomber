@@ -1,73 +1,53 @@
 class_name BombVisuals
 extends Node2D
 
-## Renderizador procedural de alta qualidade para as bombas de Bombástico.
-## Esfera metálica brilhante, gargalo dourado, pavio curvado e faíscas animadas.
-
+## Bomba redonda em pixel art com pavio e brilho animados.
 var spark_timer: float = 0.0
 
 func _ready() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	spark_timer += delta * 18.0
+	spark_timer += delta * 15.0
 	queue_redraw()
 
 func _draw() -> void:
-	# 1. Sombra circular suave no chão
-	_draw_ellipse(Vector2(0, 16), 18.0, 6.0, Color(0, 0, 0, 0.4))
-	
-	# 2. Corpo esférico metálico da bomba
-	var bomb_center: Vector2 = Vector2(0, 0)
-	
-	# Borda escura de contorno
-	draw_circle(bomb_center, 21.0, Color(0.06, 0.06, 0.08))
-	# Corpo principal escuro
-	draw_circle(bomb_center, 20.0, Color(0.14, 0.15, 0.18))
-	
-	# Brilho de profundidade/curvatura (lado superior esquerdo)
-	_draw_ellipse(bomb_center + Vector2(-5, -5), 9.0, 6.0, Color(0.28, 0.30, 0.36, 0.7))
-	# Ponto especular brilhante
-	draw_circle(bomb_center + Vector2(-7, -7), 3.2, Color(0.9, 0.92, 0.98, 0.85))
-	draw_circle(bomb_center + Vector2(-8, -8), 1.4, Color(1.0, 1.0, 1.0, 0.95))
-	
-	# 3. Gargalo de metal dourado
-	draw_rect(Rect2(-6, -24, 12, 5), Color(0.72, 0.58, 0.25))
-	draw_rect(Rect2(-5, -23, 10, 2), Color(0.95, 0.80, 0.40))
-	draw_rect(Rect2(-6, -20, 12, 2), Color(0.45, 0.35, 0.15))
-	
-	# 4. Pavio curvado
-	var fuse_points: PackedVector2Array = PackedVector2Array([
-		Vector2(0, -24),
-		Vector2(2, -28),
-		Vector2(-1, -33),
-		Vector2(3, -37)
-	])
-	draw_polyline(fuse_points, Color(0.80, 0.62, 0.38), 2.5)
-	
-	# 5. Faísca crepitante no topo do pavio
-	var spark_origin: Vector2 = Vector2(3, -37)
-	var spark_pulse: float = sin(spark_timer) * 0.5 + 0.5
-	var outer_radius: float = 4.5 + spark_pulse * 2.0
-	
-	# Halo laranja brilhante
-	draw_circle(spark_origin, outer_radius, Color(1.0, 0.45, 0.1, 0.6))
-	# Núcleo amarelo
-	draw_circle(spark_origin, 3.0, Color(1.0, 0.85, 0.2))
-	# Ponto central incandescente
-	draw_circle(spark_origin, 1.4, Color.WHITE)
-	
-	# Faíscas pontuais animadas
-	var spark_count: int = 4
-	for i in range(spark_count):
-		var angle: float = (spark_timer * 1.5) + (i * TAU / spark_count)
-		var dist: float = 5.0 + (sin(spark_timer * 3.0 + i) * 2.5)
-		var p: Vector2 = spark_origin + Vector2(cos(angle) * dist, sin(angle) * dist)
-		draw_circle(p, 1.2, Color(1.0, 0.75, 0.1, 0.85))
+	var pulse := int(round(sin(spark_timer) * 2.0))
+	# Sombra e pavio.
+	draw_rect(Rect2(-16, 15, 32, 4), Color(0, 0, 0, 0.35))
+	draw_rect(Rect2(-4, -24, 8, 8), Color("d1a64b"))
+	draw_rect(Rect2(-4, -28, 8, 4), Color("f1d17a"))
+	draw_rect(Rect2(-4, -36, 4, 8), Color("e8d6aa"))
+	draw_rect(Rect2(0, -40, 4, 4), Color("fff0ad"))
+	draw_rect(Rect2(4, -36, 4, 4), Color("ff9b36"))
+	draw_rect(Rect2(-4, -32, 4, 4), Color("ff9b36"))
+	# Silhueta escalonada da esfera.
+	_px(-8, -24, 16, 4, Color("171727"))
+	_px(-16, -20, 32, 4, Color("171727"))
+	_px(-20, -16, 40, 24, Color("171727"))
+	_px(-16, 8, 32, 8, Color("171727"))
+	_px(-8, 16, 16, 4, Color("171727"))
+	# Corpo de metal escuro, com reflexos em blocos.
+	_px(-8, -20, 16, 4, Color("38394a"))
+	_px(-16, -16, 32, 4, Color("38394a"))
+	_px(-16, -12, 32, 16, Color("292a3a"))
+	_px(-12, 4, 24, 8, Color("202131"))
+	_px(-8, -16, 8, 4, Color("85899b"))
+	_px(-12, -12, 4, 4, Color("686d82"))
+	# Reflexo pisca com o pavio.
+	_px(12, -16, 4, 4, Color("585b70"))
+	_px(-8, -8, 4, 4, Color("414356"))
+	_px(-4, -36 - pulse, 4, 4, Color("fff9d1"))
 
-func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color, num_points: int = 24) -> void:
-	var points: PackedVector2Array = PackedVector2Array()
-	for i in range(num_points):
-		var angle: float = (i / float(num_points)) * TAU
-		points.append(center + Vector2(cos(angle) * rx, sin(angle) * ry))
-	draw_colored_polygon(points, color)
+	# No Modo Melhorado, halo sutil de calor e micro faíscas do pavio
+	if GameState.is_enhanced():
+		var glow_alpha: float = sin(spark_timer * 1.5) * 0.15 + 0.25
+		draw_circle(Vector2(0, -36), 14.0, Color(1.0, 0.65, 0.15, glow_alpha))
+		# Faíscas que saltam do pavio
+		var spark_off_x: float = sin(spark_timer * 2.3) * 6.0
+		var spark_off_y: float = -42.0 - absf(cos(spark_timer * 1.8)) * 8.0
+		_px(spark_off_x, spark_off_y, 2, 2, Color("fff7bd"))
+
+func _px(x: float, y: float, width: float, height: float, color: Color) -> void:
+	draw_rect(Rect2(x, y, width, height), color)
+

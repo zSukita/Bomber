@@ -47,6 +47,41 @@ func _ready() -> void:
 	name_input.text = "Jogador_%d" % randi_range(100, 999)
 	_show_connection_view()
 	_update_lobby_ui()
+	_setup_lobby_mode_button()
+
+var mode_button: Button
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F10:
+			GameState.toggle_enhanced_mode()
+			_update_lobby_mode_button()
+
+func _setup_lobby_mode_button() -> void:
+	mode_button = Button.new()
+	mode_button.position = Vector2(960 - 204, 16)
+	mode_button.size = Vector2(188, 34)
+	mode_button.pressed.connect(func():
+		AudioManager.play_click()
+		GameState.toggle_enhanced_mode()
+		_update_lobby_mode_button()
+	)
+	add_child(mode_button)
+	GameState.enhanced_mode_toggled.connect(func(_is_enhanced: bool):
+		_update_lobby_mode_button()
+	)
+	_update_lobby_mode_button()
+
+func _update_lobby_mode_button() -> void:
+	if not mode_button:
+		return
+	if GameState.is_enhanced():
+		mode_button.text = "⚡ [F10] MODO MELHORADO"
+		mode_button.modulate = Color(0.65, 1.0, 0.8)
+	else:
+		mode_button.text = "⚙️ [F10] MODO BASE"
+		mode_button.modulate = Color(0.85, 0.85, 0.85)
+
 
 func _apply_menu_style() -> void:
 	var panel_style: StyleBoxFlat = StyleBoxFlat.new()

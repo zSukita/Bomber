@@ -38,6 +38,7 @@ var last_bomb_request_msec: int = -10000
 var bomb_range: int = 2
 var has_heart: bool = false
 var invulnerability_seconds: float = 0.0
+var bomb_buffer_timer: float = 0.0
 
 # Nós visuais internos
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -82,14 +83,21 @@ func _physics_process(delta: float) -> void:
 		_update_facing_visual()
 		return
 	
+	# Processa buffer de comando de soltura de bomba (Modo Melhorado)
+	if bomb_buffer_timer > 0.0:
+		bomb_buffer_timer -= delta
+		if active_bombs < max_bombs:
+			request_drop_bomb()
+
 	# CASO 1: Servidor Autorizado (ou Modo Offline)
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		if is_local_player():
 			_capture_local_input()
 		
-		# O Servidor simula o movimento físico autoritativo
+		# O Servidor simula o movimento físico autoritativo (com assistência suave de quina no Modo Melhorado)
 		var effective_speed: float = base_speed * speed_multiplier
-		velocity = current_direction * effective_speed
+		var move_dir: Vector2 = _apply_corner_slide(current_direction)
+		velocity = move_dir * effective_speed
 		move_and_slide()
 		
 		# Sincroniza a posição autorizada para todos os clientes
@@ -102,14 +110,38 @@ func _physics_process(delta: float) -> void:
 	else:
 		if is_local_player():
 			_capture_local_input()
+			var client_dir: Vector2 = _apply_corner_slide(current_direction)
 			# Envia entrada direcional para o servidor
-			send_input.rpc_id(1, current_direction)
+			send_input.rpc_id(1, client_dir)
 		
 		# Interpolação suave em direção à posição autoritativa confirmada pelo servidor
 		if target_sync_position != Vector2.ZERO:
 			global_position = global_position.lerp(target_sync_position, 22.0 * delta)
 		
 		_update_facing_visual()
+
+## Assistência geométrica suave de contorno de quinas ao virar corredores (corner-slip)
+func _apply_corner_slide(dir: Vector2) -> Vector2:
+	if not GameState.is_enhanced() or not GameState.corner_slide_assistance or dir == Vector2.ZERO:
+		return dir
+	var adjusted: Vector2 = dir
+	# Movimento horizontal puro: alinha suavemente ao centro Y do corredor se estiver quase na quina
+	if dir.y == 0.0 and dir.x != 0.0:
+		var tile_y := int(floor(global_position.y / 64.0))
+		var center_y := float(tile_y * 64 + 32)
+		var diff_y := center_y - global_position.y
+		if abs(diff_y) > 2.0 and abs(diff_y) <= 15.0:
+			adjusted.y = sign(diff_y) * 0.45
+			adjusted = adjusted.normalized()
+	# Movimento vertical puro: alinha suavemente ao centro X da coluna se estiver quase na quina
+	elif dir.x == 0.0 and dir.y != 0.0:
+		var tile_x := int(floor(global_position.x / 64.0))
+		var center_x := float(tile_x * 64 + 32)
+		var diff_x := center_x - global_position.x
+		if abs(diff_x) > 2.0 and abs(diff_x) <= 15.0:
+			adjusted.x = sign(diff_x) * 0.45
+			adjusted = adjusted.normalized()
+	return adjusted
 
 ## Captura teclado apenas se for o jogador local
 func _capture_local_input() -> void:
@@ -138,15 +170,21 @@ func _capture_local_input() -> void:
 	if Input.is_action_just_pressed("drop_bomb"):
 		request_drop_bomb()
 
-## Solicita soltura de bomba (cliente envia para o servidor)
+## Solicita soltura de bomba (com suporte a buffer de comando no Modo Melhorado)
 func request_drop_bomb() -> void:
-	if not is_alive or active_bombs >= max_bombs:
+	if not is_alive:
+		return
+	if active_bombs >= max_bombs:
+		if GameState.is_enhanced() and GameState.input_buffering_enabled:
+			bomb_buffer_timer = GameState.input_buffer_window
 		return
 	
+	bomb_buffer_timer = 0.0
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		server_drop_bomb.rpc_id(1)
 	else:
 		bomb_drop_requested.emit(self, global_position)
+
 
 # ----------------- RPCS DE SINCRONIZAÇÃO DE REDE -----------------
 
