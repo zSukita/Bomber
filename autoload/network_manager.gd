@@ -19,6 +19,7 @@ const MAX_PLAYERS: int = 4
 var players: Dictionary = {}
 
 var local_player_name: String = "Jogador"
+var preferred_color_index: int = 0
 var is_game_active: bool = false
 var is_dedicated_server: bool = false
 var current_match_seed: int = 0
@@ -44,7 +45,7 @@ func _check_cli_arguments() -> void:
 	for a in user_args: all_args.append(a)
 	
 	var is_headless: bool = DisplayServer.get_name() == "headless"
-	if is_headless or "--server" in all_args or "--dedicated" in all_args:
+	if ("--server" in all_args or "--dedicated" in all_args) or (is_headless and not "--run-test" in all_args and not "--editor" in all_args):
 		is_dedicated_server = true
 		var port: int = DEFAULT_PORT
 		for arg in all_args:
@@ -84,7 +85,7 @@ func create_server(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 	if not dedicated:
 		var host_info: Dictionary = {
 			"name": local_player_name,
-			"color_index": 0,
+			"color_index": preferred_color_index,
 			"is_ready": true,
 			"score": 0
 		}
@@ -145,7 +146,7 @@ func _on_connected_to_server() -> void:
 	
 	var info: Dictionary = {
 		"name": local_player_name,
-		"color_index": 0,
+		"color_index": preferred_color_index,
 		"is_ready": false,
 		"score": 0
 	}
@@ -175,16 +176,18 @@ func register_player(info: Dictionary) -> void:
 	info["is_ready"] = false
 	info["score"] = 0
 	
-	# Distribui cores disponíveis (0 a 3)
+	# Distribui cores disponíveis (0 a 3), respeitando a preferida caso esteja livre
 	var used_colors: Array = []
 	for p_id in players:
 		used_colors.append(players[p_id].get("color_index", 0))
 	
-	var assigned_color: int = 0
-	for c in range(MAX_PLAYERS):
-		if not (c in used_colors):
-			assigned_color = c
-			break
+	var req_color: int = int(info.get("color_index", 0))
+	var assigned_color: int = req_color
+	if req_color in used_colors or req_color < 0 or req_color >= MAX_PLAYERS:
+		for c in range(MAX_PLAYERS):
+			if not (c in used_colors):
+				assigned_color = c
+				break
 	
 	info["color_index"] = assigned_color
 	players[sender_id] = info

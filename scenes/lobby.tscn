@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dlobby0001"]
+[gd_scene load_steps=3 format=3 uid="uid://dlobby0001"]
 
 [ext_resource type="Script" path="res://scripts/lobby.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/lobby_background.gd" id="2_bg"]
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -11,113 +12,354 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="LobbyBackground" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.035, 0.055, 0.095, 1)
+mouse_filter = 2
+script = ExtResource("2_bg")
+
+[node name="HeaderBar" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 54.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 24
+
+[node name="HBox" type="HBoxContainer" parent="HeaderBar"]
+layout_mode = 2
+
+[node name="GameTitleSmall" type="Label" parent="HeaderBar/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "💣 BOMBÁSTICO"
+
+[node name="VersionBadge" type="Label" parent="HeaderBar/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.65, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+text = "  ·  v1.0 (Forward+)"
+
+[node name="Spacer" type="Control" parent="HeaderBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ModeToggleBtn" type="Button" parent="HeaderBar/HBox"]
+custom_minimum_size = Vector2(190, 32)
+layout_mode = 2
+text = "⚡ [F10] MODO MELHORADO"
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 40.0
+offset_bottom = -30.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="MainPanel" type="PanelContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(560, 710)
+custom_minimum_size = Vector2(860, 560)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="CenterContainer/MainPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 28
+theme_override_constants/margin_top = 22
 theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_bottom = 22
 
 [node name="ContentVBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+[node name="TitleBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
 layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/TitleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.85, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 32
 text = "💣 BOMBÁSTICO"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/TitleBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
-theme_override_font_sizes/font_size = 14
-text = "AVENTURA SOLO  ·  BATALHA MULTIPLAYER"
+theme_override_colors/font_color = Color(0.72, 0.8, 0.94, 1)
+theme_override_font_sizes/font_size = 12
+text = "ARENA TÁTICA RETRÔ  ·  CAMPANHA DE 10 MUNDOS  ·  BATALHA MULTIPLAYER"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
 layout_mode = 2
 
-[node name="ConnectionSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
-visible = false
+[node name="ConnectionSection" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+theme_override_constants/separation = 20
 
-[node name="NameLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="LeftColumn" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
 layout_mode = 2
-text = "Nome do Jogador:"
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
 
-[node name="NameInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="ProfileCard" type="PanelContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn"]
 layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProfileTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "👤 SEU JOGADOR"
+
+[node name="ProfileRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PortraitBox" type="CenterContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+
+[node name="NameInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
 placeholder_text = "Seu apelido..."
+max_length = 16
 
-[node name="CampaignButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="ColorSelectionRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ColorLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ColorSelectionRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 11
+text = "Cor do Traje:"
+
+[node name="ColorsBox" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ColorSelectionRow"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CampaignCard" type="PanelContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CampHeader" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
+layout_mode = 2
+
+[node name="CampTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox/CampHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚔️ CAMPANHA SOLO (AVENTURA)"
+
+[node name="CampDesc" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Enfrente rondadores, caçadores e chefes em 10 fases dinâmicas. Use portais temporais para escolher seus caminhos e finais!"
+autowrap_mode = 2
+
+[node name="CampSpacer" type="Control" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CampaignButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "✦  INICIAR CAMPANHA"
+text = "▶ INICIAR CAMPANHA SOLO"
 
-[node name="HostButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
-custom_minimum_size = Vector2(0, 42)
+[node name="RightColumn" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MultiplayerCard" type="PanelContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MPTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "🌐 BATALHA MULTIPLAYER (ATÉ 4 JOGADORES)"
+
+[node name="TabButtons" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TabHostButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/TabButtons"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
 text = "🏠 Criar Sala (Host)"
 
-[node name="HSeparator2" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="TabJoinButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/TabButtons"]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
+size_flags_horizontal = 3
+text = "🚀 Entrar em Sala"
 
-[node name="JoinLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="HostPanel" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox"]
 layout_mode = 2
-text = "Conectar a uma Sala:"
+size_flags_vertical = 3
+theme_override_constants/separation = 10
 
-[node name="IPInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
+[node name="HostDesc" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel"]
 layout_mode = 2
-text = "127.0.0.1"
-placeholder_text = "IP do Host (ex: 127.0.0.1)"
+theme_override_colors/font_color = Color(0.72, 0.78, 0.88, 1)
+theme_override_font_sizes/font_size = 11
+text = "Crie uma sala e compartilhe seu IP com os amigos na rede local ou internet."
+autowrap_mode = 2
 
-[node name="PortInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
-layout_mode = 2
-text = "8910"
-placeholder_text = "Porta (Padrão: 8910)"
-
-[node name="JoinButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-text = "🚀 Entrar na Sala"
-
-[node name="RoomSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+[node name="PortRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="RoomTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+[node name="PortLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel/PortRow"]
+custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Porta UDP:"
+
+[node name="PortInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel/PortRow"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "8910"
+placeholder_text = "8910"
+
+[node name="HostSpacer" type="Control" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HostButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "🏠 CRIAR NOVA SALA"
+
+[node name="JoinPanel" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="JoinDesc" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.78, 0.88, 1)
+theme_override_font_sizes/font_size = 11
+text = "Informe o endereço do computador que está hospedando a partida."
+autowrap_mode = 2
+
+[node name="IPRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="IPLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/IPRow"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Endereço IP:"
+
+[node name="IPInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/IPRow"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "127.0.0.1"
+placeholder_text = "ex: 192.168.1.100"
+
+[node name="JoinPortRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="JoinPortLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/JoinPortRow"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Porta UDP:"
+
+[node name="JoinPortInput" type="LineEdit" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/JoinPortRow"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "8910"
+placeholder_text = "8910"
+
+[node name="JoinSpacer" type="Control" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="JoinButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "🚀 CONECTAR À SALA"
+
+[node name="RoomSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="RoomHeader" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+layout_mode = 2
+
+[node name="RoomTitle" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/RoomHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "SALA DE ESPERA  ·  0/4 JOGADORES"
-horizontal_alignment = 1
+text = "SALA DE ESPERA  ·  1/4 JOGADORES"
 
 [node name="PlayerList" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
-custom_minimum_size = Vector2(0, 280)
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
 [node name="MapChoiceRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
@@ -125,44 +367,56 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="MapChoiceLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapChoiceRow"]
-custom_minimum_size = Vector2(126, 0)
+custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "MAPA DA ARENA"
+text = "MAPA DA ARENA:"
 
 [node name="MapOption" type="OptionButton" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapChoiceRow"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="HSeparator3" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+[node name="HSeparatorRoom" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
 layout_mode = 2
 
-[node name="ReadyButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
-custom_minimum_size = Vector2(0, 38)
+[node name="ActionRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
 layout_mode = 2
-text = "ESTOU PRONTO"
+theme_override_constants/separation = 12
 
-[node name="StartButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-text = "🎮 INICIAR PARTIDA"
-
-[node name="LeaveButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
-custom_minimum_size = Vector2(0, 34)
+[node name="LeaveButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow"]
+custom_minimum_size = Vector2(140, 42)
 layout_mode = 2
 text = "❌ Sair da Sala"
 
-[node name="StatusLabel" type="Label" parent="."]
+[node name="ReadyButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ESTOU PRONTO"
+
+[node name="StartButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow"]
+custom_minimum_size = Vector2(200, 42)
+layout_mode = 2
+text = "🎮 INICIAR PARTIDA"
+
+[node name="FooterBar" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -42.0
-offset_bottom = -12.0
+offset_top = -36.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 8
+
+[node name="StatusLabel" type="Label" parent="FooterBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.82, 0.94, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-text = "Inicie ou entre em uma sala para jogar."
+theme_override_font_sizes/font_size = 12
+text = "Pronto para conectar ou criar sala."
 horizontal_alignment = 1
