@@ -3,19 +3,19 @@
 [ext_resource type="Script" uid="uid://cvttyccrkvuks" path="res://scripts/game.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dgridmap001" path="res://scenes/grid_map.tscn" id="2_gridmap"]
 [ext_resource type="PackedScene" uid="uid://dhud0001" path="res://scenes/hud.tscn" id="3_hud"]
-[ext_resource type="Script" path="res://scripts/bomb_system.gd" id="4_bomb_system"]
+[ext_resource type="Script" uid="uid://c3hsnfxfeiiae" path="res://scripts/bomb_system.gd" id="4_bomb_system"]
 
 [node name="Game" type="Node2D" unique_id=11581371]
 script = ExtResource("1_script")
 
 [node name="GridMap" parent="." unique_id=373620146 instance=ExtResource("2_gridmap")]
 
-[node name="BombSystem" type="Node" parent="."]
+[node name="BombSystem" type="Node" parent="." unique_id=501020279]
 script = ExtResource("4_bomb_system")
 
-[node name="EnemiesContainer" type="Node2D" parent="."]
+[node name="EnemiesContainer" type="Node2D" parent="." unique_id=926709973]
 
-[node name="PortalsContainer" type="Node2D" parent="."]
+[node name="PortalsContainer" type="Node2D" parent="." unique_id=1288955133]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=97703872]
 position = Vector2(480, 416)
@@ -25,6 +25,10 @@ position = Vector2(480, 416)
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=379158913]
 
 [node name="HUD" parent="CanvasLayer" unique_id=1000563890 instance=ExtResource("3_hud")]
+offset_left = -198.0
+offset_top = -83.0
+offset_right = -198.0
+offset_bottom = -83.0
 
 [node name="SpectatorBanner" type="Label" parent="CanvasLayer" unique_id=900854305]
 visible = false

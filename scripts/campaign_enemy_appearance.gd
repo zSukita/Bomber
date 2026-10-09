@@ -52,7 +52,8 @@ func _draw() -> void:
 	if is_winding_up:
 		if GameState.is_enhanced():
 			# Telegrafo visual legível de alcance: linha pontilhada de perigo ao longo do vetor de ataque
-			var pulse: float = sin(animation_time * 16.0) * 0.4 + 0.6
+			var pulse_strength: float = 0.08 if GameState.reduced_flashes_enabled else 0.4
+			var pulse: float = sin(animation_time * 16.0) * pulse_strength + (1.0 - pulse_strength)
 			var alert_color: Color = Color(1.0, 0.25, 0.2, pulse)
 			for dist: float in [28.0, 56.0, 84.0, 112.0]:
 				var pt: Vector2 = charge_vector * dist

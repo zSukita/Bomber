@@ -33,17 +33,22 @@ func _animate_and_fade() -> void:
 	tween.chain().tween_callback(queue_free)
 
 func _spawn_fire_sparks() -> void:
-	for i in range(3):
+	var effect_intensity: float = clampf(GameState.visual_effects_intensity, 0.0, 1.0)
+	var spark_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	spark_rng.seed = int(get_instance_id())
+	for i in range(roundi(3.0 * effect_intensity)):
 		var spark: ColorRect = ColorRect.new()
+		spark.add_to_group("enhanced_visual_effects")
 		spark.size = Vector2(4.0, 4.0)
 		spark.color = Color("fff39c") if i % 2 == 0 else Color("ff7e29")
-		spark.position = Vector2(randf_range(-12.0, 12.0), randf_range(-12.0, 12.0))
+		spark.position = Vector2(spark_rng.randf_range(-12.0, 12.0), spark_rng.randf_range(-12.0, 12.0))
 		add_child(spark)
 		
-		var spark_dir := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
+		var spark_dir := Vector2(spark_rng.randf_range(-1.0, 1.0), spark_rng.randf_range(-1.0, 1.0)).normalized()
+		var travel_distance: float = spark_rng.randf_range(16.0, 28.0) * effect_intensity
 		var spark_tween: Tween = spark.create_tween()
 		spark_tween.set_parallel(true)
-		spark_tween.tween_property(spark, "position", spark.position + spark_dir * randf_range(16.0, 28.0), duration * 0.45)
+		spark_tween.tween_property(spark, "position", spark.position + spark_dir * travel_distance, duration * 0.45)
 		spark_tween.tween_property(spark, "scale", Vector2.ZERO, duration * 0.45)
 		spark_tween.chain().tween_callback(spark.queue_free)
 
@@ -55,20 +60,7 @@ func _handle_hit(body: Node2D) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if body is Player and body.is_alive:
-		_apply_hitstop(body)
 		body.die()
 	elif body is CampaignEnemy and body.is_alive:
-		_apply_hitstop(body)
 		body.take_bomb_hit()
-
-func _apply_hitstop(target: Node2D) -> void:
-	if not GameState.is_enhanced() or not GameState.hitstop_enabled:
-		return
-	var prev_mod: Color = target.modulate
-	target.modulate = Color(2.4, 2.4, 2.4, 1.0)
-	var timer: SceneTreeTimer = get_tree().create_timer(GameState.hitstop_duration)
-	timer.timeout.connect(func():
-		if is_instance_valid(target):
-			target.modulate = prev_mod
-	)
 

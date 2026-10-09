@@ -261,13 +261,13 @@ func _update_mode_button_state() -> void:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.set_corner_radius_all(8)
 	if GameState.is_enhanced():
-		mode_toggle_btn.text = "⚡ MODO MELHORADO [F10]"
+		mode_toggle_btn.text = "⚡ MELHORADO [F10]"
 		style.bg_color = Color(0.1, 0.35, 0.28, 0.85)
 		style.border_color = Color(0.3, 0.95, 0.68, 0.8)
 		style.set_border_width_all(1)
 		mode_toggle_btn.modulate = Color(0.9, 1.0, 0.95)
 	else:
-		mode_toggle_btn.text = "⚙️ MODO BASE [F10]"
+		mode_toggle_btn.text = "⚙ BASE [F10]"
 		style.bg_color = Color(0.12, 0.16, 0.22, 0.7)
 		style.border_color = Color(0.3, 0.38, 0.5, 0.6)
 		style.set_border_width_all(1)

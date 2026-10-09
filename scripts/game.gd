@@ -55,8 +55,11 @@ var campaign_heart_spawned: bool = false
 
 # Screen Shake (Impacto de Câmera)
 var shake_trauma: float = 0.0
+var shake_time: float = 0.0
+var shake_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
+	shake_rng.randomize()
 	bomb_system.call("configure", self)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hud.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -80,19 +83,19 @@ func _process(delta: float) -> void:
 	# Decaimento suave do screen shake na câmera
 	if shake_trauma > 0.0 and camera:
 		shake_trauma = maxf(0.0, shake_trauma - delta * 2.2)
+		var intensity: float = clampf(GameState.screen_shake_intensity, 0.0, 1.0)
 		if GameState.is_enhanced():
-			# Screen shake quadrático orgânico com amortecimento suave
-			var trauma: float = (shake_trauma * shake_trauma) * GameState.screen_shake_intensity
-			var offset_x: float = randf_range(-1.0, 1.0) * trauma * 16.0
-			var offset_y: float = randf_range(-1.0, 1.0) * trauma * 16.0
-			var rot_offset: float = randf_range(-0.012, 0.012) * trauma
+			shake_time += delta
+			var trauma: float = pow(shake_trauma, 1.5)
+			var amplitude: float = trauma * 10.0 * intensity
+			var offset_x: float = (sin(shake_time * 23.0 + 0.4) * 0.7 + sin(shake_time * 37.0 + 2.1) * 0.3) * amplitude
+			var offset_y: float = (sin(shake_time * 19.0 + 1.3) * 0.65 + sin(shake_time * 31.0 + 0.5) * 0.35) * amplitude
 			camera.offset = Vector2(offset_x, offset_y)
-			camera.rotation = rot_offset
+			camera.rotation = sin(shake_time * 17.0 + 0.8) * amplitude * 0.0006
 		else:
-			# Modo Base original
-			var offset_x: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
-			var offset_y: float = randf_range(-1.0, 1.0) * shake_trauma * 14.0
-			camera.offset = Vector2(offset_x, offset_y)
+			# Mantém o tremor legado do modo Base, mas usa um RNG próprio para não afetar as regras.
+			var amplitude: float = shake_trauma * 14.0 * intensity
+			camera.offset = Vector2(shake_rng.randf_range(-1.0, 1.0), shake_rng.randf_range(-1.0, 1.0)) * amplitude
 			camera.rotation = 0.0
 	elif camera and (camera.offset != Vector2.ZERO or camera.rotation != 0.0):
 		camera.offset = Vector2.ZERO

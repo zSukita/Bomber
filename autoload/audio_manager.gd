@@ -22,9 +22,11 @@ var sfx_menu_back: AudioStreamWAV
 # Música de fundo
 var menu_music_stream: AudioStreamWAV
 var music_player: AudioStreamPlayer
+var pitch_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	pitch_rng.randomize()
 	
 	# Canal dedicado para música de fundo
 	music_player = AudioStreamPlayer.new()
@@ -102,7 +104,7 @@ func _play_stream(stream: AudioStream, volume_db: float = 0.0) -> void:
 	
 	var pitch: float = 1.0
 	if GameState.is_enhanced() and GameState.sfx_pitch_variation:
-		pitch = randf_range(0.94, 1.06)
+		pitch = pitch_rng.randf_range(0.94, 1.06)
 	
 	for p in players_pool:
 		if not p.playing:

@@ -350,9 +350,13 @@ func take_bomb_hit() -> void:
 		die()
 	else:
 		velocity = -direction * 110.0
-		modulate = Color(1.8, 1.8, 1.8, 1.0)
-		var flash: Tween = create_tween()
-		flash.tween_property(self, "modulate", Color.WHITE, HURT_INVULNERABILITY)
+		var flash_strength: float = clampf(GameState.impact_flash_intensity, 0.0, 1.0)
+		if GameState.reduced_flashes_enabled:
+			flash_strength *= 0.35
+		if flash_strength > 0.0:
+			modulate = Color(1.0 + flash_strength * 0.8, 1.0 + flash_strength * 0.6, 1.0 + flash_strength * 0.35, 1.0)
+			var flash: Tween = create_tween()
+			flash.tween_property(self, "modulate", Color.WHITE, GameState.impact_flash_duration)
 	_update_appearance()
 
 func die() -> void:

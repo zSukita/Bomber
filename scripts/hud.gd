@@ -54,7 +54,7 @@ func _ready() -> void:
 func _setup_mode_toggle_ui() -> void:
 	mode_toggle_btn = Button.new()
 	mode_toggle_btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	mode_toggle_btn.custom_minimum_size = Vector2(170, 32)
+	mode_toggle_btn.custom_minimum_size = Vector2(155, 32)
 	mode_toggle_btn.pressed.connect(func():
 		AudioManager.play_click()
 		var is_now_enhanced: bool = GameState.toggle_enhanced_mode()
@@ -78,10 +78,10 @@ func _update_mode_button_visual(is_enhanced: bool) -> void:
 	if not mode_toggle_btn:
 		return
 	if is_enhanced:
-		mode_toggle_btn.text = "⚡ [F10] MODO MELHORADO"
+		mode_toggle_btn.text = "MELHORADO [F10]"
 		mode_toggle_btn.modulate = Color(0.65, 1.0, 0.8)
 	else:
-		mode_toggle_btn.text = "⚙️ [F10] MODO BASE"
+		mode_toggle_btn.text = "BASE [F10]"
 		mode_toggle_btn.modulate = Color(0.85, 0.85, 0.85)
 
 func notify_mode_switch(is_enhanced: bool) -> void:
@@ -92,10 +92,10 @@ func notify_mode_switch(is_enhanced: bool) -> void:
 		toast_tween.kill()
 
 	if is_enhanced:
-		toast_label.text = "✨ MODO MELHORADO: Partículas temáticas, vento, nuvens, impactos, squash & stretch e buffer ativos"
+		toast_label.text = "✨ MODO MELHORADO: Vento, partículas temáticas, faíscas e sinais visuais ativos"
 		toast_label.add_theme_color_override("font_color", Color("a8f5b8"))
 	else:
-		toast_label.text = "⚙️ MODO BASE: Visual, física e regras clássicas originais restaurados"
+		toast_label.text = "⚙️ MODO BASE: apresentação visual original restaurada; controles inalterados"
 		toast_label.add_theme_color_override("font_color", Color("f0e6b6"))
 
 	toast_label.position.y = 66
@@ -125,7 +125,7 @@ func setup_players(players_data: Dictionary) -> void:
 		var p_name: String = p_info.get("name", "Jogador")
 		
 		var card: PanelContainer = PanelContainer.new()
-		card.custom_minimum_size = Vector2(160, 48)
+		card.custom_minimum_size = Vector2(140, 48)
 		
 		var margin: MarginContainer = MarginContainer.new()
 		margin.add_theme_constant_override("margin_left", 6)

@@ -46,15 +46,21 @@ var local_pause_menu_open: bool = false
 # ----------------- CONFIGURAÇÕES DO MODO MELHORADO -----------------
 signal enhanced_mode_toggled(is_enhanced: bool)
 
-## Ativa ou desativa todo o conjunto de melhorias visuais, de impacto e de jogabilidade
+## Alterna apenas a apresentação visual para comparação com o modo base.
 var enhanced_mode: bool = true
 
-## Intensidade do tremor de tela (0.0 a 2.0)
+## Intensidade do tremor da câmera (0.0 a 1.0).
 var screen_shake_intensity: float = 1.0
 
-## Micro-pausa (freeze-frame) em impactos relevantes
-var hitstop_enabled: bool = true
-var hitstop_duration: float = 0.045
+## Intensidade dos efeitos decorativos (0.0 a 1.0).
+var visual_effects_intensity: float = 1.0
+
+## Reduz pulsos luminosos repetidos sem ocultar avisos de combate.
+var reduced_flashes_enabled: bool = false
+
+## Brilho e duração do flash de confirmação de dano (segundos).
+var impact_flash_intensity: float = 0.75
+var impact_flash_duration: float = 0.10
 
 ## Efeitos direcionais de estilhaços e detritos
 var directional_debris_enabled: bool = true
@@ -67,10 +73,10 @@ var ambient_wind_enabled: bool = true
 ## Squash & stretch nas passadas e animações do personagem
 var character_squash_stretch: bool = true
 
-## Assistência sutil de contorno de quinas ao virar corredores
+## Assistência de movimento, aplicada igualmente nos modos gráficos.
 var corner_slide_assistance: bool = true
 
-## Buffer de comandos para soltura de bombas
+## Buffer de comando, aplicado igualmente nos modos gráficos.
 var input_buffering_enabled: bool = true
 var input_buffer_window: float = 0.15
 
@@ -87,5 +93,7 @@ func toggle_enhanced_mode() -> bool:
 func set_enhanced_mode(enabled: bool) -> void:
 	if enhanced_mode != enabled:
 		enhanced_mode = enabled
+		if not enabled and is_inside_tree():
+			get_tree().call_group("enhanced_visual_effects", "queue_free")
 		enhanced_mode_toggled.emit(enhanced_mode)
 

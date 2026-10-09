@@ -406,7 +406,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="SettingsModal/CenterContainer"]
-custom_minimum_size = Vector2(440, 360)
+custom_minimum_size = Vector2(440, 430)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="SettingsModal/CenterContainer/Panel"]
@@ -492,6 +492,43 @@ text = "Tela Cheia (Fullscreen)"
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Modo Gráfico Melhorado [F10]"
+
+[node name="ShakeRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
+layout_mode = 2
+
+[node name="ShakeLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/ShakeRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Tremor da Câmera:"
+
+[node name="ShakeSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/ShakeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+step = 5.0
+value = 100.0
+
+[node name="EffectsRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
+layout_mode = 2
+
+[node name="EffectsLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/EffectsRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Efeitos Visuais:"
+
+[node name="EffectsSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/EffectsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+step = 5.0
+value = 100.0
+
+[node name="ReducedFlashesCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Reduzir flashes repetidos"
 
 [node name="CloseButton" type="Button" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 38)

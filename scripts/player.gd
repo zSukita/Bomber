@@ -68,9 +68,13 @@ func update_name_display(new_name: String) -> void:
 		name_label.text = new_name
 
 func _physics_process(delta: float) -> void:
+	_update_name_label_visibility()
 	if invulnerability_seconds > 0.0:
 		invulnerability_seconds = maxf(0.0, invulnerability_seconds - delta)
-		visuals_root.modulate.a = 0.48 if int(invulnerability_seconds * 12.0) % 2 == 0 else 1.0
+		if GameState.reduced_flashes_enabled:
+			visuals_root.modulate.a = 0.72
+		else:
+			visuals_root.modulate.a = 0.48 if int(invulnerability_seconds * 12.0) % 2 == 0 else 1.0
 	elif visuals_root and visuals_root.modulate.a != 1.0 and is_alive:
 		visuals_root.modulate.a = 1.0
 	if not is_alive:
@@ -83,7 +87,7 @@ func _physics_process(delta: float) -> void:
 		_update_facing_visual()
 		return
 	
-	# Processa buffer de comando de soltura de bomba (Modo Melhorado)
+	# Buffer curto de soltura de bomba, igual nos dois modos gráficos.
 	if bomb_buffer_timer > 0.0:
 		bomb_buffer_timer -= delta
 		if active_bombs < max_bombs:
@@ -94,7 +98,7 @@ func _physics_process(delta: float) -> void:
 		if is_local_player():
 			_capture_local_input()
 		
-		# O Servidor simula o movimento físico autoritativo (com assistência suave de quina no Modo Melhorado)
+		# O servidor simula o movimento autoritativo e aplica a assistência de quina.
 		var effective_speed: float = base_speed * speed_multiplier
 		var move_dir: Vector2 = _apply_corner_slide(current_direction)
 		velocity = move_dir * effective_speed
@@ -110,19 +114,25 @@ func _physics_process(delta: float) -> void:
 	else:
 		if is_local_player():
 			_capture_local_input()
-			var client_dir: Vector2 = _apply_corner_slide(current_direction)
-			# Envia entrada direcional para o servidor
-			send_input.rpc_id(1, client_dir)
+			# O servidor aplica a assistência uma única vez, na posição autoritativa.
+			send_input.rpc_id(1, current_direction)
 		
 		# Interpolação suave em direção à posição autoritativa confirmada pelo servidor
 		if target_sync_position != Vector2.ZERO:
-			global_position = global_position.lerp(target_sync_position, 22.0 * delta)
+			global_position = global_position.lerp(target_sync_position, clampf(22.0 * delta, 0.0, 1.0))
 		
 		_update_facing_visual()
 
+func _update_name_label_visibility() -> void:
+	if not name_label:
+		return
+	var label_rect: Rect2 = name_label.get_global_rect()
+	# A HUD cobre toda a faixa superior; esconder o nome evita texto duplicado no ponto de spawn.
+	name_label.visible = label_rect.end.y <= 0.0 or label_rect.position.y >= 80.0
+
 ## Assistência geométrica suave de contorno de quinas ao virar corredores (corner-slip)
 func _apply_corner_slide(dir: Vector2) -> Vector2:
-	if not GameState.is_enhanced() or not GameState.corner_slide_assistance or dir == Vector2.ZERO:
+	if not GameState.corner_slide_assistance or dir == Vector2.ZERO:
 		return dir
 	var adjusted: Vector2 = dir
 	# Movimento horizontal puro: alinha suavemente ao centro Y do corredor se estiver quase na quina
@@ -175,7 +185,7 @@ func request_drop_bomb() -> void:
 	if not is_alive:
 		return
 	if active_bombs >= max_bombs:
-		if GameState.is_enhanced() and GameState.input_buffering_enabled:
+		if GameState.input_buffering_enabled:
 			bomb_buffer_timer = GameState.input_buffer_window
 		return
 	

@@ -12,6 +12,9 @@ signal closed
 @onready var sfx_slider: HSlider = $CenterContainer/Panel/Margin/VBox/AudioSection/SFXRow/SFXSlider
 @onready var fullscreen_check: CheckBox = $CenterContainer/Panel/Margin/VBox/VideoSection/FullscreenCheck
 @onready var enhanced_check: CheckBox = $CenterContainer/Panel/Margin/VBox/VideoSection/EnhancedCheck
+@onready var shake_slider: HSlider = $CenterContainer/Panel/Margin/VBox/VideoSection/ShakeRow/ShakeSlider
+@onready var effects_slider: HSlider = $CenterContainer/Panel/Margin/VBox/VideoSection/EffectsRow/EffectsSlider
+@onready var reduced_flashes_check: CheckBox = $CenterContainer/Panel/Margin/VBox/VideoSection/ReducedFlashesCheck
 @onready var close_btn: Button = $CenterContainer/Panel/Margin/VBox/CloseButton
 
 func _ready() -> void:
@@ -24,8 +27,14 @@ func _ready() -> void:
 	master_slider.value_changed.connect(_on_master_changed)
 	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
 	enhanced_check.toggled.connect(_on_enhanced_toggled)
-	
-	enhanced_check.button_pressed = GameState.is_enhanced()
+	shake_slider.value_changed.connect(_on_shake_changed)
+	effects_slider.value_changed.connect(_on_effects_changed)
+	reduced_flashes_check.toggled.connect(_on_reduced_flashes_toggled)
+	shake_slider.value = GameState.screen_shake_intensity * 100.0
+	effects_slider.value = GameState.visual_effects_intensity * 100.0
+	reduced_flashes_check.button_pressed = GameState.reduced_flashes_enabled
+	enhanced_check.set_pressed_no_signal(GameState.is_enhanced())
+	GameState.enhanced_mode_toggled.connect(_sync_enhanced_check)
 
 func open() -> void:
 	AudioManager.play_menu_open()
@@ -68,4 +77,17 @@ func _on_fullscreen_toggled(toggled_on: bool) -> void:
 func _on_enhanced_toggled(toggled_on: bool) -> void:
 	AudioManager.play_click()
 	if toggled_on != GameState.is_enhanced():
-		GameState.toggle_enhanced_mode()
+		GameState.set_enhanced_mode(toggled_on)
+
+func _sync_enhanced_check(is_enhanced: bool) -> void:
+	if is_instance_valid(enhanced_check):
+		enhanced_check.set_pressed_no_signal(is_enhanced)
+
+func _on_shake_changed(value: float) -> void:
+	GameState.screen_shake_intensity = clampf(value / 100.0, 0.0, 1.0)
+
+func _on_effects_changed(value: float) -> void:
+	GameState.visual_effects_intensity = clampf(value / 100.0, 0.0, 1.0)
+
+func _on_reduced_flashes_toggled(enabled: bool) -> void:
+	GameState.reduced_flashes_enabled = enabled

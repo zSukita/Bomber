@@ -53,6 +53,7 @@ var ambience_node: ArenaAmbience
 
 func _ready() -> void:
 	rng.randomize()
+	floor_node.z_index = -2
 	ambience_node = ArenaAmbience.new()
 	ambience_node.name = "Ambience"
 	add_child(ambience_node)

@@ -82,7 +82,8 @@ func _process(_delta: float) -> void:
 	var time_left: float = fuse_timer.time_left
 	if time_left < 0.8:
 		var flash: float = sin((0.8 - time_left) * 28.0) * 0.5 + 0.5
-		visual_root.modulate = Color(1.0 + flash * 0.9, 1.0 - flash * 0.4, 1.0 - flash * 0.4, 1.0)
+		var flash_strength: float = 0.9 if not GameState.reduced_flashes_enabled else 0.22
+		visual_root.modulate = Color(1.0 + flash * flash_strength, 1.0 - flash * flash_strength * 0.44, 1.0 - flash * flash_strength * 0.44, 1.0)
 
 ## Quando um jogador sai fisicamente da área da bomba detectada pelo ExitDetector
 func _on_body_exited_exit_detector(body: Node2D) -> void:
