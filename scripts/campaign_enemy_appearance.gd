@@ -44,7 +44,7 @@ func show_enemy_state(enemy: CampaignEnemy) -> void:
 	if is_alive:
 		enemy_sprite.visible = true
 		var frame_idx: int = clampi(int(animation_time * 6.0) % 4, 0, 3)
-		var flip_h: bool = direction.x < 0
+		var flip_h: bool = direction.x > 0
 		BomberAssets.configure_enemy_sprite(enemy_sprite, archetype, frame_idx, flip_h)
 	queue_redraw()
 

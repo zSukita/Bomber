@@ -28,10 +28,10 @@ func set_skin_color(color: Color) -> void:
 func set_character(index: int) -> void:
 	character_index = posmod(index, BomberAssets.CHARACTER_TEXTURES.size())
 	if character_sprite:
-		BomberAssets.configure_character_sprite(character_sprite, character_index, 0, _direction_row(), facing_direction == Vector2.LEFT)
+		BomberAssets.configure_character_sprite(character_sprite, character_index, 0, _direction_row(), facing_direction.x > 0)
 		sprite_frame = 0
 		sprite_row = _direction_row()
-		sprite_flip = facing_direction == Vector2.LEFT
+		sprite_flip = facing_direction.x > 0
 
 func update_state(direction: Vector2, moving: bool, alive: bool) -> void:
 	if direction != Vector2.ZERO:
@@ -51,7 +51,7 @@ func _process(delta: float) -> void:
 	if character_sprite:
 		var next_frame: int = int(walk_time / 0.14) % 4 if is_moving else 0
 		var next_row: int = _direction_row()
-		var next_flip: bool = facing_direction == Vector2.LEFT
+		var next_flip: bool = facing_direction.x > 0
 		if next_frame != sprite_frame or next_row != sprite_row or next_flip != sprite_flip:
 			BomberAssets.configure_character_sprite(character_sprite, character_index, next_frame, next_row, next_flip)
 			sprite_frame = next_frame
