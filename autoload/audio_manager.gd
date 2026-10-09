@@ -15,9 +15,22 @@ var sfx_powerup: AudioStreamWAV
 var sfx_death: AudioStreamWAV
 var sfx_click: AudioStreamWAV
 var sfx_block_break: AudioStreamWAV
+var sfx_hover: AudioStreamWAV
+var sfx_menu_open: AudioStreamWAV
+var sfx_menu_back: AudioStreamWAV
+
+# Música de fundo
+var menu_music_stream: AudioStreamWAV
+var music_player: AudioStreamPlayer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	
+	# Canal dedicado para música de fundo
+	music_player = AudioStreamPlayer.new()
+	music_player.bus = "Master"
+	music_player.volume_db = -12.0
+	add_child(music_player)
 	
 	# Cria pool de canais de áudio para permitir múltiplos sons simultâneos sem corte
 	for i in range(POOL_SIZE):
@@ -36,6 +49,10 @@ func _generate_all_sfx() -> void:
 	sfx_death = _create_death_sfx()
 	sfx_click = _create_click_sfx()
 	sfx_block_break = _create_block_break_sfx()
+	sfx_hover = _create_hover_sfx()
+	sfx_menu_open = _create_menu_open_sfx()
+	sfx_menu_back = _create_menu_back_sfx()
+	menu_music_stream = _create_ambient_music()
 
 func play_bomb_drop() -> void:
 	_play_stream(sfx_bomb_drop, -4.0)
@@ -51,6 +68,30 @@ func play_death() -> void:
 
 func play_click() -> void:
 	_play_stream(sfx_click, -6.0)
+
+func play_button_click() -> void:
+	_play_stream(sfx_click, -5.0)
+
+func play_button_hover() -> void:
+	_play_stream(sfx_hover, -10.0)
+
+func play_menu_open() -> void:
+	_play_stream(sfx_menu_open, -6.0)
+
+func play_menu_back() -> void:
+	_play_stream(sfx_menu_back, -7.0)
+
+func play_menu_music() -> void:
+	if not music_player.playing and menu_music_stream:
+		music_player.stream = menu_music_stream
+		music_player.play()
+
+func stop_menu_music() -> void:
+	if music_player.playing:
+		music_player.stop()
+
+func set_music_volume(volume_db: float) -> void:
+	music_player.volume_db = volume_db
 
 func play_block_break() -> void:
 	_play_stream(sfx_block_break, -4.5)
@@ -241,4 +282,106 @@ func _create_block_break_sfx() -> AudioStreamWAV:
 	wav.mix_rate = sample_rate
 	wav.data = data
 	return wav
+
+## Som suave de foco / hover nos botões
+func _create_hover_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.04
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var envelope: float = sin(progress * PI)
+		var freq: float = lerp(1200.0, 1600.0, progress)
+		var val: float = sin(t * freq * TAU) * 0.25 * envelope
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+## Som de abertura de tela/modal
+func _create_menu_open_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.16
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var envelope: float = (1.0 - progress) * (1.0 - progress)
+		var freq: float = lerp(420.0, 920.0, progress)
+		var val: float = (sin(t * freq * TAU) + 0.3 * sin(t * freq * 1.5 * TAU)) * 0.35 * envelope
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+## Som de fechamento / voltar
+func _create_menu_back_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.14
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var envelope: float = 1.0 - progress
+		var freq: float = lerp(850.0, 360.0, progress)
+		var val: float = sin(t * freq * TAU) * 0.35 * envelope
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+## Trilha ambiente sintetizada em loop para o menu
+func _create_ambient_music() -> AudioStreamWAV:
+	var sample_rate: int = 22050
+	var duration: float = 4.0
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	# Acordes Dm (D, F, A) e Bb com subgrave pulsante
+	var notes: Array[float] = [146.83, 174.61, 220.0, 73.42] # D3, F3, A3, D2
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var val: float = 0.0
+		# Osciladores senoidais suaves
+		for n_idx in range(notes.size()):
+			var f: float = notes[n_idx]
+			var lfo: float = 1.0 + 0.15 * sin(t * 1.5 + float(n_idx))
+			val += sin(t * f * TAU) * 0.12 * lfo
+		# Tremolo suave e loop seamless
+		var loop_env: float = sin((float(i) / float(samples_count)) * PI)
+		val *= (0.7 + 0.3 * loop_env)
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_end = samples_count
+	return wav
+
 

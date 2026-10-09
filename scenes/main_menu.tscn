@@ -1,0 +1,640 @@
+[gd_scene load_steps=13 format=3 uid="uid://mainmenu001"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/menu/background_arena.png" id="2_bg_tex"]
+[ext_resource type="Script" path="res://scripts/menu_character.gd" id="3_char_script"]
+[ext_resource type="Texture2D" path="res://assets/menu/character_hero.png" id="4_char_tex"]
+[ext_resource type="Texture2D" path="res://assets/menu/logo_bombastico.png" id="5_logo_tex"]
+[ext_resource type="Script" path="res://scripts/tactical_button.gd" id="6_btn_script"]
+[ext_resource type="Texture2D" path="res://assets/menu/avatar_robot.png" id="7_avatar_tex"]
+[ext_resource type="Texture2D" path="res://assets/menu/map_preview_1.png" id="8_map_tex"]
+[ext_resource type="Script" path="res://scripts/ambient_particles.gd" id="9_particles_script"]
+[ext_resource type="Script" path="res://scripts/parallax_controller.gd" id="10_parallax_script"]
+[ext_resource type="Script" path="res://scripts/settings_modal.gd" id="11_settings_script"]
+[ext_resource type="Script" path="res://scripts/profile_modal.gd" id="12_profile_script"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ParallaxFar" type="Control" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BgTexture" type="TextureRect" parent="Background/ParallaxFar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -20.0
+offset_right = 30.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="AmbientParticlesFar" type="Control" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_particles_script")
+
+[node name="CharacterRoot" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Character" type="Node2D" parent="CharacterRoot"]
+position = Vector2(480, 465)
+script = ExtResource("3_char_script")
+
+[node name="Shadow" type="Node2D" parent="CharacterRoot/Character"]
+position = Vector2(0, 160)
+
+[node name="Sprite" type="Sprite2D" parent="CharacterRoot/Character"]
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("4_char_tex")
+
+[node name="ForegroundParticles" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_particles_script")
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopLeftLogo" type="MarginContainer" parent="UI"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 20.0
+offset_right = 382.0
+offset_bottom = 195.0
+
+[node name="LogoTexture" type="TextureRect" parent="UI/TopLeftLogo"]
+layout_mode = 2
+texture = ExtResource("5_logo_tex")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MainButtons" type="VBoxContainer" parent="UI"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 220.0
+offset_right = 380.0
+offset_bottom = 460.0
+theme_override_constants/separation = 14
+
+[node name="ContinueButton" type="Button" parent="UI/MainButtons"]
+layout_mode = 2
+script = ExtResource("6_btn_script")
+primary_text = "CONTINUAR"
+secondary_text = "RETOMAR SUA JORNADA"
+icon_symbol = "▶"
+is_accent_gold = true
+
+[node name="NewCampaignButton" type="Button" parent="UI/MainButtons"]
+layout_mode = 2
+script = ExtResource("6_btn_script")
+primary_text = "NOVA CAMPANHA"
+secondary_text = "EXPLORE NOVOS DESAFIOS"
+icon_symbol = "⚔"
+
+[node name="MultiplayerButton" type="Button" parent="UI/MainButtons"]
+layout_mode = 2
+script = ExtResource("6_btn_script")
+primary_text = "MULTIPLAYER"
+secondary_text = "JOGUE COM SEUS AMIGOS"
+icon_symbol = "🌐"
+
+[node name="TopButtons" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -118.0
+offset_top = 18.0
+offset_right = -32.0
+offset_bottom = 54.0
+grow_horizontal = 0
+theme_override_constants/separation = 8
+
+[node name="SettingsTopBtn" type="Button" parent="UI/TopButtons"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "⚙"
+
+[node name="ProfileTopBtn" type="Button" parent="UI/TopButtons"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "👤"
+
+[node name="PlayerPanel" type="PanelContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -256.0
+offset_top = 66.0
+offset_right = -32.0
+offset_bottom = 260.0
+grow_horizontal = 0
+
+[node name="Margin" type="MarginContainer" parent="UI/PlayerPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProfileRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AvatarRect" type="TextureRect" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture = ExtResource("7_avatar_tex")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="InfoVBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "JOGADOR_799"
+
+[node name="LevelLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.72, 0.95, 1)
+theme_override_font_sizes/font_size = 10
+text = "NÍVEL 12"
+
+[node name="XPContainer" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="XPBar" type="ProgressBar" parent="UI/PlayerPanel/Margin/VBox/XPContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 84.0
+show_percentage = false
+
+[node name="XPPercent" type="Label" parent="UI/PlayerPanel/Margin/VBox/XPContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "84%"
+
+[node name="StatsRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="WinsBox" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="WinsCount" type="Label" parent="UI/PlayerPanel/Margin/VBox/StatsRow/WinsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.35, 1)
+theme_override_font_sizes/font_size = 11
+text = "🏆 24 Vitórias"
+
+[node name="ElimsBox" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="ElimsCount" type="Label" parent="UI/PlayerPanel/Margin/VBox/StatsRow/ElimsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
+theme_override_font_sizes/font_size = 11
+text = "💀 187 Eliminações"
+
+[node name="SuitColorsBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SuitLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/SuitColorsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.65, 0.8, 1)
+theme_override_font_sizes/font_size = 10
+text = "COR DO TRAJE"
+
+[node name="SwatchesRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/SuitColorsBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NewsPanel" type="PanelContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -256.0
+offset_top = -245.0
+offset_right = -32.0
+offset_bottom = -48.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="UI/NewsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="UI/NewsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="MapThumb" type="TextureRect" parent="UI/NewsPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+texture = ExtResource("8_map_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="NewsBadge" type="Label" parent="UI/NewsPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.35, 1)
+theme_override_font_sizes/font_size = 11
+text = "NOVO MAPA DISPONÍVEL"
+
+[node name="NewsTitle" type="Label" parent="UI/NewsPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Arena da Montanha"
+
+[node name="NewsDesc" type="Label" parent="UI/NewsPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.72, 0.85, 1)
+theme_override_font_sizes/font_size = 10
+text = "Teste suas habilidades no novo cenário de combate."
+autowrap_mode = 2
+
+[node name="DotsLabel" type="Label" parent="UI/NewsPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "●  ○  ○"
+horizontal_alignment = 1
+
+[node name="Footer" type="MarginContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 8
+
+[node name="HBox" type="HBoxContainer" parent="UI/Footer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FooterSettingsBtn" type="Button" parent="UI/Footer/HBox"]
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "⚙ Configurações"
+flat = true
+
+[node name="Separator" type="Label" parent="UI/Footer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.4, 0.55, 1)
+text = "│"
+
+[node name="FooterExitBtn" type="Button" parent="UI/Footer/HBox"]
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "🚪 Sair"
+flat = true
+
+[node name="Spacer" type="Control" parent="UI/Footer/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VersionLabel" type="Label" parent="UI/Footer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.65, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+text = "v1.0 Forward+"
+
+[node name="ParallaxManager" type="Node" parent="." node_paths=PackedStringArray("far_layer", "mid_layer", "character_layer", "particles_layer")]
+script = ExtResource("10_parallax_script")
+far_layer = NodePath("../Background/ParallaxFar")
+mid_layer = NodePath("../Background/AmbientParticlesFar")
+character_layer = NodePath("../CharacterRoot")
+particles_layer = NodePath("../ForegroundParticles")
+
+[node name="SettingsModal" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("11_settings_script")
+
+[node name="Backdrop" type="ColorRect" parent="SettingsModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.025, 0.045, 0.82)
+
+[node name="CenterContainer" type="CenterContainer" parent="SettingsModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="SettingsModal/CenterContainer"]
+custom_minimum_size = Vector2(440, 360)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="SettingsModal/CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "⚙ CONFIGURAÇÕES DO JOGO"
+horizontal_alignment = 1
+
+[node name="HSep1" type="HSeparator" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="AudioSection" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MasterRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
+layout_mode = 2
+
+[node name="MasterLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MasterRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Volume Geral:"
+
+[node name="MasterSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MasterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 85.0
+
+[node name="MusicRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
+layout_mode = 2
+
+[node name="MusicLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MusicRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Volume da Música:"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MusicRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 75.0
+
+[node name="SFXRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
+layout_mode = 2
+
+[node name="SFXLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/SFXRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Efeitos Sonoros:"
+
+[node name="SFXSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/SFXRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 90.0
+
+[node name="HSep2" type="HSeparator" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="VideoSection" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FullscreenCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Tela Cheia (Fullscreen)"
+
+[node name="EnhancedCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Modo Gráfico Melhorado [F10]"
+
+[node name="CloseButton" type="Button" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "✖ FECHAR"
+
+[node name="ProfileModal" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("12_profile_script")
+
+[node name="Backdrop" type="ColorRect" parent="ProfileModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.025, 0.045, 0.82)
+
+[node name="CenterContainer" type="CenterContainer" parent="ProfileModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="ProfileModal/CenterContainer"]
+custom_minimum_size = Vector2(400, 320)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="ProfileModal/CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="ProfileModal/CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "👤 PERFIL DO GUERREIRO"
+horizontal_alignment = 1
+
+[node name="HSep1" type="HSeparator" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="NameRow" type="HBoxContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NameLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/NameRow"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Apelido:"
+
+[node name="NameInput" type="LineEdit" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/NameRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "JOGADOR_799"
+max_length = 16
+
+[node name="StatsGrid" type="GridContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="WinsLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Total de Vitórias:"
+
+[node name="WinsValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.35, 1)
+theme_override_font_sizes/font_size = 12
+text = "24 Vitórias"
+
+[node name="KillsLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Inimigos Eliminados:"
+
+[node name="KillsValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "187 Baixas"
+
+[node name="MatchesLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Partidas Jogadas:"
+
+[node name="MatchesValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "32 Batalhas"
+
+[node name="WinRateLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+text = "Taxa de Sucesso:"
+
+[node name="WinRateValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.95, 0.65, 1)
+theme_override_font_sizes/font_size = 12
+text = "75.0%"
+
+[node name="CloseButton" type="Button" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "✖ FECHAR"
