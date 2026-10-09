@@ -27,14 +27,14 @@ func set_character(index: int) -> void:
 	if character_sprite:
 		BomberAssets.configure_character_sprite(character_sprite, character_index, 0, 0, false)
 		var center_x: float = size.x * 0.5 if size.x > 0 else 24.0
-		var center_y: float = size.y * 0.5 + 8.0 if size.y > 0 else 32.0
+		var center_y: float = size.y * 0.5 if size.y > 0 else 24.0
 		character_sprite.position = Vector2(center_x, center_y)
 		character_sprite.scale = Vector2.ONE * 1.8
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and character_sprite:
 		var center_x: float = size.x * 0.5 if size.x > 0 else 24.0
-		var center_y: float = size.y * 0.5 + 8.0 if size.y > 0 else 32.0
+		var center_y: float = size.y * 0.5 if size.y > 0 else 24.0
 		character_sprite.position = Vector2(center_x, center_y)
 
 func _draw() -> void:

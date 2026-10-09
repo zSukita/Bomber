@@ -52,8 +52,9 @@ func _draw() -> void:
 	if not is_alive:
 		return
 	var large := archetype == CampaignEnemy.Archetype.BOSS
-	var width := 48.0 if large else 32.0
-	draw_rect(Rect2(-width * 0.4, 12, width * 0.8, 5), Color(0, 0, 0, 0.4))
+	var shadow_rx: float = 24.0 if large else 14.0
+	var shadow_ry: float = 8.0 if large else 5.0
+	_draw_ellipse(Vector2(0, 14), Vector2(shadow_rx, shadow_ry), Color(0.02, 0.03, 0.06, 0.45))
 
 	var charge_vector := charge_direction.normalized()
 	if charge_vector == Vector2.ZERO:
@@ -78,6 +79,14 @@ func _draw() -> void:
 			draw_rect(Rect2(-charge_vector.x * 18 - 4, -charge_vector.y * 18 - 4, 8, 8), Color("ffe46b"))
 
 	if max_health > 1:
-		draw_rect(Rect2(-20, -42, 40, 8), INK)
-		draw_rect(Rect2(-16, -38, 32, 4), Color("493147"))
-		draw_rect(Rect2(-16, -38, 32.0 * float(health) / float(max_health), 4), Color("ff534d"))
+		var bar_y: float = -120.0 if large else -42.0
+		draw_rect(Rect2(-20, bar_y, 40, 8), INK)
+		draw_rect(Rect2(-16, bar_y + 4, 32, 4), Color("493147"))
+		draw_rect(Rect2(-16, bar_y + 4, 32.0 * float(health) / float(max_health), 4), Color("ff534d"))
+
+func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
+	var points: PackedVector2Array = PackedVector2Array()
+	for i in range(16):
+		var angle: float = TAU * float(i) / 16.0
+		points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
+	draw_colored_polygon(points, color)

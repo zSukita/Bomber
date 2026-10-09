@@ -27,14 +27,14 @@ const CHARACTER_KEY_COLORS: Array[Color] = [
 # Configurações de layout de spritesheet por personagem:
 # [origin_x, origin_y, stride_x, stride_y, width, height]
 const CHARACTER_LAYOUTS: Array[Array] = [
-	[7, 8, 17, 28, 14, 22],   # 0: Bomberman
-	[4, 4, 21, 28, 17, 24],   # 1: Barbarian Bomber
-	[4, 4, 17, 28, 14, 24],   # 2: Bomber Chen
-	[4, 4, 17, 28, 14, 24],   # 3: Bomber the Kid
-	[4, 5, 18, 28, 16, 24],   # 4: Cossack Bomber
-	[4, 4, 22, 28, 20, 24],   # 5: Louie
-	[4, 5, 19, 28, 18, 24],   # 6: Mexican Bomber
-	[4, 18, 18, 28, 16, 24]   # 7: Pretty Bomber
+	[5, 8, 17, 25, 17, 24],   # 0: Bomberman
+	[3, 3, 21, 28, 20, 27],   # 1: Barbarian Bomber
+	[2, 2, 17, 24, 16, 23],   # 2: Bomber Chen
+	[2, 3, 17, 28, 17, 27],   # 3: Bomber the Kid
+	[4, 3, 13, 23, 14, 22],   # 4: Cossack Bomber
+	[5, 9, 20, 34, 18, 29],   # 5: Louie
+	[4, 3, 17, 33, 17, 32],   # 6: Mexican Bomber
+	[2, 22, 33, 33, 31, 33]   # 7: Pretty Bomber
 ]
 
 # Texturas de fases, itens, efeitos e inimigos
@@ -59,11 +59,11 @@ enum ExplosionSegment {
 # 4 Cruzes de animação de fogo (Cross 0, 1, 2, 3)
 const EXPLOSION_CROSS_CENTERS: Array[int] = [293, 415, 538, 656]
 
-# Quadros da bomba normal pulsando (3 quadros)
+# Quadros da bomba normal pulsando (3 quadros 16x16 autênticos limpos de bordas)
 const BOMB_FRAMES: Array[Rect2] = [
-	Rect2(4, 2, 17, 24),
-	Rect2(21, 2, 17, 24),
-	Rect2(38, 2, 17, 24)
+	Rect2(3, 6, 18, 18),
+	Rect2(20, 6, 17, 18),
+	Rect2(37, 6, 16, 18)
 ]
 
 # Regiões dos Power-Ups (16x16)
@@ -84,31 +84,45 @@ const PUFF_FRAMES: Array[Rect2] = [
 	Rect2(119, 183, 16, 16)
 ]
 
-# Inimigos de Campanha (4 arquétipos com 4 quadros cada)
+# Inimigos de Campanha (4 arquétipos com 4 quadros cada com recorte perfeito sem sangramento)
 const ENEMY_ANIMATIONS: Dictionary = {
 	CampaignEnemy.Archetype.WANDERER: [
-		Rect2(6, 35, 14, 25), Rect2(20, 35, 19, 25), Rect2(40, 35, 16, 25), Rect2(60, 35, 19, 25)
+		Rect2(5, 30, 23, 26),
+		Rect2(30, 30, 26, 26),
+		Rect2(59, 30, 26, 26),
+		Rect2(88, 30, 24, 26)
 	],
 	CampaignEnemy.Archetype.HUNTER: [
-		Rect2(8, 360, 20, 35), Rect2(32, 365, 24, 30), Rect2(56, 365, 28, 30), Rect2(84, 360, 28, 35)
+		Rect2(11, 359, 18, 43),
+		Rect2(30, 359, 20, 43),
+		Rect2(50, 359, 21, 43),
+		Rect2(76, 359, 36, 43)
 	],
 	CampaignEnemy.Archetype.CHARGER: [
-		Rect2(442, 500, 21, 30), Rect2(464, 500, 21, 30), Rect2(488, 500, 20, 30), Rect2(510, 500, 20, 30)
+		Rect2(433, 491, 26, 26),
+		Rect2(460, 491, 26, 26),
+		Rect2(487, 491, 26, 26),
+		Rect2(460, 491, 26, 26)
 	],
 	CampaignEnemy.Archetype.BOSS: [
-		Rect2(8, 140, 28, 60), Rect2(36, 140, 34, 60), Rect2(71, 140, 34, 60), Rect2(106, 140, 34, 60)
+		Rect2(7, 130, 33, 71),
+		Rect2(41, 130, 32, 71),
+		Rect2(73, 130, 33, 71),
+		Rect2(106, 130, 30, 71)
 	]
 }
 
 # Efeito de morte do inimigo (puff clássico da folha de inimigos)
 const ENEMY_DEATH_FRAMES: Array[Rect2] = [
-	Rect2(291, 715, 13, 27),
-	Rect2(304, 715, 23, 27),
-	Rect2(330, 715, 22, 27),
-	Rect2(352, 715, 24, 27)
+	Rect2(293, 725, 17, 18),
+	Rect2(310, 725, 18, 18),
+	Rect2(329, 725, 17, 18),
+	Rect2(346, 725, 18, 18),
+	Rect2(365, 725, 18, 18)
 ]
 
 static func set_key_shader(sprite: Sprite2D, key_color: Color) -> void:
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if sprite.material is ShaderMaterial:
 		(sprite.material as ShaderMaterial).set_shader_parameter("key_color", key_color)
 		(sprite.material as ShaderMaterial).set_shader_parameter("key_tolerance", 0.08)
@@ -118,7 +132,6 @@ static func set_key_shader(sprite: Sprite2D, key_color: Color) -> void:
 	material.set_shader_parameter("key_color", key_color)
 	material.set_shader_parameter("key_tolerance", 0.08)
 	sprite.material = material
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 static func configure_character_sprite(sprite: Sprite2D, character_index: int, frame: int = 0, direction_row: int = 0, flip_horizontal: bool = false) -> void:
 	var index := posmod(character_index, CHARACTER_TEXTURES.size())
@@ -135,8 +148,8 @@ static func configure_character_sprite(sprite: Sprite2D, character_index: int, f
 	var clamped_frame := clampi(frame, 0, 3)
 	var clamped_row := clampi(direction_row, 0, 2)
 	sprite.region_rect = Rect2(origin_x + clamped_frame * stride_x, origin_y + clamped_row * stride_y, frame_w, frame_h)
-	sprite.position = Vector2(0, -10)
-	sprite.scale = Vector2.ONE * 2.2
+	sprite.position = Vector2(0, -24)
+	sprite.scale = Vector2.ONE * 3.2
 	sprite.flip_h = direction_row == 2 and flip_horizontal
 	set_key_shader(sprite, CHARACTER_KEY_COLORS[index])
 
@@ -145,8 +158,8 @@ static func configure_bomb_sprite(sprite: Sprite2D, frame: int = 0) -> void:
 	sprite.region_enabled = true
 	var idx := posmod(frame, BOMB_FRAMES.size())
 	sprite.region_rect = BOMB_FRAMES[idx]
-	sprite.position = Vector2(0, -6)
-	sprite.scale = Vector2.ONE * 2.4
+	sprite.position = Vector2(0, -13)
+	sprite.scale = Vector2.ONE * 3.0
 	set_key_shader(sprite, Color8(112, 136, 88))
 
 static func configure_explosion_sprite(sprite: Sprite2D, segment: int, anim_frame: int = 0) -> void:
@@ -184,7 +197,7 @@ static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpTy
 	sprite.region_enabled = true
 	var rect: Rect2 = POWERUP_REGIONS.get(type, Rect2(88, 86, 16, 16))
 	sprite.region_rect = rect
-	sprite.scale = Vector2.ONE * 2.8
+	sprite.scale = Vector2.ONE * 3.0
 	sprite.position = Vector2.ZERO
 	set_key_shader(sprite, Color8(112, 136, 88))
 
@@ -194,6 +207,7 @@ static func configure_powerup_puff(sprite: Sprite2D, frame: int) -> void:
 	var idx := clampi(frame, 0, PUFF_FRAMES.size() - 1)
 	sprite.region_rect = PUFF_FRAMES[idx]
 	sprite.scale = Vector2.ONE * 3.0
+	sprite.position = Vector2.ZERO
 	set_key_shader(sprite, Color8(112, 136, 88))
 
 static func configure_enemy_sprite(sprite: Sprite2D, archetype: int, frame: int = 0, flip_horizontal: bool = false) -> void:
@@ -202,8 +216,19 @@ static func configure_enemy_sprite(sprite: Sprite2D, archetype: int, frame: int 
 	var anim_list: Array = ENEMY_ANIMATIONS.get(archetype, ENEMY_ANIMATIONS[CampaignEnemy.Archetype.WANDERER])
 	var idx := posmod(frame, anim_list.size())
 	sprite.region_rect = anim_list[idx]
-	sprite.scale = Vector2.ONE * (1.6 if archetype == CampaignEnemy.Archetype.BOSS else 2.2)
-	sprite.position = Vector2(0, -6)
+	match archetype:
+		CampaignEnemy.Archetype.BOSS:
+			sprite.scale = Vector2.ONE * 2.0
+			sprite.position = Vector2(0, -56)
+		CampaignEnemy.Archetype.HUNTER:
+			sprite.scale = Vector2.ONE * 2.0
+			sprite.position = Vector2(0, -28)
+		CampaignEnemy.Archetype.CHARGER:
+			sprite.scale = Vector2.ONE * 2.6
+			sprite.position = Vector2(0, -20)
+		_: # WANDERER
+			sprite.scale = Vector2.ONE * 2.6
+			sprite.position = Vector2(0, -20)
 	sprite.flip_h = flip_horizontal
 	set_key_shader(sprite, Color8(112, 136, 88))
 
@@ -212,8 +237,8 @@ static func configure_enemy_death(sprite: Sprite2D, frame: int) -> void:
 	sprite.region_enabled = true
 	var idx := clampi(frame, 0, ENEMY_DEATH_FRAMES.size() - 1)
 	sprite.region_rect = ENEMY_DEATH_FRAMES[idx]
-	sprite.scale = Vector2.ONE * 2.2
-	sprite.position = Vector2(0, -6)
+	sprite.scale = Vector2.ONE * 3.0
+	sprite.position = Vector2(0, -12)
 	set_key_shader(sprite, Color8(112, 136, 88))
 
 static func configure_wall_sprite(sprite: Sprite2D, region: Rect2) -> void:

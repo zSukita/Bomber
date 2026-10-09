@@ -68,9 +68,9 @@ func _direction_row() -> int:
 
 func _draw() -> void:
 	# Sombra suave sob os pés
-	_draw_ellipse(Vector2(0, 10), Vector2(14, 5), Color(0.02, 0.03, 0.06, 0.45))
+	_draw_ellipse(Vector2(0, 14), Vector2(16, 6), Color(0.02, 0.03, 0.06, 0.45))
 	# Indicador circular de equipe / cor do jogador
-	draw_arc(Vector2(0, 10), 19.0, 0.0, TAU, 24, Color(player_color.r, player_color.g, player_color.b, 0.85), 2.5)
+	draw_arc(Vector2(0, 14), 20.0, 0.0, TAU, 24, Color(player_color.r, player_color.g, player_color.b, 0.85), 2.5)
 
 func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points: PackedVector2Array = PackedVector2Array()

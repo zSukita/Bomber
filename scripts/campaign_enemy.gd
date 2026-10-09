@@ -407,14 +407,14 @@ func die() -> void:
 
 	if appearance and appearance.has_node("EnemySprite"):
 		var sprite: Sprite2D = appearance.get_node("EnemySprite") as Sprite2D
-		var tween: Tween = create_tween()
-		for f in range(4):
+		var frame_count: int = BomberAssets.ENEMY_DEATH_FRAMES.size()
+		for f in range(frame_count):
 			tween.tween_callback(func():
 				if is_instance_valid(sprite):
 					BomberAssets.configure_enemy_death(sprite, f)
 			)
-			tween.tween_interval(0.07)
-		tween.parallel().tween_property(self, "modulate:a", 0.0, 0.28)
+			tween.tween_interval(0.06)
+		tween.parallel().tween_property(self, "modulate:a", 0.0, float(frame_count) * 0.06)
 		tween.chain().tween_callback(queue_free)
 	else:
 		var tween: Tween = create_tween()
