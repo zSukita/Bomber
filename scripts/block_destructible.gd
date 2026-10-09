@@ -7,6 +7,13 @@ signal destroyed(grid_pos: Vector2i)
 ## Coordenada do bloco na grade lógica.
 var grid_position: Vector2i = Vector2i.ZERO
 
+func _ready() -> void:
+	$ColorRect.visible = false
+	var sprite := Sprite2D.new()
+	sprite.name = "StageBlockSprite"
+	add_child(sprite)
+	BomberAssets.configure_wall_sprite(sprite, BomberAssets.BLOCK_REGION)
+
 ## Executa a animação de destruição com rotação e estilhaçamento visual
 func destroy() -> void:
 	destroyed.emit(grid_position)
@@ -49,4 +56,3 @@ func _spawn_debris(debris_rng: RandomNumberGenerator) -> void:
 		d_tween.tween_property(debris, "rotation", debris_rng.randf_range(-3.0, 3.0), 0.28)
 		d_tween.tween_property(debris, "modulate:a", 0.0, 0.28).set_delay(0.12)
 		d_tween.chain().tween_callback(debris.queue_free)
-

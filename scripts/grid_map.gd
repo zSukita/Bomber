@@ -192,10 +192,13 @@ func place_bomb(cell: Vector2i, player: Player) -> Bomb:
 func unregister_bomb(cell: Vector2i) -> void:
 	active_bombs.erase(cell)
 
-func spawn_explosion_segment(cell: Vector2i) -> Area2D:
+func spawn_explosion_segment(cell: Vector2i, segment_type: int = BomberAssets.ExplosionSegment.CENTER) -> Area2D:
 	var explosion: Area2D = EXPLOSION_SCENE.instantiate() as Area2D
 	explosion.position = grid_to_world(cell)
-	(explosion as Explosion).grid_position = cell
+	var exp_node := explosion as Explosion
+	if exp_node:
+		exp_node.grid_position = cell
+		exp_node.set_segment_type(segment_type)
 	explosions_container.add_child(explosion)
 	return explosion
 

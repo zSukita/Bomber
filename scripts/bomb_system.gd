@@ -81,9 +81,7 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 				if is_instance_valid(chained_bomb):
 					chained_bomb.detonate()
 
-	game.grid_map.spawn_explosion_segment(center_cell)
-	for flame_cell in flame_cells:
-		game.grid_map.spawn_explosion_segment(flame_cell)
+	_spawn_explosion_rays(center_cell, flame_cells)
 	AudioManager.play_explosion()
 	if not destroyed_blocks.is_empty() and GameState.is_enhanced():
 		AudioManager.play_block_break()
@@ -111,9 +109,7 @@ func apply_explosion_replica(center: Vector2i, flame_cells: Array, destroyed_blo
 	if owner_player:
 		owner_player.on_bomb_exploded()
 		game._refresh_player_hud(owner_peer_id)
-	game.grid_map.spawn_explosion_segment(center)
-	for flame_cell in flame_cells:
-		game.grid_map.spawn_explosion_segment(flame_cell)
+	_spawn_explosion_rays(center, flame_cells)
 	for block_cell in destroyed_blocks:
 		game.grid_map.destroy_block_at(block_cell, false)
 	for powerup_info in dropped_powerups:
@@ -167,3 +163,23 @@ func _check_players_in_cell(cell: Vector2i, hit_list: Array[int]) -> void:
 		var player: Player = game.spawned_players[peer_id]
 		if player.is_alive and game.grid_map.world_to_grid(player.global_position) == cell and not hit_list.has(peer_id):
 			hit_list.append(peer_id)
+
+func _spawn_explosion_rays(center_cell: Vector2i, flame_cells: Array) -> void:
+	game.grid_map.spawn_explosion_segment(center_cell, BomberAssets.ExplosionSegment.CENTER)
+	for cell_item in flame_cells:
+		var cell: Vector2i = cell_item as Vector2i
+		var diff: Vector2i = cell - center_cell
+		var dir := Vector2i(sign(diff.x), sign(diff.y))
+		var is_tip: bool = not (cell + dir in flame_cells)
+		var seg_type: int
+		if dir.x != 0:
+			if is_tip:
+				seg_type = BomberAssets.ExplosionSegment.TIP_RIGHT if dir.x > 0 else BomberAssets.ExplosionSegment.TIP_LEFT
+			else:
+				seg_type = BomberAssets.ExplosionSegment.BEAM_HORIZONTAL
+		else:
+			if is_tip:
+				seg_type = BomberAssets.ExplosionSegment.TIP_DOWN if dir.y > 0 else BomberAssets.ExplosionSegment.TIP_UP
+			else:
+				seg_type = BomberAssets.ExplosionSegment.BEAM_VERTICAL
+		game.grid_map.spawn_explosion_segment(cell, seg_type)

@@ -11,7 +11,7 @@ Jogo multiplayer de arena feito em Godot 4.7. O projeto inclui lobby, partidas p
 
 ### Campanha
 
-No menu, escolha **Iniciar Campanha**. Derrote os inimigos antes do cronômetro de 3 minutos acabar. Você começa com cinco vidas; o coração absorve um golpe. A campanha mistura rondadores, caçadores, inimigos que anunciam uma investida e chefes que também usam investidas nas fases 5 e 10. Os inimigos tentam sair das linhas de explosão. Cada campanha gera uma variação nova dos mapas; revisitar uma fase mantém o layout daquela campanha. Os monstros surgem espalhados por caminhos conectados da arena, longe da posição inicial, e a quantidade cresce de quatro até oito ao longo das fases. Você recebe alguns segundos de proteção no início da fase para se afastar e colocar a primeira bomba. Um coração aparece garantidamente após quebrar oito blocos em cada fase, se nenhum coração já tiver surgido nela durante a campanha. Ao limpar uma fase, escolha o portal dourado para seguir para um mundo novo ou o azul para retornar a um mundo já visitado. Suas escolhas determinam o final. Use WASD ou as setas, ou o analógico esquerdo, para mover; use Espaço ou A para soltar bombas. No controle, START abre o menu de pausa.
+No menu, escolha **Iniciar Campanha**. Derrote os inimigos antes do cronômetro de 3 minutos acabar. Você começa com cinco vidas; o coração absorve um golpe. A campanha mistura rondadores, caçadores, inimigos que anunciam uma investida e chefes que também usam investidas nas fases 5, 10 e 12. Os inimigos tentam sair das linhas de explosão. Cada campanha gera uma variação nova dos mapas; revisitar uma fase mantém o layout daquela campanha. Os monstros surgem espalhados por caminhos conectados da arena, longe da posição inicial, e a quantidade cresce de quatro até nove ao longo das fases. Você recebe alguns segundos de proteção no início da fase para se afastar e colocar a primeira bomba. Um coração aparece garantidamente após quebrar oito blocos em cada fase, se nenhum coração já tiver surgido nela durante a campanha. Ao limpar uma fase, escolha o portal dourado para seguir para um mundo novo ou o azul para retornar a um mundo já visitado. Suas escolhas determinam o final. Use WASD ou as setas, ou o analógico esquerdo, para mover; use Espaço ou A para soltar bombas. No controle, START abre o menu de pausa.
 
 ## Servidor dedicado Linux
 
@@ -43,6 +43,8 @@ A imagem exige o executável exportado e o `.pck` na pasta `builds/server/`; a c
 O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e Linux Dedicated Server. Os arquivos exportados vão para `builds/`, que não precisa ser incluída no controle de versão; gere-os novamente antes de executar os scripts de servidor ou construir a imagem Docker.
 
 ## Estrutura do código
+
+- `assets/super_bomberman_3/` contém as imagens fornecidas, separadas em `battle_stages/`, `characters/`, `enemies/` e `effects/`. As doze fases são arenas jogáveis com layouts, paletas e padrões inspirados nas referências; as imagens completas dos cenários também aparecem como prévias no lobby. Personagens podem ser escolhidos antes da partida; paredes, blocos, monstros, bombas, itens e explosões têm visuais próprios no jogo.
 
 - `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.
 - `scripts/bomb_system.gd` concentra colocação, explosões, coleta de itens e sincronização de bombas.

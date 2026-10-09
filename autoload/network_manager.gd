@@ -20,6 +20,7 @@ var players: Dictionary = {}
 
 var local_player_name: String = "Jogador"
 var preferred_color_index: int = 0
+var preferred_character_index: int = 0
 var is_game_active: bool = false
 var is_dedicated_server: bool = false
 var current_match_seed: int = 0
@@ -86,6 +87,7 @@ func create_server(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 		var host_info: Dictionary = {
 			"name": local_player_name,
 			"color_index": preferred_color_index,
+			"character_index": preferred_character_index,
 			"is_ready": true,
 			"score": 0
 		}
@@ -147,6 +149,7 @@ func _on_connected_to_server() -> void:
 	var info: Dictionary = {
 		"name": local_player_name,
 		"color_index": preferred_color_index,
+		"character_index": preferred_character_index,
 		"is_ready": false,
 		"score": 0
 	}
@@ -175,6 +178,7 @@ func register_player(info: Dictionary) -> void:
 	info["name"] = safe_name if not safe_name.is_empty() else "Jogador"
 	info["is_ready"] = false
 	info["score"] = 0
+	info["character_index"] = clampi(int(info.get("character_index", 0)), 0, BomberAssets.CHARACTER_NAMES.size() - 1)
 	
 	# Distribui cores disponíveis (0 a 3), respeitando a preferida caso esteja livre
 	var used_colors: Array = []

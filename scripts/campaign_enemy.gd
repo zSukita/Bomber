@@ -12,7 +12,6 @@ const ENEMY_COLORS: Array[Color] = [
 	Color(0.18, 0.66, 0.72),
 	Color(0.91, 0.54, 0.16)
 ]
-const DANGER_LOOKAHEAD: float = 1.35
 const HURT_INVULNERABILITY: float = 0.42
 
 var target_player: Player
@@ -29,6 +28,7 @@ var max_health: int = 1
 var health: int = 1
 var hurt_invulnerability: float = 0.0
 var danger_refresh: float = 0.0
+var escape_refresh: float = 0.0
 var imminent_danger: Dictionary = {}
 var is_winding_up: bool = false
 var windup_remaining: float = 0.0
@@ -80,6 +80,7 @@ func _physics_process(delta: float) -> void:
 	hurt_invulnerability = maxf(0.0, hurt_invulnerability - delta)
 	charge_cooldown = maxf(0.0, charge_cooldown - delta)
 	danger_refresh -= delta
+	escape_refresh -= delta
 	if danger_refresh <= 0.0:
 		imminent_danger = _collect_imminent_danger()
 		danger_refresh = 0.12
@@ -95,7 +96,9 @@ func _physics_process(delta: float) -> void:
 			charge_remaining = 0.0
 			windup_remaining = 0.0
 			charge_cooldown = 0.8
-		_choose_escape_direction()
+		if escape_refresh <= 0.0:
+			_choose_escape_direction()
+			escape_refresh = 0.12
 
 	if (archetype == Archetype.CHARGER or archetype == Archetype.BOSS) and player_is_valid:
 		_update_charger(delta)
@@ -275,18 +278,56 @@ func _choose_escape_direction() -> void:
 	if arena_grid == null:
 		_choose_direction()
 		return
-	var safe_cells: Array[Vector2i] = []
-	for x in range(1, ArenaGrid.WIDTH - 1):
-		for y in range(1, ArenaGrid.HEIGHT - 1):
-			var cell: Vector2i = Vector2i(x, y)
-			if arena_grid.is_walkable(cell) and not imminent_danger.has(cell):
-				safe_cells.append(cell)
-	var escape: Vector2 = _find_path_direction(arena_grid.world_to_grid(global_position), safe_cells, false)
-	if escape != Vector2.ZERO:
-		direction = escape
-		direction_timer = 0.18
+	var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	var pending: Array[Vector2i] = [start_cell]
+	var came_from: Dictionary = {start_cell: start_cell}
+	var distance_from_start: Dictionary = {start_cell: 0}
+	var first_step: Dictionary = {}
+	var best_direction: Vector2 = Vector2.ZERO
+	var best_safety: int = -1
+	var best_path_length: int = 1 << 30
+	while not pending.is_empty():
+		var cell: Vector2i = pending.pop_front()
+		var path_length: int = distance_from_start[cell]
+		if cell != start_cell and not imminent_danger.has(cell):
+			var nearest_danger: int = 1 << 30
+			for danger_cell_variant in imminent_danger.keys():
+				var danger_cell: Vector2i = danger_cell_variant
+				nearest_danger = mini(nearest_danger, absi(cell.x - danger_cell.x) + absi(cell.y - danger_cell.y))
+			if nearest_danger > best_safety or (nearest_danger == best_safety and path_length < best_path_length):
+				best_safety = nearest_danger
+				best_path_length = path_length
+				best_direction = first_step[cell]
+		for step in DIRECTIONS:
+			var next_cell: Vector2i = cell + step
+			if came_from.has(next_cell) or not arena_grid.is_walkable(next_cell) or imminent_danger.has(next_cell):
+				continue
+			came_from[next_cell] = cell
+			distance_from_start[next_cell] = path_length + 1
+			first_step[next_cell] = Vector2(step) if cell == start_cell else first_step[cell]
+			pending.append(next_cell)
+	if best_direction != Vector2.ZERO:
+		direction = best_direction
+		direction_timer = 0.12
 	else:
-		_choose_direction()
+		var fallback_directions: Array[Vector2i] = []
+		var fallback_safety: int = -1
+		for step in DIRECTIONS:
+			var next_cell: Vector2i = start_cell + step
+			if not arena_grid.is_walkable(next_cell):
+				continue
+			var nearest_danger: int = 1 << 30
+			for danger_cell_variant in imminent_danger.keys():
+				var danger_cell: Vector2i = danger_cell_variant
+				nearest_danger = mini(nearest_danger, absi(next_cell.x - danger_cell.x) + absi(next_cell.y - danger_cell.y))
+			if nearest_danger > fallback_safety:
+				fallback_safety = nearest_danger
+				fallback_directions.clear()
+				fallback_directions.append(step)
+			elif nearest_danger == fallback_safety:
+				fallback_directions.append(step)
+		direction = Vector2(fallback_directions.pick_random()) if not fallback_directions.is_empty() else Vector2.ZERO
+		direction_timer = 0.12
 
 func _find_path_direction(start_cell: Vector2i, goals: Array[Vector2i], allow_danger: bool) -> Vector2:
 	if goals.is_empty():
@@ -322,9 +363,6 @@ func _collect_imminent_danger() -> Dictionary:
 		var bomb_cell: Vector2i = bomb_cell_variant
 		var bomb: Bomb = arena_grid.get_bomb_at(bomb_cell)
 		if not is_instance_valid(bomb) or bomb.is_detonated:
-			continue
-		var timer: Timer = bomb.fuse_timer
-		if timer == null or timer.time_left > DANGER_LOOKAHEAD:
 			continue
 		danger[bomb_cell] = true
 		var bomb_range: int = bomb.bomb_range
@@ -364,9 +402,21 @@ func die() -> void:
 		return
 	is_alive = false
 	velocity = Vector2.ZERO
-	_update_appearance()
 	$CollisionShape2D.set_deferred("disabled", true)
 	defeated.emit(self)
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "scale", Vector2.ZERO, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tween.tween_callback(queue_free)
+
+	if appearance and appearance.has_node("EnemySprite"):
+		var sprite: Sprite2D = appearance.get_node("EnemySprite") as Sprite2D
+		var tween: Tween = create_tween()
+		for f in range(4):
+			tween.tween_callback(func():
+				if is_instance_valid(sprite):
+					BomberAssets.configure_enemy_death(sprite, f)
+			)
+			tween.tween_interval(0.07)
+		tween.parallel().tween_property(self, "modulate:a", 0.0, 0.28)
+		tween.chain().tween_callback(queue_free)
+	else:
+		var tween: Tween = create_tween()
+		tween.tween_property(self, "scale", Vector2.ZERO, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		tween.tween_callback(queue_free)

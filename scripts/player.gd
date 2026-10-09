@@ -62,6 +62,10 @@ func set_player_color(index: int) -> void:
 	if visuals_root and visuals_root.has_method("set_skin_color"):
 		visuals_root.set_skin_color(color)
 
+func set_player_character(index: int) -> void:
+	if visuals_root and visuals_root.has_method("set_character"):
+		visuals_root.set_character(index)
+
 func update_name_display(new_name: String) -> void:
 	player_name = new_name
 	if name_label:

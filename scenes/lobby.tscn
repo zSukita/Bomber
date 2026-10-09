@@ -173,6 +173,22 @@ text = "Cor do Traje:"
 layout_mode = 2
 theme_override_constants/separation = 6
 
+[node name="CharacterSelectionRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CharacterLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/CharacterSelectionRow"]
+custom_minimum_size = Vector2(84, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 11
+text = "Personagem:"
+
+[node name="CharacterOption" type="OptionButton" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/CharacterSelectionRow"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="CampaignCard" type="PanelContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -201,7 +217,7 @@ text = "⚔️ CAMPANHA SOLO (AVENTURA)"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 1)
 theme_override_font_sizes/font_size = 11
-text = "Enfrente rondadores, caçadores e chefes em 10 fases dinâmicas. Use portais temporais para escolher seus caminhos e finais!"
+text = "Enfrente rondadores, caçadores e chefes em 12 fases dinâmicas. Use portais temporais para escolher seus caminhos e finais!"
 autowrap_mode = 2
 
 [node name="CampSpacer" type="Control" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
@@ -382,6 +398,24 @@ text = "MAPA DA ARENA:"
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="MapPreviewRow" type="HBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MapPreview" type="TextureRect" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapPreviewRow"]
+custom_minimum_size = Vector2(256, 156)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MapPreviewLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapPreviewRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+vertical_alignment = 1
+text = "Prévia da arena"
 
 [node name="HSeparatorRoom" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox/RoomSection"]
 layout_mode = 2

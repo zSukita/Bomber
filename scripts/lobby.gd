@@ -20,6 +20,7 @@ extends Control
 @onready var portrait_box: CenterContainer = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ProfileRow/PortraitBox
 @onready var name_input: LineEdit = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ProfileRow/NameInput
 @onready var colors_box: HBoxContainer = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ColorSelectionRow/ColorsBox
+@onready var character_option: OptionButton = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/CharacterSelectionRow/CharacterOption
 
 # Campanha Solo
 @onready var campaign_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox/CampaignButton
@@ -43,6 +44,8 @@ extends Control
 @onready var room_title: Label = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/RoomHeader/RoomTitle
 @onready var player_list_container: VBoxContainer = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/PlayerList
 @onready var map_option: OptionButton = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapChoiceRow/MapOption
+@onready var map_preview: TextureRect = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapPreviewRow/MapPreview
+@onready var map_preview_label: Label = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/MapPreviewRow/MapPreviewLabel
 @onready var leave_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow/LeaveButton
 @onready var ready_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow/ReadyButton
 @onready var start_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow/StartButton
@@ -56,10 +59,12 @@ extends Control
 var user_portrait: CharacterPortrait
 var color_swatch_buttons: Array[Button] = []
 var selected_color_index: int = 0
+var selected_character_index: int = 0
 
 func _ready() -> void:
 	_setup_profile_avatar()
 	_setup_color_swatches()
+	_setup_character_selection()
 	_apply_menu_style()
 	_setup_tabs()
 	_setup_mode_toggle()
@@ -142,7 +147,28 @@ func _setup_profile_avatar() -> void:
 	user_portrait = CharacterPortrait.new()
 	user_portrait.custom_minimum_size = Vector2(48, 48)
 	user_portrait.player_color = Player.PLAYER_COLORS[selected_color_index]
+	user_portrait.character_index = selected_character_index
 	portrait_box.add_child(user_portrait)
+
+func _setup_character_selection() -> void:
+	selected_character_index = clampi(NetworkManager.preferred_character_index, 0, BomberAssets.CHARACTER_NAMES.size() - 1)
+	character_option.clear()
+	for index in range(BomberAssets.CHARACTER_NAMES.size()):
+		character_option.add_item(BomberAssets.CHARACTER_NAMES[index], index)
+	character_option.select(selected_character_index)
+	character_option.item_selected.connect(_on_character_option_selected)
+	NetworkManager.preferred_character_index = selected_character_index
+	GameState.preferred_character_index = selected_character_index
+	if user_portrait:
+		user_portrait.set_character(selected_character_index)
+
+func _on_character_option_selected(item_index: int) -> void:
+	AudioManager.play_click()
+	selected_character_index = character_option.get_item_id(item_index)
+	NetworkManager.preferred_character_index = selected_character_index
+	GameState.preferred_character_index = selected_character_index
+	if user_portrait:
+		user_portrait.set_character(selected_character_index)
 
 func _setup_color_swatches() -> void:
 	for child in colors_box.get_children():
@@ -386,6 +412,7 @@ func _on_host_pressed() -> void:
 	var player_name: String = name_input.text.strip_edges()
 	NetworkManager.local_player_name = player_name if not player_name.is_empty() else "Host"
 	NetworkManager.preferred_color_index = selected_color_index
+	NetworkManager.preferred_character_index = selected_character_index
 	var port: int = int(host_port_input.text) if host_port_input.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	
 	var err: Error = NetworkManager.create_server(port)
@@ -400,6 +427,7 @@ func _on_join_pressed() -> void:
 	var player_name: String = name_input.text.strip_edges()
 	NetworkManager.local_player_name = player_name if not player_name.is_empty() else "Cliente"
 	NetworkManager.preferred_color_index = selected_color_index
+	NetworkManager.preferred_character_index = selected_character_index
 	var ip: String = join_ip_input.text.strip_edges()
 	var port: int = int(join_port_input.text) if join_port_input.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	
@@ -463,14 +491,26 @@ func _update_lobby_ui() -> void:
 	start_btn.disabled = not NetworkManager.can_start_game()
 	map_option.disabled = not is_host
 	map_option.select(NetworkManager.selected_map_style + 1)
+	_update_map_preview()
 
 func _on_map_option_selected(item_index: int) -> void:
 	AudioManager.play_click()
 	NetworkManager.set_selected_map_style(map_option.get_item_id(item_index))
+	_update_map_preview()
 
 func _on_map_selection_updated(_map_index: int) -> void:
 	if is_node_ready() and multiplayer.has_multiplayer_peer():
 		map_option.select(NetworkManager.selected_map_style + 1)
+		_update_map_preview()
+
+func _update_map_preview() -> void:
+	var map_index: int = NetworkManager.selected_map_style
+	if map_index < 0 or map_index >= ArenaMapStyles.PREVIEWS.size():
+		map_preview.texture = null
+		map_preview_label.text = "A próxima arena será escolhida aleatoriamente."
+		return
+	map_preview.texture = load(ArenaMapStyles.PREVIEWS[map_index]) as Texture2D
+	map_preview_label.text = "Prévia da arena: %s" % GameState.MAP_NAMES[map_index]
 
 func _create_player_card(peer_id: int, player_info: Dictionary, is_you: bool) -> void:
 	var color_idx: int = int(player_info.get("color_index", 0)) % Player.PLAYER_COLORS.size()
@@ -496,6 +536,7 @@ func _create_player_card(peer_id: int, player_info: Dictionary, is_you: bool) ->
 	var portrait: CharacterPortrait = CharacterPortrait.new()
 	portrait.custom_minimum_size = Vector2(44, 46)
 	portrait.player_color = accent
+	portrait.character_index = int(player_info.get("character_index", 0))
 	row.add_child(portrait)
 	
 	# Informações de Nome e Cargo
@@ -554,6 +595,7 @@ func _create_empty_slot(slot_number: int) -> void:
 	var portrait: CharacterPortrait = CharacterPortrait.new()
 	portrait.custom_minimum_size = Vector2(44, 46)
 	portrait.player_color = Color(0.24, 0.3, 0.38)
+	portrait.character_index = 0
 	row.add_child(portrait)
 	
 	var slot_label: Label = Label.new()

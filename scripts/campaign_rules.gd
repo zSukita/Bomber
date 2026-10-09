@@ -6,11 +6,11 @@ const STAGE_TIME_LIMIT: int = 180
 const POWERUP_DROP_CHANCE: float = 0.32
 const GUARANTEED_HEART_BLOCK_COUNT: int = 8
 const STAGE_SEED_STEP: int = 7919
-const ENEMIES_PER_STAGE: Array[int] = [4, 4, 5, 5, 6, 6, 7, 7, 8, 8]
-const BOSS_STAGES: Array[int] = [4, 9]
+const ENEMIES_PER_STAGE: Array[int] = [4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 8, 9]
+const BOSS_STAGES: Array[int] = [4, 9, 11]
 const STORY_ROUTES: Array[Array] = [
 	[1, 2], [3, 4], [4, 5], [6, 7], [7, 8],
-	[6, 8], [9], [9], [9], []
+	[6, 8], [9], [9], [9], [10, 11], [11], []
 ]
 const PORTAL_CANDIDATE_CELLS: Array[Vector2i] = [
 	Vector2i(7, 6), Vector2i(7, 5), Vector2i(7, 7), Vector2i(6, 6), Vector2i(8, 6),

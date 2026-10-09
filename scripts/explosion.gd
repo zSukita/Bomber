@@ -2,34 +2,55 @@ class_name Explosion
 extends Area2D
 
 ## Representa um segmento da explosão (fogo) na grade.
-## Causa dano/eliminação a qualquer jogador que tocar na área durante a vida útil.
+## Causa dano/eliminação a qualquer jogador ou inimigo que tocar na área durante a vida útil.
 
 @export var duration: float = 0.45
 var grid_position: Vector2i = Vector2i.ZERO
+var segment_type: int = BomberAssets.ExplosionSegment.CENTER
 
-@onready var visual_core: ColorRect = $Visuals/Core
-@onready var visual_outer: ColorRect = $Visuals/Outer
+@onready var visual_root: Node2D = $Visuals
+@onready var flame_sprite: Sprite2D = $Visuals/FlameSprite
+
+var elapsed_time: float = 0.0
+var current_anim_frame: int = -1
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	_update_flame_frame(0)
 	
 	for body in get_overlapping_bodies():
 		_handle_hit(body)
 	
 	_animate_and_fade()
 
+func set_segment_type(type: int) -> void:
+	segment_type = type
+	if flame_sprite:
+		_update_flame_frame(current_anim_frame if current_anim_frame >= 0 else 0)
+
+func _process(delta: float) -> void:
+	elapsed_time += delta
+	# Anima através dos 4 quadros da cruz de fogo (0, 1, 2, 3)
+	var frame_idx: int = clampi(int((elapsed_time / duration) * 4.0), 0, 3)
+	if frame_idx != current_anim_frame:
+		_update_flame_frame(frame_idx)
+
+func _update_flame_frame(frame: int) -> void:
+	current_anim_frame = frame
+	if flame_sprite:
+		BomberAssets.configure_explosion_sprite(flame_sprite, segment_type, current_anim_frame)
+
 func _animate_and_fade() -> void:
-	scale = Vector2(0.3, 0.3)
+	scale = Vector2(0.6, 0.6)
 	modulate.a = 1.0
 	
 	if GameState.is_enhanced():
 		_spawn_fire_sparks()
 
 	var tween: Tween = create_tween()
-	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_interval(duration * 0.4)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, duration * 0.5)
-	tween.parallel().tween_property(self, "scale", Vector2(1.15, 1.15), duration * 0.5)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(duration * 0.45)
+	tween.parallel().tween_property(self, "modulate:a", 0.0, duration * 0.45)
 	tween.chain().tween_callback(queue_free)
 
 func _spawn_fire_sparks() -> void:
@@ -63,4 +84,3 @@ func _handle_hit(body: Node2D) -> void:
 		body.die()
 	elif body is CampaignEnemy and body.is_alive:
 		body.take_bomb_hit()
-

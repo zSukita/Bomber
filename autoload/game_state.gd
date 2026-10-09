@@ -42,6 +42,7 @@ var campaign_heart_stages: Array[int] = []
 var campaign_golden_choices: int = 0
 var campaign_blue_choices: int = 0
 var local_pause_menu_open: bool = false
+var preferred_character_index: int = 0
 
 # ----------------- CONFIGURAÇÕES DO MODO MELHORADO -----------------
 signal enhanced_mode_toggled(is_enhanced: bool)
@@ -96,4 +97,3 @@ func set_enhanced_mode(enabled: bool) -> void:
 		if not enabled and is_inside_tree():
 			get_tree().call_group("enhanced_visual_effects", "queue_free")
 		enhanced_mode_toggled.emit(enhanced_mode)
-

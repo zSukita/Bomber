@@ -116,7 +116,8 @@ func _init_multiplayer_match() -> void:
 		var p_info: Dictionary = NetworkManager.players[peer_id]
 		var color_idx: int = p_info.get("color_index", 0)
 		var p_name: String = p_info.get("name", "Jogador")
-		_spawn_player_instance(peer_id, p_name, color_idx)
+		var character_idx: int = p_info.get("character_index", 0)
+		_spawn_player_instance(peer_id, p_name, color_idx, character_idx)
 	
 	hud.setup_players(NetworkManager.players)
 	hud.update_round_info(1, WINS_REQUIRED)
@@ -131,7 +132,7 @@ func _init_multiplayer_match() -> void:
 func _init_singleplayer_match() -> void:
 	grid_map.generate_map()
 	hud.update_map_name(grid_map.get_map_name())
-	_spawn_player_instance(1, "Jogador 1", 0)
+	_spawn_player_instance(1, "Jogador 1", 0, GameState.preferred_character_index)
 	match_round.begin(1, [1], ROUND_TIME_LIMIT)
 	
 	var mock_players: Dictionary = {
@@ -156,7 +157,7 @@ func _init_campaign_match() -> void:
 	grid_map.powerup_drop_chance = CampaignRules.POWERUP_DROP_CHANCE
 	grid_map.generate_map(GameState.campaign_seed, 0)
 	hud.update_map_name(grid_map.get_map_name())
-	var player: Player = _spawn_player_instance(1, "Bomberman", 0)
+	var player: Player = _spawn_player_instance(1, "Bomberman", 0, GameState.preferred_character_index)
 	player.invulnerability_seconds = 2.5
 	spawned_players[1] = player
 	match_round.begin(1, [1], CampaignRules.STAGE_TIME_LIMIT)
@@ -190,7 +191,7 @@ func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	hud.update_map_name(grid_map.get_map_name())
 	var player: Player = spawned_players.get(1, null)
 	if player == null or not is_instance_valid(player):
-		player = _spawn_player_instance(1, "Bomberman", 0)
+		player = _spawn_player_instance(1, "Bomberman", 0, GameState.preferred_character_index)
 		spawned_players[1] = player
 	player.respawn(grid_map.get_spawn_world_pos(0), preserve_upgrades)
 	player.current_direction = Vector2.ZERO
@@ -333,7 +334,7 @@ func _return_to_main_menu() -> void:
 	NetworkManager.is_game_active = false
 	TransitionManager.change_scene("res://scenes/main_menu.tscn")
 
-func _spawn_player_instance(peer_id: int, p_name: String, color_index: int) -> Player:
+func _spawn_player_instance(peer_id: int, p_name: String, color_index: int, character_index: int = 0) -> Player:
 	var is_authoritative: bool = not multiplayer.has_multiplayer_peer() or multiplayer.is_server()
 	var player: Player = player_spawner.spawn(
 		players_container,
@@ -344,7 +345,8 @@ func _spawn_player_instance(peer_id: int, p_name: String, color_index: int) -> P
 		is_authoritative,
 		_on_player_bomb_drop_requested,
 		_on_player_died,
-		_on_player_powerup_changed
+		_on_player_powerup_changed,
+		character_index
 	)
 	spawned_players[peer_id] = player
 	return player
