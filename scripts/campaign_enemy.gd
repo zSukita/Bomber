@@ -407,6 +407,7 @@ func die() -> void:
 
 	if appearance and appearance.has_node("EnemySprite"):
 		var sprite: Sprite2D = appearance.get_node("EnemySprite") as Sprite2D
+		var tween: Tween = create_tween()
 		var frame_count: int = BomberAssets.ENEMY_DEATH_FRAMES.size()
 		for f in range(frame_count):
 			tween.tween_callback(func():
