@@ -31,6 +31,7 @@ TransitionManager="*res://autoload/transition_manager.gd"
 window/size/viewport_width=960
 window/size/viewport_height=832
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [input]
 

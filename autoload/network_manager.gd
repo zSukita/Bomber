@@ -159,7 +159,7 @@ func _on_connection_failed() -> void:
 func _on_server_disconnected() -> void:
 	status_message.emit("O servidor encerrou a conexão.", true)
 	disconnect_from_server()
-	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+	TransitionManager.change_scene("res://scenes/main_menu.tscn")
 
 # ----------------- RPCS DE SINCRONIZAÇÃO DE LOBBY -----------------
 

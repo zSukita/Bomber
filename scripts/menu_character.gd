@@ -43,18 +43,13 @@ func set_suit_color(color_idx: int) -> void:
 func _process(delta: float) -> void:
 	time_accum += delta
 	
-	# Animação suave de respiração (idle breath / sway)
-	var breath: float = sin(time_accum * 2.2) * 0.015
-	var sway_y: float = sin(time_accum * 2.2) * 3.2
-	var sway_x: float = cos(time_accum * 1.1) * 1.2
-	
 	if sprite:
-		sprite.scale = Vector2(1.0 + sway_x * 0.005, 1.0 + breath)
-		sprite.position = Vector2(sway_x, sway_y)
+		sprite.scale = Vector2.ONE
+		sprite.position = Vector2.ZERO
 		
 	if shadow:
-		shadow.scale = Vector2(1.0 - breath * 0.8, 1.0 - breath * 0.8)
-		shadow.modulate.a = 0.7 - breath * 2.0
+		shadow.scale = Vector2.ONE
+		shadow.modulate.a = 0.7
 	
 	_update_sparks(delta)
 	queue_redraw()

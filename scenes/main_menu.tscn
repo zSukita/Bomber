@@ -354,18 +354,6 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="FooterSettingsBtn" type="Button" parent="UI/Footer/HBox"]
-layout_mode = 2
-focus_mode = 0
-mouse_default_cursor_shape = 2
-text = "⚙ Configurações"
-flat = true
-
-[node name="Separator" type="Label" parent="UI/Footer/HBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.4, 0.55, 1)
-text = "│"
-
 [node name="FooterExitBtn" type="Button" parent="UI/Footer/HBox"]
 layout_mode = 2
 focus_mode = 0

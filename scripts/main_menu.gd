@@ -29,7 +29,6 @@ extends Control
 # Botões Topo e Rodapé
 @onready var settings_top_btn: Button = $UI/TopButtons/SettingsTopBtn
 @onready var profile_top_btn: Button = $UI/TopButtons/ProfileTopBtn
-@onready var footer_settings_btn: Button = $UI/Footer/HBox/FooterSettingsBtn
 @onready var footer_exit_btn: Button = $UI/Footer/HBox/FooterExitBtn
 
 # Card de Novidades
@@ -81,8 +80,8 @@ func _ready() -> void:
 	_update_character_layout()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	
-	# Inicia música ambiente do menu
-	AudioManager.play_menu_music()
+	# Música desativada para manter o lobby tranquilo
+	AudioManager.stop_menu_music()
 	
 	# Executa animação de entrada cinemática
 	_play_intro_animation()
@@ -260,7 +259,6 @@ func _setup_interactions() -> void:
 	
 	settings_top_btn.pressed.connect(settings_modal.open)
 	profile_top_btn.pressed.connect(profile_modal.open)
-	footer_settings_btn.pressed.connect(settings_modal.open)
 	footer_exit_btn.pressed.connect(_on_exit_pressed)
 
 func _on_continue_pressed() -> void:

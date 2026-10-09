@@ -10,7 +10,7 @@ extends Node
 @export var character_layer: CanvasItem
 @export var particles_layer: CanvasItem
 
-@export var enabled: bool = true
+@export var enabled: bool = false
 @export var smooth_speed: float = 4.0
 
 var current_offset: Vector2 = Vector2.ZERO

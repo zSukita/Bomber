@@ -35,6 +35,12 @@ theme_override_constants/margin_right = 24
 [node name="HBox" type="HBoxContainer" parent="HeaderBar"]
 layout_mode = 2
 
+[node name="BackToMenuBtn" type="Button" parent="HeaderBar/HBox"]
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "◀ MENU PRINCIPAL"
+
 [node name="GameTitleSmall" type="Label" parent="HeaderBar/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)

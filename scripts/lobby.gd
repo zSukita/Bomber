@@ -48,6 +48,7 @@ extends Control
 @onready var start_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/ActionRow/StartButton
 
 # Header e Footer
+@onready var back_to_menu_btn: Button = $HeaderBar/HBox/BackToMenuBtn
 @onready var mode_toggle_btn: Button = $HeaderBar/HBox/ModeToggleBtn
 @onready var status_label: Label = $FooterBar/StatusLabel
 
@@ -62,6 +63,8 @@ func _ready() -> void:
 	_apply_menu_style()
 	_setup_tabs()
 	_setup_mode_toggle()
+	
+	back_to_menu_btn.pressed.connect(_on_back_to_menu_pressed)
 	
 	# Sinais de rede
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
@@ -416,6 +419,12 @@ func _on_leave_pressed() -> void:
 	AudioManager.play_click()
 	NetworkManager.disconnect_from_server()
 	_show_connection_view()
+
+func _on_back_to_menu_pressed() -> void:
+	AudioManager.play_click()
+	if multiplayer.has_multiplayer_peer():
+		NetworkManager.disconnect_from_server()
+	TransitionManager.change_scene("res://scenes/main_menu.tscn")
 
 # ----------------- SINCRONIZAÇÃO DA SALA DE ESPERA -----------------
 

@@ -328,7 +328,7 @@ func _show_campaign_ending() -> void:
 func _return_to_main_menu() -> void:
 	GameState.game_mode = GameState.GameMode.BATTLE
 	NetworkManager.is_game_active = false
-	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+	TransitionManager.change_scene("res://scenes/main_menu.tscn")
 
 func _spawn_player_instance(peer_id: int, p_name: String, color_index: int) -> Player:
 	var is_authoritative: bool = not multiplayer.has_multiplayer_peer() or multiplayer.is_server()
@@ -562,7 +562,7 @@ func _on_player_disconnected(peer_id: int) -> void:
 		is_round_active = false
 		NetworkManager.is_game_active = false
 		NetworkManager.scores.clear()
-		get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+		TransitionManager.change_scene("res://scenes/main_menu.tscn")
 		return
 	
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server() and is_round_active:
@@ -575,7 +575,7 @@ func _on_leave_requested() -> void:
 	if not NetworkManager.is_dedicated_server:
 		NetworkManager.disconnect_from_server()
 	GameState.game_mode = GameState.GameMode.BATTLE
-	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+	TransitionManager.change_scene("res://scenes/main_menu.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F10:
