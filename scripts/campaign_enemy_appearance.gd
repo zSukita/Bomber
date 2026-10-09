@@ -15,6 +15,7 @@ var health: int = 1
 var max_health: int = 1
 
 var enemy_sprite: Sprite2D
+var facing_h_flip: bool = false
 const INK := Color("252139")
 
 func _ready() -> void:
@@ -44,8 +45,11 @@ func show_enemy_state(enemy: CampaignEnemy) -> void:
 	if is_alive:
 		enemy_sprite.visible = true
 		var frame_idx: int = clampi(int(animation_time * 6.0) % 4, 0, 3)
-		var flip_h: bool = direction.x > 0
-		BomberAssets.configure_enemy_sprite(enemy_sprite, archetype, frame_idx, flip_h)
+		if direction.x < 0:
+			facing_h_flip = true
+		elif direction.x > 0:
+			facing_h_flip = false
+		BomberAssets.configure_enemy_sprite(enemy_sprite, archetype, frame_idx, facing_h_flip)
 	queue_redraw()
 
 func _draw() -> void:
