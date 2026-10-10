@@ -65,13 +65,13 @@ func _draw() -> void:
 			_draw_grain(p, tile_seed, shade, highlight)
 			_draw_stage_pattern(p, tile_seed, shade, highlight)
 
-func _draw_stage_pattern(position: Vector2, seed_value: int, shade: Color, highlight: Color) -> void:
-	var center: Vector2 = position + Vector2(TILE_SIZE * 0.5, TILE_SIZE * 0.5)
+func _draw_stage_pattern(p: Vector2, seed_value: int, shade: Color, highlight: Color) -> void:
+	var center: Vector2 = p + Vector2(TILE_SIZE * 0.5, TILE_SIZE * 0.5)
 	match theme_index:
 		0:
 			if seed_value % 3 == 0:
-				draw_line(position + Vector2(12, 16), position + Vector2(26, 16), highlight.darkened(0.2), 2.0)
-				draw_circle(position + Vector2(48, 46), 2.0, shade.lightened(0.12))
+				draw_line(p + Vector2(12, 16), p + Vector2(26, 16), highlight.darkened(0.2), 2.0)
+				draw_circle(p + Vector2(48, 46), 2.0, shade.lightened(0.12))
 		1:
 			if seed_value % 3 == 0:
 				draw_arc(center, 18.0, 0.0, TAU, 16, highlight.darkened(0.22), 3.0)
@@ -79,16 +79,16 @@ func _draw_stage_pattern(position: Vector2, seed_value: int, shade: Color, highl
 		2:
 			for wave in range(3):
 				var wave_y: float = float(18 + wave * 14 + posmod(seed_value + wave * 7, 5))
-				draw_line(position + Vector2(8, wave_y), position + Vector2(56, wave_y - 3), highlight.darkened(0.2), 3.0)
+				draw_line(p + Vector2(8, wave_y), p + Vector2(56, wave_y - 3), highlight.darkened(0.2), 3.0)
 		3:
-			draw_rect(Rect2(position + Vector2(10, 13), Vector2(44, 14)), shade.darkened(0.12))
-			draw_rect(Rect2(position + Vector2(14, 17), Vector2(36, 6)), highlight.darkened(0.3))
-			draw_circle(position + Vector2(13, 47), 3.0, highlight)
-			draw_circle(position + Vector2(51, 47), 3.0, highlight)
+			draw_rect(Rect2(p + Vector2(10, 13), Vector2(44, 14)), shade.darkened(0.12))
+			draw_rect(Rect2(p + Vector2(14, 17), Vector2(36, 6)), highlight.darkened(0.3))
+			draw_circle(p + Vector2(13, 47), 3.0, highlight)
+			draw_circle(p + Vector2(51, 47), 3.0, highlight)
 		4:
 			for streak in range(3):
 				var streak_x: float = float(12 + streak * 16 + posmod(seed_value, 6))
-				draw_line(position + Vector2(streak_x, 12), position + Vector2(streak_x - 5, 52), highlight.darkened(0.12), 2.0)
+				draw_line(p + Vector2(streak_x, 12), p + Vector2(streak_x - 5, 52), highlight.darkened(0.12), 2.0)
 		5:
 			var arrow_y: float = center.y + float(posmod(seed_value, 3) - 1) * 5.0
 			draw_line(center + Vector2(-19, arrow_y - center.y), center + Vector2(15, arrow_y - center.y), highlight, 4.0)
@@ -99,11 +99,11 @@ func _draw_stage_pattern(position: Vector2, seed_value: int, shade: Color, highl
 				draw_arc(center, float(10 + posmod(seed_value, 8)), 0.4, 5.3, 18, highlight.darkened(0.22), 3.0)
 				draw_circle(center, 3.0, shade.lightened(0.15))
 		7:
-			draw_line(position + Vector2(12, 8), position + Vector2(12, 56), shade.darkened(0.3), 3.0)
-			draw_line(position + Vector2(28, 8), position + Vector2(28, 56), shade.darkened(0.3), 3.0)
-			draw_line(position + Vector2(44, 8), position + Vector2(44, 56), shade.darkened(0.3), 3.0)
+			draw_line(p + Vector2(12, 8), p + Vector2(12, 56), shade.darkened(0.3), 3.0)
+			draw_line(p + Vector2(28, 8), p + Vector2(28, 56), shade.darkened(0.3), 3.0)
+			draw_line(p + Vector2(44, 8), p + Vector2(44, 56), shade.darkened(0.3), 3.0)
 			for sleeper in range(3):
-				draw_rect(Rect2(position + Vector2(8 + sleeper * 16, 20), Vector2(40, 4)), highlight.darkened(0.18))
+				draw_rect(Rect2(p + Vector2(8 + sleeper * 16, 20), Vector2(40, 4)), highlight.darkened(0.18))
 		8:
 			if seed_value % 2 == 0:
 				draw_line(center + Vector2(-20, 8), center + Vector2(20, -8), highlight.darkened(0.12), 5.0)

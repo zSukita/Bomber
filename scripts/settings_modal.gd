@@ -64,7 +64,7 @@ func _on_music_changed(value: float) -> void:
 	var vol_db: float = linear_to_db(value / 100.0)
 	AudioManager.set_music_volume(vol_db)
 
-func _on_sfx_changed(value: float) -> void:
+func _on_sfx_changed(_value: float) -> void:
 	AudioManager.play_click()
 
 func _on_fullscreen_toggled(toggled_on: bool) -> void:

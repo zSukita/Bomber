@@ -156,12 +156,12 @@ func _init_campaign_match() -> void:
 	campaign_heart_spawned = false
 	grid_map.powerup_drop_chance = CampaignRules.POWERUP_DROP_CHANCE
 	grid_map.generate_map(GameState.campaign_seed, 0)
-	hud.update_map_name(grid_map.get_map_name())
-	var player: Player = _spawn_player_instance(1, "Bomberman", 0, GameState.preferred_character_index)
+	var p_name: String = NetworkManager.local_player_name if not NetworkManager.local_player_name.is_empty() else "Jogador 1"
+	var player: Player = _spawn_player_instance(1, p_name, 0, GameState.preferred_character_index)
 	player.invulnerability_seconds = 2.5
 	spawned_players[1] = player
 	match_round.begin(1, [1], CampaignRules.STAGE_TIME_LIMIT)
-	hud.setup_players({1: {"name": "Bomberman", "color_index": 0}})
+	hud.setup_players({1: {"name": p_name, "color_index": 0}})
 	hud.update_round_info(1, 1)
 	hud.update_campaign_info(1, GameState.MAP_NAMES.size(), GameState.campaign_lives)
 	hud.update_timer_display(CampaignRules.STAGE_TIME_LIMIT)
@@ -191,7 +191,8 @@ func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	hud.update_map_name(grid_map.get_map_name())
 	var player: Player = spawned_players.get(1, null)
 	if player == null or not is_instance_valid(player):
-		player = _spawn_player_instance(1, "Bomberman", 0, GameState.preferred_character_index)
+		var p_name: String = NetworkManager.local_player_name if not NetworkManager.local_player_name.is_empty() else "Jogador 1"
+		player = _spawn_player_instance(1, p_name, 0, GameState.preferred_character_index)
 		spawned_players[1] = player
 	player.respawn(grid_map.get_spawn_world_pos(0), preserve_upgrades)
 	player.current_direction = Vector2.ZERO

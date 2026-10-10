@@ -33,6 +33,10 @@ window/size/viewport_height=832
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[gui]
+
+theme/custom_font="res://assets/legal/fonts/pixel_font.ttf"
+
 [input]
 
 move_left={

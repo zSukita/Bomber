@@ -19,8 +19,15 @@ var sfx_hover: AudioStreamWAV
 var sfx_menu_open: AudioStreamWAV
 var sfx_menu_back: AudioStreamWAV
 
-# Música de fundo
+# Música de fundo e trilhas legais
 var menu_music_stream: AudioStreamWAV
+var bgm_lobby: AudioStream
+var bgm_battle: AudioStream
+var bgm_tension: AudioStream
+var sfx_victory: AudioStream
+var sfx_game_over: AudioStream
+var sfx_stage_clear: AudioStream
+
 var music_player: AudioStreamPlayer
 var pitch_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -42,6 +49,21 @@ func _ready() -> void:
 		players_pool.append(player)
 	
 	_generate_all_sfx()
+	_load_legal_audio()
+
+func _load_legal_audio() -> void:
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_lobby.ogg"):
+		bgm_lobby = load("res://assets/legal/audio/music/music_lobby.ogg")
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_battle_1.ogg"):
+		bgm_battle = load("res://assets/legal/audio/music/music_battle_1.ogg")
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_tension.ogg"):
+		bgm_tension = load("res://assets/legal/audio/music/music_tension.ogg")
+	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_victory.wav"):
+		sfx_victory = load("res://assets/legal/audio/jingles/jingle_victory.wav")
+	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_game_over.wav"):
+		sfx_game_over = load("res://assets/legal/audio/jingles/jingle_game_over.wav")
+	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_stage_clear.wav"):
+		sfx_stage_clear = load("res://assets/legal/audio/jingles/jingle_stage_clear.wav")
 
 ## Sintetiza todos os efeitos sonoros clássicos em formato PCM 16-bit 44.1kHz
 func _generate_all_sfx() -> void:
@@ -84,13 +106,40 @@ func play_menu_back() -> void:
 	_play_stream(sfx_menu_back, -7.0)
 
 func play_menu_music() -> void:
-	if not music_player.playing and menu_music_stream:
-		music_player.stream = menu_music_stream
+	var stream_to_play: AudioStream = bgm_lobby if bgm_lobby else menu_music_stream
+	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
+		music_player.stream = stream_to_play
 		music_player.play()
 
-func stop_menu_music() -> void:
+func play_battle_music() -> void:
+	var stream_to_play: AudioStream = bgm_battle if bgm_battle else menu_music_stream
+	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
+		music_player.stream = stream_to_play
+		music_player.play()
+
+func play_tension_music() -> void:
+	if bgm_tension and (music_player.stream != bgm_tension or not music_player.playing):
+		music_player.stream = bgm_tension
+		music_player.play()
+
+func play_victory_jingle() -> void:
+	if sfx_victory:
+		_play_stream(sfx_victory, -2.0)
+
+func play_game_over_jingle() -> void:
+	if sfx_game_over:
+		_play_stream(sfx_game_over, -2.0)
+
+func play_stage_clear_jingle() -> void:
+	if sfx_stage_clear:
+		_play_stream(sfx_stage_clear, -2.0)
+
+func stop_music() -> void:
 	if music_player.playing:
 		music_player.stop()
+
+func stop_menu_music() -> void:
+	stop_music()
 
 func set_music_volume(volume_db: float) -> void:
 	music_player.volume_db = volume_db

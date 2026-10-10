@@ -191,7 +191,6 @@ func _setup_suit_color_buttons() -> void:
 	color_buttons.clear()
 	
 	for i in range(Player.PLAYER_COLORS.size()):
-		var col: Color = Player.PLAYER_COLORS[i]
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(26, 26)
 		btn.focus_mode = Control.FOCUS_NONE

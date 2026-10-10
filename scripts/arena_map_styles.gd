@@ -5,24 +5,24 @@ extends RefCounted
 enum BlockPattern { FULL, SUM_MOD_3, XY_MOD_5, CORRIDORS, OUTER_ZONES, SUM_MOD_4, EDGES, RING, CHECKER, CROSS, RAILS, ISLANDS, HORIZONTAL }
 
 const NAMES: Array[String] = [
-	"BlockBuster", "Merry Go Round", "Splish Splash", "Peekaboo",
-	"Slip n' Slide", "Move n' Groove", "Sandman", "Spitfire",
-	"Seesaw", "Swamp Boogie", "Superstar", "Happy Happy"
+	"Arena Clássica", "Carrossel de Fogo", "Costa Tropical", "Labirinto Oculto",
+	"Tundra Congelada", "Usina Eletrizante", "Ruínas do Deserto", "Vulcão Ardente",
+	"Girocrusader", "Pântano Tóxico", "Templo Estelar", "Coliseu Bombástico"
 ]
 
 const PREVIEWS: Array[String] = [
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 01_ BlockBuster.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 02_ Merry Go Round.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 03_ Splish Splash.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 04_ Peekaboo.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 05_ Slip n' Slide.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 06_ Move n' Groove.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 07_ Sandman.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 08_ Spitfire.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 09_ Seesaw.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 10_ Swamp Boogie.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 11_ Superstar.png",
-	"res://assets/super_bomberman_3/battle_stages/SNES - Super Bomberman 3 - Battle Stages - Battle Stage 12_ Happy Happy.png"
+	"res://assets/legal/previews/stage_01.png",
+	"res://assets/legal/previews/stage_02.png",
+	"res://assets/legal/previews/stage_03.png",
+	"res://assets/legal/previews/stage_04.png",
+	"res://assets/legal/previews/stage_05.png",
+	"res://assets/legal/previews/stage_06.png",
+	"res://assets/legal/previews/stage_07.png",
+	"res://assets/legal/previews/stage_08.png",
+	"res://assets/legal/previews/stage_09.png",
+	"res://assets/legal/previews/stage_10.png",
+	"res://assets/legal/previews/stage_11.png",
+	"res://assets/legal/previews/stage_12.png"
 ]
 
 const PILLARS: Array[Array] = [

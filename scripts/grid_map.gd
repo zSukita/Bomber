@@ -149,7 +149,7 @@ func spawn_powerup(cell: Vector2i, power_type: int) -> PowerUp:
 	var p_up: PowerUp = POWERUP_SCENE.instantiate() as PowerUp
 	p_up.position = grid_to_world(cell)
 	p_up.grid_position = cell
-	p_up.type = power_type
+	p_up.type = power_type as GameState.PowerUpType
 	p_up.destroyed_by_fire.connect(func(_cell: Vector2i): unregister_powerup(cell))
 	
 	active_powerups[cell] = p_up

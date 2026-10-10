@@ -44,7 +44,7 @@ O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e 
 
 ## Estrutura do código
 
-- `assets/super_bomberman_3/` contém as imagens fornecidas, separadas em `battle_stages/`, `characters/`, `enemies/` e `effects/`. As doze fases são arenas jogáveis com layouts, paletas e padrões inspirados nas referências; as imagens completas dos cenários também aparecem como prévias no lobby. Personagens podem ser escolhidos antes da partida; paredes, blocos, monstros, bombas, itens e explosões têm visuais próprios no jogo.
+- `assets/legal/` contém os recursos visuais livres de direitos autorais (CC0 / Domínio Público), divididos em `characters/`, `enemies/`, `tiles/`, `previews/`, bombas, explosões e itens. As doze fases contam com prévias e estilos visuais próprios, com suporte total para até oito personagens selecionáveis no lobby e quatro arquétipos de monstros na campanha.
 
 - `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.
 - `scripts/bomb_system.gd` concentra colocação, explosões, coleta de itens e sincronização de bombas.

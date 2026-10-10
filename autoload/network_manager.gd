@@ -19,6 +19,11 @@ const MAX_PLAYERS: int = 4
 var players: Dictionary = {}
 
 var local_player_name: String = "Jogador"
+var player_name: String:
+	get:
+		return local_player_name
+	set(value):
+		local_player_name = value
 var preferred_color_index: int = 0
 var preferred_character_index: int = 0
 var is_game_active: bool = false

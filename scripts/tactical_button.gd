@@ -12,7 +12,7 @@ extends Button
 @export var is_accent_gold: bool = false
 @export var chamfer_size: float = 14.0
 
-var is_hovered: bool = false
+var _is_btn_hovered: bool = false
 var is_active_pressed: bool = false
 var glow_intensity: float = 0.0
 
@@ -42,12 +42,12 @@ func _notification(what: int) -> void:
 		pivot_offset = size * 0.5
 
 func _on_mouse_entered() -> void:
-	is_hovered = true
+	_is_btn_hovered = true
 	AudioManager.play_button_hover()
 	_animate_state(1.03, 1.0)
 
 func _on_mouse_exited() -> void:
-	is_hovered = false
+	_is_btn_hovered = false
 	if not has_focus():
 		_animate_state(1.0, 0.0)
 
@@ -58,15 +58,15 @@ func _on_button_down() -> void:
 
 func _on_button_up() -> void:
 	is_active_pressed = false
-	_animate_scale(1.03 if is_hovered or has_focus() else 1.0)
+	_animate_scale(1.03 if _is_btn_hovered or has_focus() else 1.0)
 
 func _on_focus_entered() -> void:
-	is_hovered = true
+	_is_btn_hovered = true
 	AudioManager.play_button_hover()
 	_animate_state(1.03, 1.0)
 
 func _on_focus_exited() -> void:
-	if not is_hovered:
+	if not _is_btn_hovered:
 		_animate_state(1.0, 0.0)
 
 func _animate_state(target_scale: float, target_glow: float) -> void:
@@ -150,7 +150,7 @@ func _draw() -> void:
 	# 3. Traçado da Borda Neon
 	var loop_points: PackedVector2Array = points.duplicate()
 	loop_points.append(points[0])
-	var stroke_width: float = 2.0 + (1.2 if is_hovered else 0.0)
+	var stroke_width: float = 2.0 + (1.2 if _is_btn_hovered else 0.0)
 	draw_polyline(loop_points, border_color, stroke_width, true)
 	
 	# 4. Detalhe tático na ponta chanfrada esquerda
