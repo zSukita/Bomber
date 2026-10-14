@@ -38,6 +38,8 @@ var charge_cooldown: float = 0.0
 var charge_direction: Vector2 = Vector2.ZERO
 var stuck_time: float = 0.0
 var queued_direction: Vector2 = Vector2.ZERO
+var is_chasing: bool = false
+var last_decision_cell: Vector2i = Vector2i(-999, -999)
 
 @onready var appearance: Node2D = $Appearance
 
@@ -70,6 +72,8 @@ func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype
 func _ready() -> void:
 	add_to_group("enemies")
 	_choose_direction()
+	if arena_grid:
+		last_decision_cell = arena_grid.world_to_grid(global_position)
 	_update_appearance()
 
 func _physics_process(delta: float) -> void:
@@ -99,6 +103,7 @@ func _physics_process(delta: float) -> void:
 			charge_cooldown = 0.8
 		if escape_refresh <= 0.0:
 			queued_direction = Vector2.ZERO
+			last_decision_cell = Vector2i(-999, -999)
 			_choose_escape_direction()
 			escape_refresh = 0.12
 
@@ -115,8 +120,10 @@ func _physics_process(delta: float) -> void:
 			charge_cooldown = maxf(charge_cooldown, 0.8)
 			direction_timer = 0.0
 			queued_direction = Vector2.ZERO
+			last_decision_cell = Vector2i(-999, -999)
 			velocity = Vector2.ZERO
 			stuck_time = 0.0
+			_select_next_direction(player_is_valid)
 	else:
 		stuck_time = 0.0
 
@@ -132,7 +139,12 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 	if arena_grid != null:
 		var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
 		var cell_center: Vector2 = arena_grid.grid_to_world(current_cell)
-		
+
+		# Se estiver sem direção ou parado, seleciona direção imediatamente para nunca ficar congelado
+		if direction == Vector2.ZERO:
+			_select_next_direction(player_is_valid)
+			last_decision_cell = current_cell
+
 		# Verifica se o monstro está no centro da casa
 		var is_at_center: bool = false
 		if direction == Vector2.ZERO:
@@ -142,28 +154,26 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 		else:
 			is_at_center = absf(cell_center.y - global_position.y) <= 4.0 and absf(cell_center.x - global_position.x) <= 6.0
 
-		if is_at_center:
-			if queued_direction != Vector2.ZERO:
-				var q_step: Vector2i = Vector2i(queued_direction)
-				var q_target: Vector2i = current_cell + q_step
-				var old_dir: Vector2 = direction
-				if arena_grid.is_walkable(q_target) and not imminent_danger.has(q_target):
-					direction = queued_direction
-					direction_timer = randf_range(0.55, 1.15) if archetype == Archetype.HUNTER else randf_range(0.8, 1.5)
-					if direction != old_dir:
-						if absf(direction.x) > 0.0:
-							global_position.y = cell_center.y
-						else:
-							global_position.x = cell_center.x
-				else:
-					_select_next_direction(player_is_valid)
-					if direction != old_dir:
-						if absf(direction.x) > 0.0:
-							global_position.y = cell_center.y
-						else:
-							global_position.x = cell_center.x
-				queued_direction = Vector2.ZERO
-			elif direction_timer <= 0.0 or direction == Vector2.ZERO:
+		if is_at_center and current_cell != last_decision_cell:
+			last_decision_cell = current_cell
+
+			# Avalia opções a partir da casa atual
+			var forward_step: Vector2i = Vector2i(direction)
+			var forward_cell: Vector2i = current_cell + forward_step
+			var forward_open: bool = direction != Vector2.ZERO and arena_grid.is_walkable(forward_cell) and not imminent_danger.has(forward_cell)
+
+			var has_perp_turn: bool = false
+			var perp_dirs: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN] if forward_step.x != 0 else [Vector2i.LEFT, Vector2i.RIGHT]
+			for p in perp_dirs:
+				var side_cell: Vector2i = current_cell + p
+				if arena_grid.is_walkable(side_cell) and not imminent_danger.has(side_cell):
+					has_perp_turn = true
+					break
+
+			# Cruzamento: há curvas perpendiculares OU o caminho em frente está bloqueado/perigoso
+			var is_intersection: bool = has_perp_turn or not forward_open
+
+			if is_intersection:
 				var old_dir: Vector2 = direction
 				_select_next_direction(player_is_valid)
 				if direction != old_dir:
@@ -171,55 +181,109 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 						global_position.y = cell_center.y
 					else:
 						global_position.x = cell_center.x
-		elif direction_timer <= 0.0 and queued_direction == Vector2.ZERO:
-			# Temporizador expirou no meio do caminho: escolhe e guarda a próxima direção para aplicar ao centro da casa
-			var candidate: Vector2 = _get_candidate_direction(player_is_valid)
-			if candidate != Vector2.ZERO and candidate != direction:
-				queued_direction = candidate
 			else:
-				direction_timer = randf_range(0.55, 1.15) if archetype == Archetype.HUNTER else randf_range(0.8, 1.5)
+				# Corredor reto sem curvas: mantém a direção para não mudar de rota no meio do corredor.
+				# Apenas se estiver perseguindo e o jogador ficou para trás no mesmo corredor, inverte a marcha.
+				if is_chasing and player_is_valid:
+					var chase_dir: Vector2 = _get_chase_direction()
+					if chase_dir != Vector2.ZERO and chase_dir == -direction:
+						direction = -direction
+						if absf(direction.x) > 0.0:
+							global_position.y = cell_center.y
+						else:
+							global_position.x = cell_center.x
 
 	_move_aligned(move_speed)
 	if get_slide_collision_count() > 0:
-		direction_timer = 0.0
-		queued_direction = Vector2.ZERO
-		_choose_direction()
+		last_decision_cell = Vector2i(-999, -999)
+		_select_next_direction(player_is_valid)
 
 func _select_next_direction(player_is_valid: bool) -> void:
-	if player_is_valid and archetype == Archetype.HUNTER and global_position.distance_to(target_player.global_position) < 640.0:
-		_choose_chase_direction()
-	elif player_is_valid and archetype == Archetype.WANDERER and global_position.distance_to(target_player.global_position) < 180.0 and randf() < 0.35:
-		_choose_chase_direction()
-	else:
-		_choose_direction()
+	if player_is_valid:
+		var dist: float = global_position.distance_to(target_player.global_position)
+		var can_chase: bool = false
+		if archetype == Archetype.HUNTER:
+			can_chase = dist <= (720.0 if is_chasing else 640.0)
+		elif archetype == Archetype.WANDERER:
+			# Perseguição consistente com histerese (240px entrada, 300px saída) para evitar alternâncias rápidas
+			can_chase = dist <= (300.0 if is_chasing else 240.0)
 
-func _get_candidate_direction(player_is_valid: bool) -> Vector2:
-	if arena_grid == null:
-		return Vector2.ZERO
-	if player_is_valid and archetype == Archetype.HUNTER and global_position.distance_to(target_player.global_position) < 640.0:
-		var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
-		var goal_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
-		var goals: Array[Vector2i] = []
-		if not imminent_danger.has(goal_cell):
-			goals.append(goal_cell)
-		else:
-			for step in DIRECTIONS:
-				var safe_neighbor: Vector2i = goal_cell + step
-				if arena_grid.is_walkable(safe_neighbor) and not imminent_danger.has(safe_neighbor):
-					goals.append(safe_neighbor)
-		if not goals.is_empty():
-			var chase_dir: Vector2 = _find_path_direction(start_cell, goals, false)
+		if can_chase:
+			var chase_dir: Vector2 = _get_chase_direction()
 			if chase_dir != Vector2.ZERO:
-				return chase_dir
-	var cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var options: Array[Vector2i] = []
+				is_chasing = true
+				direction = chase_dir
+				return
+
+	is_chasing = false
+	_choose_wander_direction()
+
+func _get_chase_direction() -> Vector2:
+	if arena_grid == null or not is_instance_valid(target_player):
+		return Vector2.ZERO
+	var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	if imminent_danger.has(start_cell):
+		return Vector2.ZERO
+	var goal_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
+	if start_cell == goal_cell:
+		var diff: Vector2 = target_player.global_position - global_position
+		if absf(diff.x) > absf(diff.y) and absf(diff.x) > 1.0:
+			return Vector2(sign(diff.x), 0.0)
+		elif absf(diff.y) > 1.0:
+			return Vector2(0.0, sign(diff.y))
+		return direction
+
+	var goals: Array[Vector2i] = []
+	if not imminent_danger.has(goal_cell):
+		goals.append(goal_cell)
+	else:
+		for step in DIRECTIONS:
+			var safe_neighbor: Vector2i = goal_cell + step
+			if arena_grid.is_walkable(safe_neighbor) and not imminent_danger.has(safe_neighbor):
+				goals.append(safe_neighbor)
+	if goals.is_empty():
+		return Vector2.ZERO
+	return _find_path_direction(start_cell, goals, false)
+
+func _choose_wander_direction() -> void:
+	if arena_grid == null:
+		direction = Vector2.ZERO
+		return
+	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	var all_safe_steps: Array[Vector2i] = []
 	for step in DIRECTIONS:
-		var next_cell: Vector2i = cell + step
-		if arena_grid.is_walkable(next_cell) and not imminent_danger.has(next_cell):
-			options.append(step)
-	if not options.is_empty():
-		return Vector2(options.pick_random())
-	return Vector2.ZERO
+		var neighbor: Vector2i = current_cell + step
+		if arena_grid.is_walkable(neighbor) and not imminent_danger.has(neighbor):
+			all_safe_steps.append(step)
+
+	if all_safe_steps.is_empty():
+		direction = Vector2.ZERO
+		return
+
+	var forward_step: Vector2i = Vector2i(direction) if direction != Vector2.ZERO else Vector2i.ZERO
+	var reverse_step: Vector2i = -forward_step if forward_step != Vector2i.ZERO else Vector2i.ZERO
+
+	var forward_open: bool = all_safe_steps.has(forward_step)
+	var perp_steps: Array[Vector2i] = []
+	for step in all_safe_steps:
+		if step != forward_step and step != reverse_step:
+			perp_steps.append(step)
+
+	if forward_open and not perp_steps.is_empty():
+		# Em cruzamentos: 55% de manter em frente para circular naturalmente o mapa, 45% de virar em bifurcações
+		if randf() < 0.55:
+			direction = Vector2(forward_step)
+		else:
+			direction = Vector2(perp_steps.pick_random())
+	elif forward_open:
+		direction = Vector2(forward_step)
+	elif not perp_steps.is_empty():
+		direction = Vector2(perp_steps.pick_random())
+	elif all_safe_steps.has(reverse_step):
+		# Fim de linha (beco sem saída): inverte marcha
+		direction = Vector2(reverse_step)
+	else:
+		direction = Vector2(all_safe_steps.pick_random())
 
 ## Corrige o eixo perpendicular antes de seguir a direção da grade.
 ## Isso impede que a troca de direção corte a quina entre dois blocos.
@@ -274,6 +338,8 @@ func _update_charger(delta: float) -> void:
 			is_charging = false
 			charge_cooldown = 3.2 if archetype == Archetype.BOSS else 2.6
 			direction_timer = 0.35
+			last_decision_cell = Vector2i(-999, -999)
+			_choose_wander_direction()
 		return
 	if is_winding_up:
 		windup_remaining -= delta
@@ -290,6 +356,7 @@ func _update_charger(delta: float) -> void:
 		windup_remaining = 0.72 if archetype == Archetype.BOSS else 0.48
 		direction = charge_direction
 		queued_direction = Vector2.ZERO
+		last_decision_cell = Vector2i(-999, -999)
 		AudioManager.play_enemy_alert()
 		return
 	_update_regular_movement(true)
@@ -316,49 +383,16 @@ func _try_start_charge() -> bool:
 	return true
 
 func _choose_direction() -> void:
-	var options: Array[Vector2i] = []
-	if arena_grid:
-		var cell: Vector2i = arena_grid.world_to_grid(global_position)
-		for step in DIRECTIONS:
-			var next_cell: Vector2i = cell + step
-			if arena_grid.is_walkable(next_cell) and not imminent_danger.has(next_cell):
-				options.append(step)
-	if options.is_empty():
-		direction = Vector2.ZERO
-		direction_timer = 0.3
-		return
-	direction = Vector2(options.pick_random())
-	direction_timer = randf_range(0.55, 1.15) if archetype == Archetype.HUNTER else randf_range(0.8, 1.5)
+	_choose_wander_direction()
 
 func _choose_chase_direction() -> void:
-	if arena_grid == null or not is_instance_valid(target_player):
-		_choose_direction()
-		return
-	var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	if imminent_danger.has(start_cell):
-		_choose_escape_direction()
-		return
-	var goal_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
-	if start_cell == goal_cell:
-		direction_timer = 0.2
-		return
-	var goals: Array[Vector2i] = []
-	if not imminent_danger.has(goal_cell):
-		goals.append(goal_cell)
+	var chase_dir: Vector2 = _get_chase_direction()
+	if chase_dir != Vector2.ZERO:
+		direction = chase_dir
+		is_chasing = true
 	else:
-		for step in DIRECTIONS:
-			var safe_neighbor: Vector2i = goal_cell + step
-			if arena_grid.is_walkable(safe_neighbor) and not imminent_danger.has(safe_neighbor):
-				goals.append(safe_neighbor)
-	if goals.is_empty():
-		_choose_direction()
-		return
-	var next_direction: Vector2 = _find_path_direction(start_cell, goals, false)
-	if next_direction == Vector2.ZERO:
-		_choose_direction()
-	else:
-		direction = next_direction
-		direction_timer = 0.24
+		is_chasing = false
+		_choose_wander_direction()
 
 func _choose_escape_direction() -> void:
 	if arena_grid == null:
@@ -395,6 +429,8 @@ func _choose_escape_direction() -> void:
 	if best_direction != Vector2.ZERO:
 		direction = best_direction
 		direction_timer = 0.12
+		is_chasing = false
+		last_decision_cell = Vector2i(-999, -999)
 	else:
 		var fallback_directions: Array[Vector2i] = []
 		var fallback_safety: int = -1
@@ -414,10 +450,20 @@ func _choose_escape_direction() -> void:
 				fallback_directions.append(step)
 		direction = Vector2(fallback_directions.pick_random()) if not fallback_directions.is_empty() else Vector2.ZERO
 		direction_timer = 0.12
+		is_chasing = false
+		last_decision_cell = Vector2i(-999, -999)
 
 func _find_path_direction(start_cell: Vector2i, goals: Array[Vector2i], allow_danger: bool) -> Vector2:
 	if goals.is_empty():
 		return Vector2.ZERO
+	if goals.has(start_cell):
+		if is_instance_valid(target_player):
+			var diff: Vector2 = target_player.global_position - global_position
+			if absf(diff.x) > absf(diff.y) and absf(diff.x) > 1.0:
+				return Vector2(sign(diff.x), 0.0)
+			elif absf(diff.y) > 1.0:
+				return Vector2(0.0, sign(diff.y))
+		return direction
 	var pending: Array[Vector2i] = [start_cell]
 	var came_from: Dictionary = {start_cell: start_cell}
 	var found_cell: Vector2i = Vector2i(-1, -1)
@@ -463,6 +509,10 @@ func _collect_imminent_danger() -> Dictionary:
 				danger[flame_cell] = true
 				if cell_type == GameState.CellType.BLOCK_DESTRUCTIBLE:
 					break
+	if arena_grid.explosions_container:
+		for exp_child in arena_grid.explosions_container.get_children():
+			if exp_child is Explosion:
+				danger[exp_child.grid_position] = true
 	return danger
 
 func take_bomb_hit() -> void:
