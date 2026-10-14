@@ -22,8 +22,9 @@ extends Control
 @onready var colors_box: HBoxContainer = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/ColorSelectionRow/ColorsBox
 @onready var character_option: OptionButton = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/ProfileCard/Margin/VBox/CharacterSelectionRow/CharacterOption
 
-# Campanha Solo
+# Campanha Solo & Treino vs Bots
 @onready var campaign_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox/CampaignButton
+@onready var bot_battle_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox/BotBattleButton
 
 # Multiplayer - Abas e Painéis
 @onready var tab_host_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/TabButtons/TabHostButton
@@ -91,6 +92,7 @@ func _ready() -> void:
 	
 	# Botões de Ação
 	campaign_btn.pressed.connect(_on_campaign_pressed)
+	bot_battle_btn.pressed.connect(_on_bot_battle_pressed)
 	host_btn.pressed.connect(_on_host_pressed)
 	join_btn.pressed.connect(_on_join_pressed)
 	ready_btn.pressed.connect(_on_ready_pressed)
@@ -372,6 +374,7 @@ func _apply_menu_style() -> void:
 	
 	# Estilos dos Botões de Ação Principais
 	_style_button(campaign_btn, Color(0.72, 0.42, 0.14), Color(0.92, 0.58, 0.22), true)
+	_style_button(bot_battle_btn, Color(0.18, 0.46, 0.76), Color(0.28, 0.62, 0.92), true)
 	_style_button(host_btn, Color(0.14, 0.48, 0.82), Color(0.24, 0.65, 0.98), true)
 	_style_button(join_btn, Color(0.12, 0.58, 0.48), Color(0.22, 0.76, 0.64), true)
 	_style_button(ready_btn, Color(0.14, 0.56, 0.4), Color(0.24, 0.76, 0.54), true)
@@ -450,6 +453,14 @@ func _on_campaign_pressed() -> void:
 	GameState.game_mode = GameState.GameMode.CAMPAIGN
 	GameState.campaign_heart_stages.clear()
 	GameState.start_new_campaign()
+	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+func _on_bot_battle_pressed() -> void:
+	AudioManager.play_click()
+	if multiplayer.has_multiplayer_peer():
+		NetworkManager.disconnect_from_server()
+	GameState.game_mode = GameState.GameMode.BATTLE
+	GameState.battle_bot_count = 3
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 func _on_host_pressed() -> void:

@@ -43,10 +43,18 @@ var queued_direction: Vector2 = Vector2.ZERO
 var is_chasing: bool = false
 var last_decision_cell: Vector2i = Vector2i(-999, -999)
 
+# Identificação da Fase e Mecânicas Específicas de Chefes (Fases 5, 10 e 12)
+var stage_index: int = 0
+var boss_stomp_timer: float = 5.0
+var boss_illusion_spawned: bool = false
+var boss_enraged: bool = false
+var boss_time_bomb_timer: float = 4.0
+
 @onready var appearance: Node2D = $Appearance
 
-func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype: int = Archetype.WANDERER) -> void:
+func setup(target: Player, stage_idx: int, grid: ArenaGrid, selected_archetype: int = Archetype.WANDERER) -> void:
 	target_player = target
+	stage_index = stage_idx
 	arena_grid = grid
 	archetype = clampi(selected_archetype, Archetype.WANDERER, Archetype.BOSS)
 	var stage_level: float = float(mini(stage_index, 9))
@@ -63,8 +71,26 @@ func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype
 			move_speed = 66.0 + stage_level * 2.5
 			max_health = 1
 		Archetype.BOSS:
-			move_speed = 62.0 + stage_level * 2.0
-			max_health = 4
+			# Balanceamento individual e marcante por fase de chefe
+			if stage_index == 4:
+				# Fase 5: Golem das Ruínas (Terremoto / Queda de Blocos)
+				move_speed = 60.0
+				max_health = 4
+				body_color = Color(0.82, 0.48, 0.25)
+			elif stage_index == 9:
+				# Fase 10: Espectro Dimensional (Teleporte e Cópia Ilusória)
+				move_speed = 74.0
+				max_health = 5
+				body_color = Color(0.68, 0.25, 0.88)
+			elif stage_index == 11:
+				# Fase 12: Cronos, o Lorde Temporal (Minas Temporais e Fúria)
+				move_speed = 78.0
+				max_health = 6
+				body_color = Color(0.96, 0.78, 0.22)
+			else:
+				move_speed = 62.0 + stage_level * 2.0
+				max_health = 4
+			accent_color = body_color.lightened(0.36)
 	health = max_health
 	if archetype == Archetype.BOSS:
 		var shape: CircleShape2D = $CollisionShape2D.shape.duplicate() as CircleShape2D
@@ -116,6 +142,9 @@ func _physics_process(delta: float) -> void:
 		_update_charger(delta)
 	else:
 		_update_regular_movement(player_is_valid)
+	
+	if archetype == Archetype.BOSS:
+		_update_boss_mechanics(delta)
 	if velocity.length_squared() > 1.0 and global_position.distance_squared_to(frame_start_position) < 0.5:
 		stuck_time += delta
 		if stuck_time >= 0.35:
@@ -353,6 +382,15 @@ func _update_charger(delta: float) -> void:
 		var speed_factor: float = 2.15 if archetype == Archetype.BOSS else 1.8
 		direction = charge_direction
 		_move_aligned(move_speed * speed_factor)
+
+		# Cronos Enfurecido (Fase 12) demole blocos destrutíveis em sua carga
+		if archetype == Archetype.BOSS and stage_index == 11 and boss_enraged and arena_grid:
+			var charge_cell: Vector2i = arena_grid.world_to_grid(global_position)
+			var forward_c: Vector2i = charge_cell + Vector2i(roundi(charge_direction.x), roundi(charge_direction.y))
+			if arena_grid.is_in_bounds(forward_c) and arena_grid.get_cell_type(forward_c) == GameState.CellType.BLOCK_DESTRUCTIBLE:
+				arena_grid.destroy_block_at(forward_c, false)
+				AudioManager.play_block_break()
+
 		if get_slide_collision_count() > 0 or charge_remaining <= 0.0:
 			is_charging = false
 			charge_cooldown = 3.2 if archetype == Archetype.BOSS else 2.6
@@ -542,6 +580,8 @@ func take_bomb_hit() -> void:
 	if health <= 0:
 		die()
 	else:
+		if archetype == Archetype.BOSS:
+			_on_boss_damaged()
 		velocity = -direction * 110.0
 		var flash_strength: float = clampf(GameState.impact_flash_intensity, 0.0, 1.0)
 		if GameState.reduced_flashes_enabled:
@@ -551,6 +591,135 @@ func take_bomb_hit() -> void:
 			var flash: Tween = create_tween()
 			flash.tween_property(self, "modulate", Color.WHITE, GameState.impact_flash_duration)
 	_update_appearance()
+
+# ----------------- HABILIDADES EXCLUSIVAS DE CHEFES -----------------
+
+func _update_boss_mechanics(delta: float) -> void:
+	if stage_index == 4:
+		# Chefe 1 (Fase 5): Golem - Pisotão Sísmico Periódico
+		boss_stomp_timer -= delta
+		if boss_stomp_timer <= 0.0:
+			boss_stomp_timer = 5.5
+			_boss_perform_stomp()
+	elif stage_index == 11:
+		# Chefe 3 (Fase 12): Cronos - Minas Temporais Periódicas
+		boss_time_bomb_timer -= delta
+		if boss_time_bomb_timer <= 0.0:
+			boss_time_bomb_timer = 3.8 if boss_enraged else 5.2
+			_boss_drop_time_mine()
+
+func _on_boss_damaged() -> void:
+	if stage_index == 4:
+		# Golem: Pisotão reativo imediato quebrando blocos ao redor
+		_boss_perform_stomp()
+	elif stage_index == 9:
+		# Espectro: Teletransporte reativo para escapar de armadilhas
+		_boss_teleport_away()
+		if health <= 2 and not boss_illusion_spawned:
+			_boss_spawn_illusion()
+	elif stage_index == 11:
+		# Cronos: Entra em Fúria com metade da vida
+		if health <= 3 and not boss_enraged:
+			_boss_trigger_enrage()
+
+## Fase 5: Terremoto que treme a tela e destrói blocos adjacentes
+func _boss_perform_stomp() -> void:
+	if arena_grid == null:
+		return
+	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.45)
+	AudioManager.play_bump()
+	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	for d in DIRECTIONS:
+		var target_c: Vector2i = current_cell + d
+		if arena_grid.is_in_bounds(target_c) and arena_grid.get_cell_type(target_c) == GameState.CellType.BLOCK_DESTRUCTIBLE:
+			arena_grid.destroy_block_at(target_c, false)
+	var stomp_tween: Tween = create_tween()
+	stomp_tween.tween_property(self, "scale", Vector2(1.28, 0.75), 0.08)
+	stomp_tween.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+
+## Fase 10: Teletransporte para uma célula segura distante do jogador
+func _boss_teleport_away() -> void:
+	if arena_grid == null or not is_instance_valid(target_player):
+		return
+	var player_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
+	var candidates: Array[Vector2i] = []
+	for x in range(1, ArenaGrid.WIDTH - 1):
+		for y in range(1, ArenaGrid.HEIGHT - 1):
+			var cell := Vector2i(x, y)
+			if arena_grid.is_walkable(cell) and not imminent_danger.has(cell):
+				var dist: int = absi(cell.x - player_cell.x) + absi(cell.y - player_cell.y)
+				if dist >= 4:
+					candidates.append(cell)
+	if candidates.is_empty():
+		return
+	var dest_cell: Vector2i = candidates.pick_random()
+	var dest_pos: Vector2 = arena_grid.grid_to_world(dest_cell)
+	AudioManager.play_enemy_alert()
+	var tp_tween: Tween = create_tween()
+	tp_tween.tween_property(self, "scale", Vector2(0.1, 1.8), 0.10)
+	tp_tween.tween_property(self, "modulate:a", 0.0, 0.08)
+	tp_tween.tween_callback(func():
+		global_position = dest_pos
+		last_decision_cell = dest_cell
+		direction = Vector2.ZERO
+		_choose_wander_direction()
+	)
+	tp_tween.tween_property(self, "scale", Vector2.ONE, 0.14)
+	tp_tween.parallel().tween_property(self, "modulate:a", 1.0, 0.14)
+
+## Fase 10: Invoca um lacaio ilusório para proteger o chefe
+func _boss_spawn_illusion() -> void:
+	boss_illusion_spawned = true
+	if arena_grid == null or get_parent() == null:
+		return
+	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	var spawn_cell: Vector2i = Vector2i(-1, -1)
+	for d in DIRECTIONS:
+		var c: Vector2i = current_cell + d
+		if arena_grid.is_walkable(c):
+			spawn_cell = c
+			break
+	if spawn_cell == Vector2i(-1, -1):
+		return
+	var enemy_scene: PackedScene = load("res://scenes/campaign_enemy.tscn")
+	var minion: CampaignEnemy = enemy_scene.instantiate() as CampaignEnemy
+	minion.setup(target_player, stage_index, arena_grid, Archetype.WANDERER)
+	minion.modulate = Color(0.65, 0.85, 1.3, 0.85)
+	minion.global_position = arena_grid.grid_to_world(spawn_cell)
+	get_parent().add_child(minion)
+
+## Fase 12: Planta minas temporais de fusível acelerado
+func _boss_drop_time_mine() -> void:
+	if arena_grid == null:
+		return
+	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	if not arena_grid.is_in_bounds(current_cell) or arena_grid.has_bomb_at(current_cell):
+		return
+	if arena_grid.get_cell_type(current_cell) != GameState.CellType.EMPTY:
+		return
+	var mine: Bomb = arena_grid.place_bomb(current_cell, self as CharacterBody2D)
+	if mine:
+		mine.bomb_range = 2
+		mine.fuse_time = 1.6
+		if mine.fuse_timer:
+			mine.fuse_timer.start(1.6)
+		mine.exploded.connect(func(b: Bomb, c: Vector2i, r: int):
+			arena_grid.unregister_bomb(c)
+			var game = get_tree().get_first_node_in_group("game_orchestrator")
+			if game and game.get("bomb_system"):
+				game.bomb_system.call("resolve_explosion", b, c, r)
+		)
+		AudioManager.play_bomb_drop()
+
+## Fase 12: Cronos entra em Fúria Temporal
+func _boss_trigger_enrage() -> void:
+	boss_enraged = true
+	move_speed *= 1.35
+	charge_cooldown = 1.4
+	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.55)
+	AudioManager.play_enemy_alert()
+	modulate = Color(1.4, 0.45, 0.35)
+
 
 func die() -> void:
 	if not is_alive:

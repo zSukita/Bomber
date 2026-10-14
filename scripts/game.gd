@@ -9,6 +9,7 @@ extends Node2D
 ## - Melhor de 3 rodadas e fluxo completo de retorno ao lobby
 
 const TIME_PORTAL_SCENE: PackedScene = preload("res://scenes/time_portal.tscn")
+const BOT_SCENE: PackedScene = preload("res://scenes/battle_bot.tscn")
 const WINS_REQUIRED: int = 2 # Melhor de 3 rodadas (primeiro a 2 vitórias)
 const ROUND_TIME_LIMIT: int = 150 # 2 minutos e 30 segundos por rodada
 
@@ -53,6 +54,11 @@ var is_campaign_choosing_portal: bool = false
 var campaign_blocks_broken: int = 0
 var campaign_heart_spawned: bool = false
 
+# Bots de IA (Modo Batalha) e Morte Súbita
+var spawned_bots: Array[BattleBot] = []
+var sudden_death: SuddenDeath = SuddenDeath.new()
+var sudden_death_banner_shown: bool = false
+
 # Estatísticas da Partida / Campanha
 var stat_bombs_dropped: int = 0
 var stat_blocks_broken: int = 0
@@ -66,6 +72,7 @@ var shake_time: float = 0.0
 var shake_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
+	add_to_group("game_orchestrator")
 	shake_rng.randomize()
 	bomb_system.call("configure", self)
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -141,15 +148,24 @@ func _init_singleplayer_match() -> void:
 	grid_map.generate_map()
 	hud.update_map_name(grid_map.get_map_name())
 	_spawn_player_instance(1, "Jogador 1", 0, GameState.preferred_character_index)
-	match_round.begin(1, [1], ROUND_TIME_LIMIT)
-	
+
+	var all_peer_ids: Array[int] = [1]
 	var mock_players: Dictionary = {
 		1: {"name": "Jogador 1", "color_index": 0, "is_ready": true}
 	}
+
+	# Spawna bots de IA se configurados
+	var bot_count: int = clampi(GameState.battle_bot_count, 0, 3)
+	_spawn_bots(bot_count, mock_players, all_peer_ids)
+
+	match_round.begin(1, all_peer_ids, ROUND_TIME_LIMIT)
 	hud.setup_players(mock_players)
 	hud.update_round_info(1, WINS_REQUIRED)
 	_refresh_all_hud_cards()
 	hud.update_campaign_info(0, GameState.MAP_NAMES.size(), 0, false)
+	# Reinicia a Morte Súbita
+	sudden_death_banner_shown = false
+	sudden_death.start(grid_map)
 	AudioManager.play_battle_music()
 
 func _init_campaign_match() -> void:
@@ -407,6 +423,68 @@ func _on_player_powerup_changed(player: Player) -> void:
 	if GameState.game_mode == GameState.GameMode.CAMPAIGN and player.peer_id == 1:
 		_save_campaign_player_progress(player)
 
+# ----------------- BOTS DE IA (MODO BATALHA) -----------------
+
+const BOT_NAMES: Array[String] = ["Bot-Alfa", "Bot-Beta", "Bot-Gama"]
+const BOT_PEER_ID_OFFSET: int = -100  # IDs negativos nunca conflitam com peers reais
+
+func _spawn_bots(count: int, mock_players: Dictionary, peer_ids: Array[int]) -> void:
+	# Limpa bots anteriores, se houver
+	for old_bot in spawned_bots:
+		if is_instance_valid(old_bot):
+			old_bot.queue_free()
+	spawned_bots.clear()
+
+	# Coleta jogadores humanos para que os bots os persigam
+	var human_players: Array[Player] = spawned_players.values()
+
+	for i in range(count):
+		var bot_index: int = 1 + i  # índice de spawn: 1, 2, 3 (0 = jogador humano)
+		var bot_peer_id: int = BOT_PEER_ID_OFFSET - i
+		var bot_name: String = BOT_NAMES[i % BOT_NAMES.size()]
+		var bot_color: int = (1 + i) % Player.PLAYER_COLORS.size()
+
+		var bot: BattleBot = BOT_SCENE.instantiate() as BattleBot
+		bot.setup(grid_map, human_players, bot_peer_id, bot_color, 0, bot_name)
+		bot.global_position = grid_map.get_spawn_world_pos(bot_index)
+		bot.bomb_drop_requested.connect(_on_bot_bomb_drop_requested)
+		bot.died.connect(_on_bot_died)
+		bot.powerup_changed.connect(_on_bot_powerup_changed)
+		players_container.add_child(bot)
+		spawned_bots.append(bot)
+
+		# Registra no mock_players para aparecer no HUD
+		mock_players[bot_peer_id] = {"name": bot_name, "color_index": bot_color, "is_ready": true}
+		peer_ids.append(bot_peer_id)
+
+	# Atualiza a referência de all_players dos bots para incluir todos os humanos
+	for bot in spawned_bots:
+		bot.all_players = human_players
+
+func _on_bot_bomb_drop_requested(bot: BattleBot, _world_pos: Vector2) -> void:
+	if not is_round_active or not bot.is_alive or bot.active_bombs >= bot.max_bombs:
+		return
+	var cell: Vector2i = grid_map.world_to_grid(bot.global_position)
+	if not grid_map.is_in_bounds(cell) or grid_map.has_bomb_at(cell) or grid_map.get_cell_type(cell) != GameState.CellType.EMPTY:
+		return
+	var bomb: Bomb = grid_map.place_bomb(cell, bot as CharacterBody2D)
+	if bomb == null:
+		return
+	bot.active_bombs += 1
+	bomb.exploded.connect(func(b: Bomb, c: Vector2i, r: int): bot.on_bomb_exploded(); grid_map.unregister_bomb(c); bomb_system.call("resolve_explosion", b, c, r))
+	AudioManager.play_bomb_drop()
+
+func _on_bot_died(bot: BattleBot) -> void:
+	match_round.mark_player_out(bot.peer_id)
+	_check_round_end_condition()
+	_refresh_all_hud_cards()
+
+func _on_bot_powerup_changed(_bot: BattleBot) -> void:
+	stat_powerups_collected += 1
+	_refresh_all_hud_cards()
+
+
+
 # ----------------- CRONÔMETRO DE RODADA (SERVIDOR) -----------------
 
 func _physics_process(delta: float) -> void:
@@ -427,6 +505,16 @@ func _physics_process(delta: float) -> void:
 					AudioManager.play_tension_music()
 				if multiplayer.has_multiplayer_peer():
 					sync_round_timer.rpc(current_sec)
+				# Morte Súbita — só no Modo Batalha
+				if GameState.game_mode == GameState.GameMode.BATTLE:
+					var triggered: bool = sudden_death.advance(current_sec, delta)
+					if triggered and not sudden_death_banner_shown:
+						sudden_death_banner_shown = true
+						AudioManager.play_sudden_death_alert()
+						spectator_banner.text = "⚠  MORTE SÚBITA  —  AS PAREDES ESTÃO CAINDO!  ⚠"
+						spectator_banner.modulate = Color(1.0, 0.35, 0.25)
+						spectator_banner.visible = true
+						get_tree().create_timer(3.5).timeout.connect(func(): if spectator_banner: spectator_banner.visible = spawned_players.values().all(func(p): return not p.is_alive))
 			if match_round.clock.is_expired():
 				if GameState.game_mode == GameState.GameMode.CAMPAIGN:
 					_campaign_lose_life("O TEMPO DA FASE ACABOU!")
@@ -607,7 +695,18 @@ func sync_start_new_round(next_seed: int, round_num: int) -> void:
 		var spawn_pos: Vector2 = grid_map.get_spawn_world_pos(p.player_index)
 		p.respawn(spawn_pos)
 		alive_players.append(peer_id)
+	# Repositiona bots no novo mapa
+	for bot in spawned_bots:
+		if is_instance_valid(bot):
+			bot.arena_grid = grid_map
+			var bot_pos: Vector2 = grid_map.get_spawn_world_pos(bot.player_index)
+			bot.respawn(bot_pos)
+			alive_players.append(bot.peer_id)
 	
+	# Reinicia Morte Súbita para a nova rodada
+	sudden_death_banner_shown = false
+	sudden_death.start(grid_map)
+
 	match_round.begin(round_num, alive_players, ROUND_TIME_LIMIT)
 	hud.update_round_info(current_round, WINS_REQUIRED)
 	hud.update_timer_display(ROUND_TIME_LIMIT)

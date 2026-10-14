@@ -174,7 +174,7 @@ func has_bomb_at(cell: Vector2i) -> bool:
 func get_bomb_at(cell: Vector2i) -> Bomb:
 	return active_bombs.get(cell) as Bomb
 
-func place_bomb(cell: Vector2i, player: Player) -> Bomb:
+func place_bomb(cell: Vector2i, player: CharacterBody2D) -> Bomb:
 	if not is_in_bounds(cell) or has_bomb_at(cell):
 		return null
 	if get_cell_type(cell) != CellType.EMPTY:
@@ -183,7 +183,10 @@ func place_bomb(cell: Vector2i, player: Player) -> Bomb:
 	var bomb: Bomb = BOMB_SCENE.instantiate() as Bomb
 	bomb.position = grid_to_world(cell)
 	bomb.grid_position = cell
-	bomb.bomb_range = player.bomb_range
+	var b_range: int = 2
+	if "bomb_range" in player and player.get("bomb_range") != null:
+		b_range = int(player.get("bomb_range"))
+	bomb.bomb_range = b_range
 	bomb.owner_player = player
 	bomb.grid_map = self
 	

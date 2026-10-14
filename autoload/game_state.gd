@@ -117,6 +117,9 @@ var input_buffer_window: float = 0.15
 ## Variação de pitch e ambiência nos efeitos sonoros
 var sfx_pitch_variation: bool = true
 
+## Número de bots de IA no Modo Batalha offline (0 = sem bots, máx 3)
+var battle_bot_count: int = 1
+
 func _ready() -> void:
 	call_deferred("_load_user_preferences")
 
@@ -140,6 +143,7 @@ func _load_user_preferences() -> void:
 		screen_shake_intensity = clampf(float(settings.get_value("video", "screen_shake", screen_shake_intensity)), 0.0, 1.0)
 		visual_effects_intensity = clampf(float(settings.get_value("video", "visual_effects", visual_effects_intensity)), 0.0, 1.0)
 		reduced_flashes_enabled = bool(settings.get_value("video", "reduced_flashes", reduced_flashes_enabled))
+		battle_bot_count = clampi(int(settings.get_value("gameplay", "battle_bot_count", 1)), 0, 3)
 		custom_keybindings.clear()
 		for action in DEFAULT_KEYBINDINGS.keys():
 			if settings.has_section_key("keybindings", action):
@@ -172,6 +176,7 @@ func save_user_preferences() -> bool:
 	settings.set_value("video", "screen_shake", screen_shake_intensity)
 	settings.set_value("video", "visual_effects", visual_effects_intensity)
 	settings.set_value("video", "reduced_flashes", reduced_flashes_enabled)
+	settings.set_value("gameplay", "battle_bot_count", battle_bot_count)
 	for action in custom_keybindings:
 		settings.set_value("keybindings", action, custom_keybindings[action])
 	return settings.save(USER_SETTINGS_PATH) == OK

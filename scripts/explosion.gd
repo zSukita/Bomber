@@ -80,7 +80,9 @@ func _handle_hit(body: Node2D) -> void:
 	# Em rede, apenas o servidor calcula o dano; clientes só reproduzem o efeito.
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	if body is Player and body.is_alive:
+	if not body.get("is_alive"):
+		return
+	if body is Player or body.is_in_group("players"):
 		body.die()
-	elif body is CampaignEnemy and body.is_alive:
+	elif body is CampaignEnemy:
 		body.take_bomb_hit()

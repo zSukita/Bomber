@@ -10,7 +10,7 @@ signal exploded(bomb_node: Bomb, cell: Vector2i, range: int)
 @export var fuse_time: float = 2.5
 var bomb_range: int = 2
 var grid_position: Vector2i = Vector2i.ZERO
-var owner_player: Player
+var owner_player: CharacterBody2D
 
 var is_detonated: bool = false
 var is_sliding: bool = false

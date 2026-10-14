@@ -225,9 +225,14 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="CampaignButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 text = "▶ INICIAR CAMPANHA SOLO"
+
+[node name="BotBattleButton" type="Button" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/LeftColumn/CampaignCard/Margin/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "🤖 BATALHA VS BOTS (OFFLINE)"
 
 [node name="RightColumn" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection"]
 layout_mode = 2

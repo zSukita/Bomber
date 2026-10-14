@@ -145,6 +145,21 @@ func check_powerup_pickups() -> void:
 		if multiplayer.has_multiplayer_peer():
 			game.sync_powerup_collected.rpc(cell, peer_id, powerup_type)
 		game._refresh_player_hud(peer_id)
+	
+	# Coleta de itens por bots no modo batalha
+	for bot in game.spawned_bots:
+		if not is_instance_valid(bot) or not bot.is_alive:
+			continue
+		var b_cell: Vector2i = game.grid_map.world_to_grid(bot.global_position)
+		var b_pu: PowerUp = game.grid_map.get_powerup_at(b_cell)
+		if b_pu != null and not b_pu.is_collected:
+			var b_type: int = b_pu.type
+			b_pu.is_collected = true
+			b_pu.collision_shape.set_deferred("disabled", true)
+			bot.apply_power_up(b_type)
+			game.grid_map.unregister_powerup(b_cell)
+			b_pu.queue_free()
+			AudioManager.play_powerup()
 
 func apply_powerup_collected(cell: Vector2i, collector_id: int, powerup_type: int) -> void:
 	var powerup: PowerUp = game.grid_map.get_powerup_at(cell)
@@ -163,6 +178,9 @@ func _check_players_in_cell(cell: Vector2i, hit_list: Array[int]) -> void:
 		var player: Player = game.spawned_players[peer_id]
 		if player.is_alive and game.grid_map.world_to_grid(player.global_position) == cell and not hit_list.has(peer_id):
 			hit_list.append(peer_id)
+	for bot in game.spawned_bots:
+		if is_instance_valid(bot) and bot.is_alive and game.grid_map.world_to_grid(bot.global_position) == cell:
+			bot.die()
 
 func _spawn_explosion_rays(center_cell: Vector2i, flame_cells: Array) -> void:
 	game.grid_map.spawn_explosion_segment(center_cell, BomberAssets.ExplosionSegment.CENTER)

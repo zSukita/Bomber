@@ -21,6 +21,7 @@ var sfx_menu_back: AudioStreamWAV
 var sfx_enemy_alert: AudioStreamWAV
 var sfx_kick: AudioStreamWAV
 var sfx_bump: AudioStreamWAV
+var sfx_sudden_death: AudioStreamWAV
 
 # Música de fundo e trilhas legais
 var menu_music_stream: AudioStreamWAV
@@ -90,6 +91,7 @@ func _generate_all_sfx() -> void:
 	sfx_enemy_alert = _create_enemy_alert_sfx()
 	sfx_kick = _create_kick_sfx()
 	sfx_bump = _create_bump_sfx()
+	sfx_sudden_death = _create_sudden_death_sfx()
 	menu_music_stream = _create_ambient_music()
 	menu_music_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 
@@ -122,6 +124,9 @@ func play_menu_back() -> void:
 
 func play_enemy_alert() -> void:
 	_play_stream(sfx_enemy_alert, -3.5)
+
+func play_sudden_death_alert() -> void:
+	_play_stream(sfx_sudden_death, 1.0)
 
 func play_kick() -> void:
 	_play_stream(sfx_kick, -2.5)
@@ -223,6 +228,33 @@ func _create_enemy_alert_sfx() -> AudioStreamWAV:
 		wave = clampf(wave * 2.2, -0.9, 0.9)
 		var envelope: float = sin(progress * PI)
 		var val: float = wave * envelope * tremolo * 0.65
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+	
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+## Alarme impactante de Morte Súbita (duplo tom cortante com envelope de aviso)
+func _create_sudden_death_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.65
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		# Dois pulsos de sirene a 550Hz e 820Hz
+		var pulse_idx: int = int(t * 5.0) % 2
+		var base_freq: float = 550.0 if pulse_idx == 0 else 820.0
+		var envelope: float = sin(fmod(t, 0.2) / 0.2 * PI)
+		var wave: float = sin(t * base_freq * TAU)
+		# Saturação suave tipo distorção retrô
+		wave = clampf(wave * 1.8, -0.9, 0.9)
+		var val: float = wave * envelope * 0.75
 		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
 		data.encode_s16(i * 2, sample_16)
 	
