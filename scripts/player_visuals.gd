@@ -47,9 +47,12 @@ func update_state(direction: Vector2, moving: bool, alive: bool) -> void:
 func _process(delta: float) -> void:
 	if not is_alive:
 		return
-	walk_time += delta * (12.0 if is_moving else 3.0)
+	if is_moving:
+		walk_time += delta
+	else:
+		walk_time = 0.0
 	if character_sprite:
-		var next_frame: int = int(walk_time / 0.14) % 4 if is_moving else 0
+		var next_frame: int = int(walk_time * 8.0) % 4 if is_moving else 0
 		var next_row: int = _direction_row()
 		var next_flip: bool = facing_direction.x > 0
 		if next_frame != sprite_frame or next_row != sprite_row or next_flip != sprite_flip:

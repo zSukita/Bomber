@@ -142,23 +142,26 @@ func _update_name_label_visibility() -> void:
 func _apply_corner_slide(dir: Vector2) -> Vector2:
 	if not GameState.corner_slide_assistance or dir == Vector2.ZERO:
 		return dir
+	var input_len: float = dir.length()
 	var adjusted: Vector2 = dir
-	# Movimento horizontal puro: alinha suavemente ao centro Y do corredor se estiver quase na quina
-	if dir.y == 0.0 and dir.x != 0.0:
+	# Movimento horizontal cardinal: alinha suave e gradualmente ao centro Y do corredor
+	if absf(dir.x) > 0.0 and absf(dir.y) <= 0.05:
 		var tile_y := int(floor(global_position.y / 64.0))
 		var center_y := float(tile_y * 64 + 32)
 		var diff_y := center_y - global_position.y
-		if abs(diff_y) > 2.0 and abs(diff_y) <= 15.0:
-			adjusted.y = sign(diff_y) * 0.45
-			adjusted = adjusted.normalized()
-	# Movimento vertical puro: alinha suavemente ao centro X da coluna se estiver quase na quina
-	elif dir.x == 0.0 and dir.y != 0.0:
+		if absf(diff_y) > 0.5 and absf(diff_y) <= 16.0:
+			var t: float = clampf((absf(diff_y) - 0.5) / 15.5, 0.0, 1.0)
+			adjusted.y = sign(diff_y) * (t * 0.22)
+			adjusted = adjusted.normalized() * input_len
+	# Movimento vertical cardinal: alinha suave e gradualmente ao centro X da coluna
+	elif absf(dir.y) > 0.0 and absf(dir.x) <= 0.05:
 		var tile_x := int(floor(global_position.x / 64.0))
 		var center_x := float(tile_x * 64 + 32)
 		var diff_x := center_x - global_position.x
-		if abs(diff_x) > 2.0 and abs(diff_x) <= 15.0:
-			adjusted.x = sign(diff_x) * 0.45
-			adjusted = adjusted.normalized()
+		if absf(diff_x) > 0.5 and absf(diff_x) <= 16.0:
+			var t: float = clampf((absf(diff_x) - 0.5) / 15.5, 0.0, 1.0)
+			adjusted.x = sign(diff_x) * (t * 0.22)
+			adjusted = adjusted.normalized() * input_len
 	return adjusted
 
 ## Captura input local (suporte total a teclado e joystick/gamepad)

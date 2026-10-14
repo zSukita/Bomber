@@ -37,6 +37,7 @@ var charge_remaining: float = 0.0
 var charge_cooldown: float = 0.0
 var charge_direction: Vector2 = Vector2.ZERO
 var stuck_time: float = 0.0
+var queued_direction: Vector2 = Vector2.ZERO
 
 @onready var appearance: Node2D = $Appearance
 
@@ -97,6 +98,7 @@ func _physics_process(delta: float) -> void:
 			windup_remaining = 0.0
 			charge_cooldown = 0.8
 		if escape_refresh <= 0.0:
+			queued_direction = Vector2.ZERO
 			_choose_escape_direction()
 			escape_refresh = 0.12
 
@@ -112,6 +114,7 @@ func _physics_process(delta: float) -> void:
 			is_winding_up = false
 			charge_cooldown = maxf(charge_cooldown, 0.8)
 			direction_timer = 0.0
+			queued_direction = Vector2.ZERO
 			velocity = Vector2.ZERO
 			stuck_time = 0.0
 	else:
@@ -126,16 +129,85 @@ func _update_appearance() -> void:
 	appearance.call("show_enemy_state", self)
 
 func _update_regular_movement(player_is_valid: bool) -> void:
-	if direction_timer <= 0.0:
-		if player_is_valid and archetype == Archetype.HUNTER and global_position.distance_to(target_player.global_position) < 640.0:
-			_choose_chase_direction()
-		elif player_is_valid and archetype == Archetype.WANDERER and global_position.distance_to(target_player.global_position) < 180.0 and randf() < 0.35:
-			_choose_chase_direction()
+	if arena_grid != null:
+		var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+		var cell_center: Vector2 = arena_grid.grid_to_world(current_cell)
+		
+		# Verifica se o monstro está alinhado ao centro da casa (ou alcançando-o neste passo)
+		var is_aligned: bool = false
+		if direction == Vector2.ZERO:
+			is_aligned = global_position.distance_to(cell_center) <= 4.0
 		else:
-			_choose_direction()
+			var to_center: float = (cell_center - global_position).dot(direction)
+			var perp_error: float = absf(cell_center.y - global_position.y) if absf(direction.x) > 0.0 else absf(cell_center.x - global_position.x)
+			if perp_error <= 6.0 and to_center >= -2.0 and to_center <= (move_speed * get_physics_process_delta_time() + 2.0):
+				is_aligned = true
+
+		if is_aligned:
+			var next_cell_ahead: Vector2i = current_cell + Vector2i(direction)
+			var path_ahead_blocked: bool = direction != Vector2.ZERO and (not arena_grid.is_walkable(next_cell_ahead) or imminent_danger.has(next_cell_ahead))
+			
+			if queued_direction != Vector2.ZERO:
+				var q_step: Vector2i = Vector2i(queued_direction)
+				var q_target: Vector2i = current_cell + q_step
+				if arena_grid.is_walkable(q_target) and not imminent_danger.has(q_target):
+					direction = queued_direction
+				else:
+					_select_next_direction(player_is_valid)
+				queued_direction = Vector2.ZERO
+				global_position = cell_center
+			elif direction_timer <= 0.0 or path_ahead_blocked or direction == Vector2.ZERO:
+				global_position = cell_center
+				_select_next_direction(player_is_valid)
+		elif direction_timer <= 0.0 and queued_direction == Vector2.ZERO:
+			# Temporizador expirou no meio do caminho: escolhe e guarda a próxima direção para aplicar ao centro da casa
+			var candidate: Vector2 = _get_candidate_direction(player_is_valid)
+			if candidate != Vector2.ZERO and candidate != direction:
+				queued_direction = candidate
+			else:
+				direction_timer = randf_range(0.55, 1.15) if archetype == Archetype.HUNTER else randf_range(0.8, 1.5)
+
 	_move_aligned(move_speed)
 	if get_slide_collision_count() > 0:
 		direction_timer = 0.0
+		queued_direction = Vector2.ZERO
+		_choose_direction()
+
+func _select_next_direction(player_is_valid: bool) -> void:
+	if player_is_valid and archetype == Archetype.HUNTER and global_position.distance_to(target_player.global_position) < 640.0:
+		_choose_chase_direction()
+	elif player_is_valid and archetype == Archetype.WANDERER and global_position.distance_to(target_player.global_position) < 180.0 and randf() < 0.35:
+		_choose_chase_direction()
+	else:
+		_choose_direction()
+
+func _get_candidate_direction(player_is_valid: bool) -> Vector2:
+	if arena_grid == null:
+		return Vector2.ZERO
+	if player_is_valid and archetype == Archetype.HUNTER and global_position.distance_to(target_player.global_position) < 640.0:
+		var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
+		var goal_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
+		var goals: Array[Vector2i] = []
+		if not imminent_danger.has(goal_cell):
+			goals.append(goal_cell)
+		else:
+			for step in DIRECTIONS:
+				var safe_neighbor: Vector2i = goal_cell + step
+				if arena_grid.is_walkable(safe_neighbor) and not imminent_danger.has(safe_neighbor):
+					goals.append(safe_neighbor)
+		if not goals.is_empty():
+			var chase_dir: Vector2 = _find_path_direction(start_cell, goals, false)
+			if chase_dir != Vector2.ZERO:
+				return chase_dir
+	var cell: Vector2i = arena_grid.world_to_grid(global_position)
+	var options: Array[Vector2i] = []
+	for step in DIRECTIONS:
+		var next_cell: Vector2i = cell + step
+		if arena_grid.is_walkable(next_cell) and not imminent_danger.has(next_cell):
+			options.append(step)
+	if not options.is_empty():
+		return Vector2(options.pick_random())
+	return Vector2.ZERO
 
 ## Corrige o eixo perpendicular antes de seguir a direção da grade.
 ## Isso impede que a troca de direção corte a quina entre dois blocos.
@@ -205,6 +277,7 @@ func _update_charger(delta: float) -> void:
 		is_winding_up = true
 		windup_remaining = 0.72 if archetype == Archetype.BOSS else 0.48
 		direction = charge_direction
+		queued_direction = Vector2.ZERO
 		AudioManager.play_enemy_alert()
 		return
 	_update_regular_movement(true)
@@ -385,6 +458,7 @@ func take_bomb_hit() -> void:
 		return
 	health -= 1
 	hurt_invulnerability = HURT_INVULNERABILITY
+	queued_direction = Vector2.ZERO
 	if health <= 0:
 		die()
 	else:
