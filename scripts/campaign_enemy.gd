@@ -6,6 +6,8 @@ signal defeated(enemy: CampaignEnemy)
 enum Archetype { WANDERER, HUNTER, CHARGER, BOSS }
 
 const DIRECTIONS: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+const VERTICAL_DIRECTIONS: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN]
+const HORIZONTAL_DIRECTIONS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT]
 const ENEMY_COLORS: Array[Color] = [
 	Color(0.84, 0.25, 0.28),
 	Color(0.65, 0.31, 0.86),
@@ -163,7 +165,7 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 			var forward_open: bool = direction != Vector2.ZERO and arena_grid.is_walkable(forward_cell) and not imminent_danger.has(forward_cell)
 
 			var has_perp_turn: bool = false
-			var perp_dirs: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN] if forward_step.x != 0 else [Vector2i.LEFT, Vector2i.RIGHT]
+			var perp_dirs: Array[Vector2i] = VERTICAL_DIRECTIONS if forward_step.x != 0 else HORIZONTAL_DIRECTIONS
 			for p in perp_dirs:
 				var side_cell: Vector2i = current_cell + p
 				if arena_grid.is_walkable(side_cell) and not imminent_danger.has(side_cell):

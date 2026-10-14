@@ -678,7 +678,7 @@ func _configure_controller_inputs() -> void:
 
 func _populate_match_stats(container: VBoxContainer) -> void:
 	var total_seconds: int = int(stat_match_seconds)
-	var minutes: int = total_seconds / 60
+	var minutes: int = int(float(total_seconds) / 60.0)
 	var seconds: int = total_seconds % 60
 	var time_str: String = "%02d:%02d" % [minutes, seconds]
 	
