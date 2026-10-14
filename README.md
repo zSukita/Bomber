@@ -44,7 +44,8 @@ O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e 
 
 ## Estrutura do código
 
-- `assets/legal/` contém os recursos visuais livres de direitos autorais (CC0 / Domínio Público), divididos em `characters/`, `enemies/`, `tiles/`, `previews/`, bombas, explosões e itens. As doze fases contam com prévias e estilos visuais próprios, com suporte total para até oito personagens selecionáveis no lobby e quatro arquétipos de monstros na campanha.
+- Consulte [CREDITS.md](CREDITS.md) para a lista de assets em uso e suas fontes/licenças conhecidas. `assets/legal/` é apenas o nome da pasta: ela inclui conteúdo atribuído a CC0 e assets com condições próprias. Em particular, Bomber Bots permite uso em jogos comerciais, mas proíbe redistribuir ou reempacotar os arquivos do asset; os PNGs correspondentes ainda estão no repositório. A arte principal do menu e algumas prévias não têm origem/licença documentadas. Esses pontos precisam ser resolvidos antes da publicação.
+- `assets/lpc_characters/` e `assets/lpc_monsters/` contêm arte LPC não referenciada pelas cenas/scripts atuais. Seus créditos listam OGA-BY 3.0, CC-BY-SA 3.0 e GPL 3.0 para componentes diferentes; não são assets CC0. Os PNGs foram preservados no projeto e excluídos dos três presets de publicação; confirme a ausência nos pacotes gerados.
 
 - `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.
 - `scripts/bomb_system.gd` concentra colocação, explosões, coleta de itens e sincronização de bombas.

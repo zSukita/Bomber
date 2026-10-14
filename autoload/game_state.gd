@@ -29,6 +29,8 @@ enum PowerUpType {
 }
 
 const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES
+const CAMPAIGN_SAVE_PATH: String = "user://campaign_progress.cfg"
+const CAMPAIGN_SAVE_VERSION: int = 1
 
 var current_status: GameStatus = GameStatus.LOBBY
 var current_round: int = 1
@@ -41,11 +43,27 @@ var campaign_visited_stages: Array[int] = []
 var campaign_heart_stages: Array[int] = []
 var campaign_golden_choices: int = 0
 var campaign_blue_choices: int = 0
+var campaign_max_bombs: int = 1
+var campaign_bomb_range: int = 2
+var campaign_speed_multiplier: float = 1.0
+var campaign_has_heart: bool = false
+var campaign_progress_initialized: bool = false
 var local_pause_menu_open: bool = false
 var preferred_character_index: int = 0
 
 # ----------------- CONFIGURAÇÕES DO MODO MELHORADO -----------------
 signal enhanced_mode_toggled(is_enhanced: bool)
+signal user_preferences_loaded
+
+const USER_SETTINGS_PATH: String = "user://user_settings.cfg"
+const DEFAULT_MASTER_VOLUME: float = 85.0
+const DEFAULT_MUSIC_VOLUME: float = 75.0
+const DEFAULT_SFX_VOLUME: float = 90.0
+
+var master_volume_percent: float = DEFAULT_MASTER_VOLUME
+var music_volume_percent: float = DEFAULT_MUSIC_VOLUME
+var sfx_volume_percent: float = DEFAULT_SFX_VOLUME
+var fullscreen_enabled: bool = false
 
 ## Alterna apenas a apresentação visual para comparação com o modo base.
 var enhanced_mode: bool = true
@@ -84,6 +102,56 @@ var input_buffer_window: float = 0.15
 ## Variação de pitch e ambiência nos efeitos sonoros
 var sfx_pitch_variation: bool = true
 
+func _ready() -> void:
+	call_deferred("_load_user_preferences")
+
+func _load_user_preferences() -> void:
+	var settings := ConfigFile.new()
+	var loaded_enhanced_mode: bool = enhanced_mode
+	var had_saved_settings: bool = false
+	if settings.load(USER_SETTINGS_PATH) == OK:
+		had_saved_settings = true
+		var name_value := str(settings.get_value("profile", "player_name", "Jogador")).strip_edges()
+		if not name_value.is_empty():
+			NetworkManager.local_player_name = name_value
+		NetworkManager.preferred_color_index = clampi(int(settings.get_value("profile", "color_index", 0)), 0, Player.PLAYER_COLORS.size() - 1)
+		preferred_character_index = clampi(int(settings.get_value("profile", "character_index", 0)), 0, BomberAssets.CHARACTER_NAMES.size() - 1)
+		NetworkManager.preferred_character_index = preferred_character_index
+		master_volume_percent = clampf(float(settings.get_value("audio", "master", DEFAULT_MASTER_VOLUME)), 0.0, 100.0)
+		music_volume_percent = clampf(float(settings.get_value("audio", "music", DEFAULT_MUSIC_VOLUME)), 0.0, 100.0)
+		sfx_volume_percent = clampf(float(settings.get_value("audio", "sfx", DEFAULT_SFX_VOLUME)), 0.0, 100.0)
+		fullscreen_enabled = bool(settings.get_value("video", "fullscreen", false))
+		loaded_enhanced_mode = bool(settings.get_value("video", "enhanced", enhanced_mode))
+		screen_shake_intensity = clampf(float(settings.get_value("video", "screen_shake", screen_shake_intensity)), 0.0, 1.0)
+		visual_effects_intensity = clampf(float(settings.get_value("video", "visual_effects", visual_effects_intensity)), 0.0, 1.0)
+		reduced_flashes_enabled = bool(settings.get_value("video", "reduced_flashes", reduced_flashes_enabled))
+	if had_saved_settings and enhanced_mode != loaded_enhanced_mode:
+		enhanced_mode = loaded_enhanced_mode
+		if not enhanced_mode and is_inside_tree():
+			get_tree().call_group("enhanced_visual_effects", "queue_free")
+		enhanced_mode_toggled.emit(enhanced_mode)
+	AudioServer.set_bus_volume_linear(AudioServer.get_bus_index("Master"), master_volume_percent / 100.0)
+	AudioManager.set_music_volume(music_volume_percent / 100.0)
+	AudioManager.set_sfx_volume(sfx_volume_percent / 100.0)
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen_enabled else DisplayServer.WINDOW_MODE_WINDOWED)
+	user_preferences_loaded.emit()
+
+func save_user_preferences() -> bool:
+	var settings := ConfigFile.new()
+	settings.set_value("profile", "player_name", NetworkManager.local_player_name)
+	settings.set_value("profile", "color_index", NetworkManager.preferred_color_index)
+	settings.set_value("profile", "character_index", NetworkManager.preferred_character_index)
+	settings.set_value("audio", "master", master_volume_percent)
+	settings.set_value("audio", "music", music_volume_percent)
+	settings.set_value("audio", "sfx", sfx_volume_percent)
+	settings.set_value("video", "fullscreen", fullscreen_enabled)
+	settings.set_value("video", "enhanced", enhanced_mode)
+	settings.set_value("video", "screen_shake", screen_shake_intensity)
+	settings.set_value("video", "visual_effects", visual_effects_intensity)
+	settings.set_value("video", "reduced_flashes", reduced_flashes_enabled)
+	return settings.save(USER_SETTINGS_PATH) == OK
+
 func is_enhanced() -> bool:
 	return enhanced_mode
 
@@ -97,3 +165,95 @@ func set_enhanced_mode(enabled: bool) -> void:
 		if not enabled and is_inside_tree():
 			get_tree().call_group("enhanced_visual_effects", "queue_free")
 		enhanced_mode_toggled.emit(enhanced_mode)
+		save_user_preferences()
+
+func start_new_campaign() -> void:
+	campaign_stage_index = 0
+	campaign_lives = 5
+	campaign_seed = randi()
+	if campaign_seed == 0:
+		campaign_seed = 1
+	campaign_visited_stages.clear()
+	campaign_visited_stages.append(0)
+	campaign_heart_stages.clear()
+	campaign_golden_choices = 0
+	campaign_blue_choices = 0
+	reset_campaign_upgrades()
+	campaign_progress_initialized = true
+	save_campaign_progress()
+
+func has_campaign_save() -> bool:
+	var save := ConfigFile.new()
+	if save.load(CAMPAIGN_SAVE_PATH) != OK:
+		return false
+	return int(save.get_value("campaign", "version", 0)) == CAMPAIGN_SAVE_VERSION \
+		and int(save.get_value("campaign", "stage_index", -1)) >= 0 \
+		and int(save.get_value("campaign", "stage_index", -1)) < MAP_NAMES.size() \
+		and int(save.get_value("campaign", "lives", 0)) > 0 \
+		and int(save.get_value("campaign", "seed", 0)) != 0
+
+func load_campaign_progress() -> bool:
+	var save := ConfigFile.new()
+	if save.load(CAMPAIGN_SAVE_PATH) != OK:
+		return false
+	if int(save.get_value("campaign", "version", 0)) != CAMPAIGN_SAVE_VERSION:
+		return false
+	var stage_index := int(save.get_value("campaign", "stage_index", -1))
+	var lives := int(save.get_value("campaign", "lives", 0))
+	var seed_value := int(save.get_value("campaign", "seed", 0))
+	if stage_index < 0 or stage_index >= MAP_NAMES.size() or lives <= 0 or seed_value == 0:
+		return false
+	campaign_stage_index = stage_index
+	campaign_lives = clampi(lives, 1, 9)
+	campaign_seed = seed_value
+	campaign_visited_stages = _validated_stage_list(save.get_value("campaign", "visited_stages", [stage_index]))
+	if not campaign_visited_stages.has(stage_index):
+		campaign_visited_stages.append(stage_index)
+	campaign_heart_stages = _validated_stage_list(save.get_value("campaign", "heart_stages", []))
+	campaign_golden_choices = maxi(0, int(save.get_value("campaign", "golden_choices", 0)))
+	campaign_blue_choices = maxi(0, int(save.get_value("campaign", "blue_choices", 0)))
+	campaign_max_bombs = clampi(int(save.get_value("player", "max_bombs", 1)), 1, 8)
+	campaign_bomb_range = clampi(int(save.get_value("player", "bomb_range", 2)), 1, 8)
+	campaign_speed_multiplier = clampf(float(save.get_value("player", "speed_multiplier", 1.0)), 1.0, 2.2)
+	campaign_has_heart = bool(save.get_value("player", "has_heart", false))
+	campaign_progress_initialized = true
+	return true
+
+func save_campaign_progress() -> bool:
+	if not campaign_progress_initialized or campaign_lives <= 0:
+		return false
+	var save := ConfigFile.new()
+	save.set_value("campaign", "version", CAMPAIGN_SAVE_VERSION)
+	save.set_value("campaign", "stage_index", clampi(campaign_stage_index, 0, MAP_NAMES.size() - 1))
+	save.set_value("campaign", "lives", clampi(campaign_lives, 1, 9))
+	save.set_value("campaign", "seed", campaign_seed)
+	save.set_value("campaign", "visited_stages", campaign_visited_stages)
+	save.set_value("campaign", "heart_stages", campaign_heart_stages)
+	save.set_value("campaign", "golden_choices", campaign_golden_choices)
+	save.set_value("campaign", "blue_choices", campaign_blue_choices)
+	save.set_value("player", "max_bombs", campaign_max_bombs)
+	save.set_value("player", "bomb_range", campaign_bomb_range)
+	save.set_value("player", "speed_multiplier", campaign_speed_multiplier)
+	save.set_value("player", "has_heart", campaign_has_heart)
+	return save.save(CAMPAIGN_SAVE_PATH) == OK
+
+func clear_campaign_progress() -> void:
+	var absolute_path := ProjectSettings.globalize_path(CAMPAIGN_SAVE_PATH)
+	if FileAccess.file_exists(CAMPAIGN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)
+	campaign_progress_initialized = false
+
+func reset_campaign_upgrades() -> void:
+	campaign_max_bombs = 1
+	campaign_bomb_range = 2
+	campaign_speed_multiplier = 1.0
+	campaign_has_heart = false
+
+func _validated_stage_list(value: Variant) -> Array[int]:
+	var stages: Array[int] = []
+	if value is Array:
+		for item in value:
+			var stage := int(item)
+			if stage >= 0 and stage < MAP_NAMES.size() and not stages.has(stage):
+				stages.append(stage)
+	return stages

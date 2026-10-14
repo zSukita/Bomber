@@ -62,6 +62,8 @@ var selected_color_index: int = 0
 var selected_character_index: int = 0
 
 func _ready() -> void:
+	selected_color_index = clampi(NetworkManager.preferred_color_index, 0, Player.PLAYER_COLORS.size() - 1)
+	selected_character_index = clampi(NetworkManager.preferred_character_index, 0, BomberAssets.CHARACTER_NAMES.size() - 1)
 	_setup_profile_avatar()
 	_setup_color_swatches()
 	_setup_character_selection()
@@ -75,6 +77,10 @@ func _ready() -> void:
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.status_message.connect(_on_status_message)
 	NetworkManager.map_selection_updated.connect(_on_map_selection_updated)
+	if not NetworkManager.pending_status_message.is_empty():
+		_on_status_message(NetworkManager.pending_status_message, NetworkManager.pending_status_is_error)
+		NetworkManager.pending_status_message = ""
+		NetworkManager.pending_status_is_error = false
 	
 	# Opções de Mapa
 	map_option.clear()
@@ -92,7 +98,7 @@ func _ready() -> void:
 	leave_btn.pressed.connect(_on_leave_pressed)
 	
 	# Sincroniza apelido inicial padrão
-	name_input.text = "Jogador_%d" % randi_range(100, 999)
+	name_input.text = NetworkManager.local_player_name
 	name_input.text_changed.connect(_on_name_changed)
 	
 	_show_connection_view()
@@ -167,6 +173,7 @@ func _on_character_option_selected(item_index: int) -> void:
 	selected_character_index = character_option.get_item_id(item_index)
 	NetworkManager.preferred_character_index = selected_character_index
 	GameState.preferred_character_index = selected_character_index
+	GameState.save_user_preferences()
 	if user_portrait:
 		user_portrait.set_character(selected_character_index)
 
@@ -196,6 +203,7 @@ func _select_player_color(idx: int) -> void:
 	AudioManager.play_click()
 	selected_color_index = idx
 	NetworkManager.preferred_color_index = idx
+	GameState.save_user_preferences()
 	if user_portrait:
 		user_portrait.player_color = Player.PLAYER_COLORS[selected_color_index]
 		user_portrait.queue_redraw()
@@ -226,6 +234,7 @@ func _update_color_swatches_ui() -> void:
 func _on_name_changed(new_text: String) -> void:
 	var clean: String = new_text.strip_edges()
 	NetworkManager.local_player_name = clean if not clean.is_empty() else "Jogador"
+	GameState.save_user_preferences()
 
 # ----------------- ABAS MULTIPLAYER (HOST vs JOIN) -----------------
 
@@ -398,13 +407,8 @@ func _on_campaign_pressed() -> void:
 	if multiplayer.has_multiplayer_peer():
 		NetworkManager.disconnect_from_server()
 	GameState.game_mode = GameState.GameMode.CAMPAIGN
-	GameState.campaign_stage_index = 0
-	GameState.campaign_lives = 5
-	GameState.campaign_seed = randi()
-	GameState.campaign_visited_stages.clear()
 	GameState.campaign_heart_stages.clear()
-	GameState.campaign_golden_choices = 0
-	GameState.campaign_blue_choices = 0
+	GameState.start_new_campaign()
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 func _on_host_pressed() -> void:
@@ -413,6 +417,8 @@ func _on_host_pressed() -> void:
 	NetworkManager.local_player_name = player_name if not player_name.is_empty() else "Host"
 	NetworkManager.preferred_color_index = selected_color_index
 	NetworkManager.preferred_character_index = selected_character_index
+	GameState.preferred_character_index = selected_character_index
+	GameState.save_user_preferences()
 	var port: int = int(host_port_input.text) if host_port_input.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	
 	var err: Error = NetworkManager.create_server(port)
@@ -428,6 +434,8 @@ func _on_join_pressed() -> void:
 	NetworkManager.local_player_name = player_name if not player_name.is_empty() else "Cliente"
 	NetworkManager.preferred_color_index = selected_color_index
 	NetworkManager.preferred_character_index = selected_character_index
+	GameState.preferred_character_index = selected_character_index
+	GameState.save_user_preferences()
 	var ip: String = join_ip_input.text.strip_edges()
 	var port: int = int(join_port_input.text) if join_port_input.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	

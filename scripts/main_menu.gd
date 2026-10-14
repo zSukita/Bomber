@@ -19,11 +19,6 @@ extends Control
 # Painel do Jogador
 @onready var player_panel: PanelContainer = $UI/PlayerPanel
 @onready var player_name_label: Label = $UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox/NameLabel
-@onready var player_level_label: Label = $UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox/LevelLabel
-@onready var xp_progress: ProgressBar = $UI/PlayerPanel/Margin/VBox/XPContainer/XPBar
-@onready var xp_percent_label: Label = $UI/PlayerPanel/Margin/VBox/XPContainer/XPPercent
-@onready var wins_count_label: Label = $UI/PlayerPanel/Margin/VBox/StatsRow/WinsBox/WinsCount
-@onready var elims_count_label: Label = $UI/PlayerPanel/Margin/VBox/StatsRow/ElimsBox/ElimsCount
 @onready var color_swatches_box: HBoxContainer = $UI/PlayerPanel/Margin/VBox/SuitColorsBox/SwatchesRow
 
 # Botões Topo e Rodapé
@@ -51,18 +46,18 @@ var selected_suit_idx: int = 0
 
 const NEWS_PAGES: Array[Dictionary] = [
 	{
-		"title": "Arena da Montanha",
-		"desc": "Teste suas habilidades no novo cenário de combate.",
+		"title": "Campanha com rotas",
+		"desc": "Explore doze mundos e escolha portais para definir seu final.",
 		"dots": "●  ○  ○"
 	},
 	{
-		"title": "Arsenal de Plasma",
-		"desc": "Novas bombas de impacto com detonação em cadeia.",
+		"title": "Arena para quatro",
+		"desc": "Partidas pela rede com até quatro jogadores, usando IP e porta.",
 		"dots": "○  ●  ○"
 	},
 	{
-		"title": "Torneio Semanal",
-		"desc": "Concorra a trajes e insígnias exclusivas de campeão.",
+		"title": "Servidor dedicado Linux",
+		"desc": "Exporte um servidor dedicado para hospedar partidas de arena.",
 		"dots": "○  ○  ●"
 	}
 ]
@@ -73,8 +68,13 @@ var _base_char_pos: Vector2 = Vector2.ZERO
 func _ready() -> void:
 	_apply_tactical_styles()
 	_setup_player_data()
+	_set_continue_available(GameState.has_campaign_save())
 	_setup_suit_color_buttons()
 	_setup_interactions()
+	GameState.user_preferences_loaded.connect(_refresh_player_identity)
+	settings_modal.closed.connect(_on_settings_closed)
+	profile_modal.closed.connect(_on_profile_closed)
+	(continue_btn if not continue_btn.disabled else new_campaign_btn).grab_focus()
 	
 	# Responsividade do herói central
 	_update_character_layout()
@@ -179,11 +179,14 @@ func _play_intro_animation() -> void:
 
 func _setup_player_data() -> void:
 	player_name_label.text = NetworkManager.local_player_name.to_upper()
-	player_level_label.text = "NÍVEL 12"
-	xp_progress.value = 84
-	xp_percent_label.text = "84%"
-	wins_count_label.text = "24 Vitórias"
-	elims_count_label.text = "187 Eliminações"
+
+func _set_continue_available(available: bool) -> void:
+	continue_btn.disabled = not available
+	continue_btn.modulate = Color.WHITE if available else Color(0.48, 0.52, 0.58, 1.0)
+
+func _refresh_player_identity() -> void:
+	player_name_label.text = NetworkManager.local_player_name.to_upper()
+	_select_suit_color(NetworkManager.preferred_color_index, false)
 
 func _setup_suit_color_buttons() -> void:
 	for child in color_swatches_box.get_children():
@@ -193,7 +196,7 @@ func _setup_suit_color_buttons() -> void:
 	for i in range(Player.PLAYER_COLORS.size()):
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(26, 26)
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		
 		var idx: int = i
@@ -203,12 +206,14 @@ func _setup_suit_color_buttons() -> void:
 		color_swatches_box.add_child(btn)
 		color_buttons.append(btn)
 		
-	_select_suit_color(NetworkManager.preferred_color_index)
+	_select_suit_color(NetworkManager.preferred_color_index, false)
 
-func _select_suit_color(idx: int) -> void:
+func _select_suit_color(idx: int, persist: bool = true) -> void:
 	AudioManager.play_button_hover()
 	selected_suit_idx = idx
 	NetworkManager.preferred_color_index = idx
+	if persist:
+		GameState.save_user_preferences()
 	
 	if character_node:
 		character_node.set_suit_color(idx)
@@ -258,21 +263,27 @@ func _setup_interactions() -> void:
 	
 	settings_top_btn.pressed.connect(settings_modal.open)
 	profile_top_btn.pressed.connect(profile_modal.open)
+	profile_modal.closed.connect(_refresh_player_identity)
 	footer_exit_btn.pressed.connect(_on_exit_pressed)
 
+func _on_settings_closed() -> void:
+	settings_top_btn.grab_focus()
+
+func _on_profile_closed() -> void:
+	profile_top_btn.grab_focus()
+
 func _on_continue_pressed() -> void:
+	if not GameState.load_campaign_progress():
+		_set_continue_available(false)
+		return
 	GameState.game_mode = GameState.GameMode.CAMPAIGN
 	TransitionManager.change_scene("res://scenes/game.tscn")
 
 func _on_new_campaign_pressed() -> void:
 	GameState.game_mode = GameState.GameMode.CAMPAIGN
-	GameState.campaign_stage_index = 0
-	GameState.campaign_lives = 5
-	GameState.campaign_seed = randi()
-	GameState.campaign_visited_stages.clear()
 	GameState.campaign_heart_stages.clear()
-	GameState.campaign_golden_choices = 0
-	GameState.campaign_blue_choices = 0
+	GameState.start_new_campaign()
+	_set_continue_available(true)
 	TransitionManager.change_scene("res://scenes/game.tscn")
 
 func _on_multiplayer_pressed() -> void:
@@ -295,18 +306,6 @@ func _apply_tactical_styles() -> void:
 	p_style.shadow_color = Color("0088cc") * Color(1, 1, 1, 0.22)
 	p_style.shadow_size = 12
 	player_panel.add_theme_stylebox_override("panel", p_style)
-	
-	# Estilização Neon da Barra de XP
-	var xp_bg: StyleBoxFlat = StyleBoxFlat.new()
-	xp_bg.bg_color = Color(0.06, 0.11, 0.18, 0.9)
-	xp_bg.set_corner_radius_all(4)
-	var xp_fill: StyleBoxFlat = StyleBoxFlat.new()
-	xp_fill.bg_color = Color("00d4ff")
-	xp_fill.shadow_color = Color("00d4ff") * Color(1, 1, 1, 0.45)
-	xp_fill.shadow_size = 4
-	xp_fill.set_corner_radius_all(4)
-	xp_progress.add_theme_stylebox_override("background", xp_bg)
-	xp_progress.add_theme_stylebox_override("fill", xp_fill)
 	
 	# Estilo para o Card de Novidades
 	var n_style: StyleBoxFlat = StyleBoxFlat.new()

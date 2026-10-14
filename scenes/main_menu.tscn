@@ -162,14 +162,14 @@ theme_override_constants/separation = 8
 [node name="SettingsTopBtn" type="Button" parent="UI/TopButtons"]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 mouse_default_cursor_shape = 2
 text = "⚙"
 
 [node name="ProfileTopBtn" type="Button" parent="UI/TopButtons"]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 mouse_default_cursor_shape = 2
 text = "👤"
 
@@ -181,7 +181,7 @@ anchor_right = 1.0
 offset_left = -256.0
 offset_top = 66.0
 offset_right = -32.0
-offset_bottom = 260.0
+offset_bottom = 210.0
 grow_horizontal = 0
 
 [node name="Margin" type="MarginContainer" parent="UI/PlayerPanel"]
@@ -215,55 +215,6 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "JOGADOR_799"
-
-[node name="LevelLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.72, 0.95, 1)
-theme_override_font_sizes/font_size = 10
-text = "NÍVEL 12"
-
-[node name="XPContainer" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="XPBar" type="ProgressBar" parent="UI/PlayerPanel/Margin/VBox/XPContainer"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-value = 84.0
-show_percentage = false
-
-[node name="XPPercent" type="Label" parent="UI/PlayerPanel/Margin/VBox/XPContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
-theme_override_font_sizes/font_size = 10
-text = "84%"
-
-[node name="StatsRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
-layout_mode = 2
-
-[node name="WinsBox" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/StatsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="WinsCount" type="Label" parent="UI/PlayerPanel/Margin/VBox/StatsRow/WinsBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.82, 0.35, 1)
-theme_override_font_sizes/font_size = 11
-text = "🏆 24 Vitórias"
-
-[node name="ElimsBox" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/StatsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="ElimsCount" type="Label" parent="UI/PlayerPanel/Margin/VBox/StatsRow/ElimsBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
-theme_override_font_sizes/font_size = 11
-text = "💀 187 Eliminações"
 
 [node name="SuitColorsBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
 layout_mode = 2
@@ -315,19 +266,19 @@ stretch_mode = 6
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.35, 1)
 theme_override_font_sizes/font_size = 11
-text = "NOVO MAPA DISPONÍVEL"
+text = "MODOS E RECURSOS"
 
 [node name="NewsTitle" type="Label" parent="UI/NewsPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 12
-text = "Arena da Montanha"
+text = "Campanha com rotas"
 
 [node name="NewsDesc" type="Label" parent="UI/NewsPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.72, 0.85, 1)
 theme_override_font_sizes/font_size = 10
-text = "Teste suas habilidades no novo cenário de combate."
+text = "Explore doze mundos e escolha portais para definir seu final."
 autowrap_mode = 2
 
 [node name="DotsLabel" type="Label" parent="UI/NewsPanel/Margin/VBox"]
@@ -356,7 +307,7 @@ theme_override_constants/separation = 12
 
 [node name="FooterExitBtn" type="Button" parent="UI/Footer/HBox"]
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 mouse_default_cursor_shape = 2
 text = "🚪 Sair"
 flat = true
@@ -564,7 +515,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="ProfileModal/CenterContainer"]
-custom_minimum_size = Vector2(400, 320)
+custom_minimum_size = Vector2(400, 190)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="ProfileModal/CenterContainer/Panel"]
@@ -582,7 +533,7 @@ theme_override_constants/separation = 14
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "👤 PERFIL DO GUERREIRO"
+text = "👤 PERFIL DO JOGADOR"
 horizontal_alignment = 1
 
 [node name="HSep1" type="HSeparator" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
@@ -603,60 +554,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "JOGADOR_799"
 max_length = 16
-
-[node name="StatsGrid" type="GridContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 8
-columns = 2
-
-[node name="WinsLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
-theme_override_font_sizes/font_size = 11
-text = "Total de Vitórias:"
-
-[node name="WinsValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.82, 0.35, 1)
-theme_override_font_sizes/font_size = 12
-text = "24 Vitórias"
-
-[node name="KillsLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
-theme_override_font_sizes/font_size = 11
-text = "Inimigos Eliminados:"
-
-[node name="KillsValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 12
-text = "187 Baixas"
-
-[node name="MatchesLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
-theme_override_font_sizes/font_size = 11
-text = "Partidas Jogadas:"
-
-[node name="MatchesValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 12
-text = "32 Batalhas"
-
-[node name="WinRateLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
-theme_override_font_sizes/font_size = 11
-text = "Taxa de Sucesso:"
-
-[node name="WinRateValue" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/StatsGrid"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.35, 0.95, 0.65, 1)
-theme_override_font_sizes/font_size = 12
-text = "75.0%"
 
 [node name="CloseButton" type="Button" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 38)

@@ -32,6 +32,8 @@ var current_match_seed: int = 0
 var selected_map_style: int = -1
 var scores: Dictionary = {} # peer_id -> int (vitórias)
 var peer: ENetMultiplayerPeer = null
+var pending_status_message: String = ""
+var pending_status_is_error: bool = false
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -120,7 +122,7 @@ func join_server(ip: String, port: int = DEFAULT_PORT) -> Error:
 	status_message.emit("Conectando a %s:%d..." % [target_ip, port], false)
 	return OK
 
-func disconnect_from_server() -> void:
+func disconnect_from_server(show_status_message: bool = true) -> void:
 	if peer != null:
 		peer.close()
 		peer = null
@@ -129,7 +131,8 @@ func disconnect_from_server() -> void:
 	players.clear()
 	is_game_active = false
 	selected_map_style = -1
-	status_message.emit("Desconectado da sala.", false)
+	if show_status_message:
+		status_message.emit("Desconectado da sala.", false)
 	lobby_updated.emit()
 
 # ----------------- CALLBACKS DE CONEXÃO MULTIPLAYER -----------------
@@ -161,13 +164,14 @@ func _on_connected_to_server() -> void:
 	register_player.rpc_id(1, info)
 
 func _on_connection_failed() -> void:
-	status_message.emit("Não foi possível conectar ao servidor. Verifique o IP e a Porta.", true)
-	disconnect_from_server()
+	disconnect_from_server(false)
+	status_message.emit("Não foi possível conectar. Confira o IP, a porta e se o host está online.", true)
 
 func _on_server_disconnected() -> void:
-	status_message.emit("O servidor encerrou a conexão.", true)
-	disconnect_from_server()
-	TransitionManager.change_scene("res://scenes/main_menu.tscn")
+	disconnect_from_server(false)
+	pending_status_message = "Conexão perdida. Entre em outra sala pelo lobby; a partida não pode ser retomada automaticamente."
+	pending_status_is_error = true
+	TransitionManager.change_scene("res://scenes/lobby.tscn")
 
 # ----------------- RPCS DE SINCRONIZAÇÃO DE LOBBY -----------------
 
@@ -177,7 +181,11 @@ func register_player(info: Dictionary) -> void:
 		return
 	
 	var sender_id: int = multiplayer.get_remote_sender_id()
-	if players.has(sender_id) or players.size() >= MAX_PLAYERS:
+	if players.has(sender_id):
+		connection_rejected.rpc_id(sender_id, "Este jogador já está registrado na sala.")
+		return
+	if players.size() >= MAX_PLAYERS:
+		connection_rejected.rpc_id(sender_id, "Sala cheia: o limite é de quatro jogadores.")
 		return
 	var safe_name: String = str(info.get("name", "Jogador")).strip_edges().substr(0, 20)
 	info["name"] = safe_name if not safe_name.is_empty() else "Jogador"
@@ -206,6 +214,11 @@ func register_player(info: Dictionary) -> void:
 	lobby_updated.emit()
 	
 	print("[Lobby] Jogador cadastrado: %s (ID: %d, Cor: %d)" % [info["name"], sender_id, assigned_color])
+
+@rpc("authority", "call_remote", "reliable")
+func connection_rejected(reason: String) -> void:
+	disconnect_from_server(false)
+	status_message.emit(reason, true)
 
 @rpc("authority", "reliable")
 func sync_lobby(lobby_data: Dictionary) -> void:

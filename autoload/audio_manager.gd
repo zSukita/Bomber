@@ -30,6 +30,8 @@ var sfx_stage_clear: AudioStream
 
 var music_player: AudioStreamPlayer
 var pitch_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var music_volume_scale: float = 0.75
+var sfx_volume_scale: float = 0.90
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -141,8 +143,16 @@ func stop_music() -> void:
 func stop_menu_music() -> void:
 	stop_music()
 
-func set_music_volume(volume_db: float) -> void:
-	music_player.volume_db = volume_db
+func set_music_volume(volume_linear: float) -> void:
+	music_volume_scale = clampf(volume_linear, 0.0, 1.0)
+	if music_player:
+		music_player.volume_db = -12.0 + _scale_to_db(music_volume_scale)
+
+func set_sfx_volume(volume_linear: float) -> void:
+	sfx_volume_scale = clampf(volume_linear, 0.0, 1.0)
+
+func _scale_to_db(scale: float) -> float:
+	return linear_to_db(scale) if scale > 0.0 else -80.0
 
 func play_block_break() -> void:
 	_play_stream(sfx_block_break, -4.5)
@@ -158,14 +168,14 @@ func _play_stream(stream: AudioStream, volume_db: float = 0.0) -> void:
 	for p in players_pool:
 		if not p.playing:
 			p.stream = stream
-			p.volume_db = volume_db
+			p.volume_db = volume_db + _scale_to_db(sfx_volume_scale)
 			p.pitch_scale = pitch
 			p.play()
 			return
 	
 	# Se todos os canais estiverem ocupados, reutiliza o primeiro
 	players_pool[0].stream = stream
-	players_pool[0].volume_db = volume_db
+	players_pool[0].volume_db = volume_db + _scale_to_db(sfx_volume_scale)
 	players_pool[0].pitch_scale = pitch
 	players_pool[0].play()
 

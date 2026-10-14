@@ -35,10 +35,14 @@ func _ready() -> void:
 	reduced_flashes_check.button_pressed = GameState.reduced_flashes_enabled
 	enhanced_check.set_pressed_no_signal(GameState.is_enhanced())
 	GameState.enhanced_mode_toggled.connect(_sync_enhanced_check)
+	GameState.user_preferences_loaded.connect(_sync_controls_from_active_settings)
+	_sync_controls_from_active_settings()
 
 func open() -> void:
 	AudioManager.play_menu_open()
+	_sync_controls_from_active_settings()
 	visible = true
+	master_slider.grab_focus()
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_BACK)
@@ -58,13 +62,19 @@ func close() -> void:
 
 func _on_master_changed(value: float) -> void:
 	var bus_idx: int = AudioServer.get_bus_index("Master")
-	AudioServer.set_bus_volume_db(bus_idx, linear_to_db(value / 100.0))
+	AudioServer.set_bus_volume_linear(bus_idx, value / 100.0)
+	GameState.master_volume_percent = value
+	GameState.save_user_preferences()
 
 func _on_music_changed(value: float) -> void:
-	var vol_db: float = linear_to_db(value / 100.0)
-	AudioManager.set_music_volume(vol_db)
+	AudioManager.set_music_volume(value / 100.0)
+	GameState.music_volume_percent = value
+	GameState.save_user_preferences()
 
-func _on_sfx_changed(_value: float) -> void:
+func _on_sfx_changed(value: float) -> void:
+	AudioManager.set_sfx_volume(value / 100.0)
+	GameState.sfx_volume_percent = value
+	GameState.save_user_preferences()
 	AudioManager.play_click()
 
 func _on_fullscreen_toggled(toggled_on: bool) -> void:
@@ -73,11 +83,14 @@ func _on_fullscreen_toggled(toggled_on: bool) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	GameState.fullscreen_enabled = toggled_on
+	GameState.save_user_preferences()
 
 func _on_enhanced_toggled(toggled_on: bool) -> void:
 	AudioManager.play_click()
 	if toggled_on != GameState.is_enhanced():
 		GameState.set_enhanced_mode(toggled_on)
+	GameState.save_user_preferences()
 
 func _sync_enhanced_check(is_enhanced: bool) -> void:
 	if is_instance_valid(enhanced_check):
@@ -85,9 +98,27 @@ func _sync_enhanced_check(is_enhanced: bool) -> void:
 
 func _on_shake_changed(value: float) -> void:
 	GameState.screen_shake_intensity = clampf(value / 100.0, 0.0, 1.0)
+	GameState.save_user_preferences()
 
 func _on_effects_changed(value: float) -> void:
 	GameState.visual_effects_intensity = clampf(value / 100.0, 0.0, 1.0)
+	GameState.save_user_preferences()
 
 func _on_reduced_flashes_toggled(enabled: bool) -> void:
 	GameState.reduced_flashes_enabled = enabled
+	GameState.save_user_preferences()
+
+func _sync_controls_from_active_settings() -> void:
+	if not is_node_ready():
+		return
+	master_slider.set_value_no_signal(AudioServer.get_bus_volume_linear(AudioServer.get_bus_index("Master")) * 100.0)
+	music_slider.set_value_no_signal(AudioManager.music_volume_scale * 100.0)
+	sfx_slider.set_value_no_signal(AudioManager.sfx_volume_scale * 100.0)
+	if DisplayServer.get_name() != "headless":
+		fullscreen_check.set_pressed_no_signal(DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		fullscreen_check.set_pressed_no_signal(GameState.fullscreen_enabled)
+	enhanced_check.set_pressed_no_signal(GameState.is_enhanced())
+	shake_slider.set_value_no_signal(GameState.screen_shake_intensity * 100.0)
+	effects_slider.set_value_no_signal(GameState.visual_effects_intensity * 100.0)
+	reduced_flashes_check.set_pressed_no_signal(GameState.reduced_flashes_enabled)

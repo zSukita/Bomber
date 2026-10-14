@@ -1,16 +1,12 @@
 class_name ProfileModal
 extends Control
 
-## Modal de Perfil e Estatísticas do Jogador no Bombástico.
+## Modal de perfil local do jogador no Bombástico.
 
 signal closed
 
 @onready var panel: PanelContainer = $CenterContainer/Panel
 @onready var name_edit: LineEdit = $CenterContainer/Panel/Margin/VBox/NameRow/NameInput
-@onready var wins_label: Label = $CenterContainer/Panel/Margin/VBox/StatsGrid/WinsValue
-@onready var kills_label: Label = $CenterContainer/Panel/Margin/VBox/StatsGrid/KillsValue
-@onready var matches_label: Label = $CenterContainer/Panel/Margin/VBox/StatsGrid/MatchesValue
-@onready var winrate_label: Label = $CenterContainer/Panel/Margin/VBox/StatsGrid/WinRateValue
 @onready var close_btn: Button = $CenterContainer/Panel/Margin/VBox/CloseButton
 
 func _ready() -> void:
@@ -23,6 +19,7 @@ func open() -> void:
 	AudioManager.play_menu_open()
 	name_edit.text = NetworkManager.local_player_name
 	visible = true
+	name_edit.grab_focus()
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_BACK)
@@ -44,3 +41,4 @@ func _on_name_changed(new_text: String) -> void:
 	var clean: String = new_text.strip_edges()
 	if not clean.is_empty():
 		NetworkManager.local_player_name = clean
+		GameState.save_user_preferences()

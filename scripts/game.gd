@@ -145,19 +145,18 @@ func _init_singleplayer_match() -> void:
 
 func _init_campaign_match() -> void:
 	is_campaign_choosing_portal = false
-	GameState.campaign_stage_index = 0
-	GameState.campaign_lives = clampi(GameState.campaign_lives, 3, 9)
-	GameState.campaign_visited_stages.clear()
-	GameState.campaign_heart_stages.clear()
-	GameState.campaign_visited_stages.append(0)
-	GameState.campaign_golden_choices = 0
-	GameState.campaign_blue_choices = 0
+	if not GameState.campaign_progress_initialized:
+		GameState.start_new_campaign()
+	GameState.campaign_lives = clampi(GameState.campaign_lives, 1, 9)
+	if not GameState.campaign_visited_stages.has(GameState.campaign_stage_index):
+		GameState.campaign_visited_stages.append(GameState.campaign_stage_index)
 	campaign_blocks_broken = 0
-	campaign_heart_spawned = false
+	campaign_heart_spawned = GameState.campaign_heart_stages.has(GameState.campaign_stage_index)
 	grid_map.powerup_drop_chance = CampaignRules.POWERUP_DROP_CHANCE
-	grid_map.generate_map(GameState.campaign_seed, 0)
+	grid_map.generate_map(GameState.campaign_seed + GameState.campaign_stage_index * CampaignRules.STAGE_SEED_STEP, GameState.campaign_stage_index)
 	var p_name: String = NetworkManager.local_player_name if not NetworkManager.local_player_name.is_empty() else "Jogador 1"
 	var player: Player = _spawn_player_instance(1, p_name, 0, GameState.preferred_character_index)
+	_apply_campaign_player_progress(player)
 	player.invulnerability_seconds = 2.5
 	spawned_players[1] = player
 	match_round.begin(1, [1], CampaignRules.STAGE_TIME_LIMIT)
@@ -167,6 +166,7 @@ func _init_campaign_match() -> void:
 	hud.update_timer_display(CampaignRules.STAGE_TIME_LIMIT)
 	_spawn_campaign_enemies(player)
 	_refresh_all_hud_cards()
+	_save_campaign_player_progress(player)
 
 func _spawn_campaign_enemies(player: Player) -> void:
 	campaign_enemies = campaign_enemy_spawner.spawn(
@@ -176,7 +176,13 @@ func _spawn_campaign_enemies(player: Player) -> void:
 		GameState.campaign_stage_index,
 		_on_campaign_enemy_defeated
 	)
-	hud.update_campaign_objective("DERROTE TODOS OS INIMIGOS  ·  RESTANTES: %d" % campaign_enemies.size())
+	_update_campaign_objective()
+
+func _update_campaign_objective() -> void:
+	hud.update_campaign_objective(
+		"INIMIGOS: %d  ·  MOVER WASD/SETAS/ANALÓGICO  ·  BOMBA ESPAÇO/A  ·  PAUSA ESC/START"
+		% campaign_enemies.size()
+	)
 
 func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	is_round_active = false
@@ -207,6 +213,21 @@ func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	spectator_banner.visible = false
 	_spawn_campaign_enemies(player)
 	_refresh_all_hud_cards()
+	_save_campaign_player_progress(player)
+	GameState.save_campaign_progress()
+
+func _apply_campaign_player_progress(player: Player) -> void:
+	player.max_bombs = GameState.campaign_max_bombs
+	player.bomb_range = GameState.campaign_bomb_range
+	player.speed_multiplier = GameState.campaign_speed_multiplier
+	player.has_heart = GameState.campaign_has_heart
+
+func _save_campaign_player_progress(player: Player) -> void:
+	GameState.campaign_max_bombs = player.max_bombs
+	GameState.campaign_bomb_range = player.bomb_range
+	GameState.campaign_speed_multiplier = player.speed_multiplier
+	GameState.campaign_has_heart = player.has_heart
+	GameState.save_campaign_progress()
 
 func _clear_campaign_entities() -> void:
 	for enemy in campaign_enemies:
@@ -220,7 +241,7 @@ func _clear_campaign_entities() -> void:
 
 func _on_campaign_enemy_defeated(enemy: CampaignEnemy) -> void:
 	campaign_enemies.erase(enemy)
-	hud.update_campaign_objective("INIMIGOS RESTANTES: %d" % campaign_enemies.size())
+	_update_campaign_objective()
 	if campaign_enemies.is_empty() and GameState.game_mode == GameState.GameMode.CAMPAIGN:
 		if GameState.campaign_stage_index == GameState.MAP_NAMES.size() - 1:
 			_show_campaign_ending()
@@ -269,7 +290,7 @@ func _open_campaign_portals() -> void:
 			campaign_portals.append(portal)
 			break
 	
-	spectator_banner.text = "PORTAL DOURADO: MUNDO INÉDITO     ·     PORTAL AZUL: MUNDO VISITADO"
+	spectator_banner.text = "ENTRE NO PORTAL DOURADO: MUNDO NOVO     ·     AZUL: MUNDO VISITADO"
 	spectator_banner.modulate = Color(1.0, 0.83, 0.4)
 	spectator_banner.visible = true
 	hud.set_campaign_help_visible(false)
@@ -285,6 +306,10 @@ func _on_campaign_portal_selected(portal: TimePortal) -> void:
 		GameState.campaign_golden_choices += 1
 	else:
 		GameState.campaign_blue_choices += 1
+	GameState.campaign_stage_index = target
+	if not GameState.campaign_visited_stages.has(target):
+		GameState.campaign_visited_stages.append(target)
+	GameState.save_campaign_progress()
 	call_deferred("_start_campaign_stage", target, true)
 
 func _campaign_lose_life(reason: String) -> void:
@@ -293,6 +318,11 @@ func _campaign_lose_life(reason: String) -> void:
 	is_round_active = false
 	is_campaign_choosing_portal = false
 	GameState.campaign_lives = maxi(0, GameState.campaign_lives - 1)
+	GameState.reset_campaign_upgrades()
+	if GameState.campaign_lives > 0:
+		GameState.save_campaign_progress()
+	else:
+		GameState.clear_campaign_progress()
 	hud.update_campaign_info(GameState.campaign_stage_index + 1, GameState.MAP_NAMES.size(), GameState.campaign_lives)
 	round_overlay.visible = true
 	round_title.text = "VOCÊ PERDEU UMA VIDA"
@@ -315,6 +345,7 @@ func _restart_campaign_stage() -> void:
 func _show_campaign_ending() -> void:
 	is_round_active = false
 	is_campaign_choosing_portal = false
+	GameState.clear_campaign_progress()
 	var good_ending: bool = GameState.campaign_golden_choices >= GameState.campaign_blue_choices
 	round_overlay.visible = true
 	round_title.text = "FINAL BOM" if good_ending else "FINAL SOMBRIO"
@@ -354,6 +385,8 @@ func _spawn_player_instance(peer_id: int, p_name: String, color_index: int, char
 
 func _on_player_powerup_changed(player: Player) -> void:
 	_refresh_player_hud(player.peer_id)
+	if GameState.game_mode == GameState.GameMode.CAMPAIGN and player.peer_id == 1:
+		_save_campaign_player_progress(player)
 
 # ----------------- CRONÔMETRO DE RODADA (SERVIDOR) -----------------
 
@@ -596,6 +629,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		var opening: bool = not hud.pause_panel.visible
 		hud.pause_panel.visible = opening
+		if opening:
+			hud.get_node("PauseOverlay/Panel/Margin/VBox/ResumeButton").grab_focus()
+		else:
+			get_viewport().gui_release_focus()
 		var online: bool = multiplayer.has_multiplayer_peer()
 		GameState.local_pause_menu_open = opening and online
 		hud.update_pause_status(online)

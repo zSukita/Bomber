@@ -1,63 +1,29 @@
-# Créditos e Licenças de Recursos Visuais - Bombástico
+# Créditos e licenças de assets — Bombástico
 
-Todos os recursos visuais utilizados no jogo **Bombástico** foram substituídos por ativos livres de direitos autorais (Domínio Público / CC0) e de código aberto, permitindo publicação comercial ou não comercial sem riscos de infração de copyright ou marcas registradas.
+As licenças são específicas de cada origem. A pasta `assets/legal/` não significa que tudo nela esteja em domínio público ou sob CC0. As associações entre arquivos renomeados e os pacotes originais abaixo refletem os créditos já mantidos pelo projeto; os arquivos originais dos pacotes e um manifesto de hashes não foram preservados, portanto a identificação arquivo a arquivo ainda precisa ser conferida antes da publicação.
 
----
+## Assets usados pelo jogo
 
-## 1. Personagens, Inimigos e Itens
-* **Origem:** Ninja Adventure Asset Pack
-* **Autores:** [Pixel-boy](https://pixel-boy.itch.io/) & [AAA](https://www.instagram.com/challenger.aaa/)
-* **Licença:** **Creative Commons Zero (CC0 1.0 Universal - Domínio Público)**
-* **Uso no projeto:**
-  - Personagens jogáveis (Robô Beta, Robô Alfa, Robô Tático, Ninja Bomb, Ninja Fogo, Samurai Azul, Samurai Rubro, Cavaleiro).
-  - Inimigos da campanha (Slime/Wanderer, Ciclope/Hunter, Fera/Charger, DemonCyclop/Boss).
-  - Ícones de power-ups (Bomba, Alcance de Fogo, Pena de Agilidade/Velocidade, Coração).
-  - Efeitos de fumaça (Puff).
+| Arquivos em uso | Origem registrada | Licença / condições |
+|---|---|---|
+| `assets/legal/characters/character_0.png` a `character_7.png`, `assets/legal/enemies/enemy_0.png` a `enemy_3.png`, `assets/legal/items.png`, `assets/legal/puff.png`, `assets/legal/fonts/pixel_font.ttf`; músicas `music_lobby.ogg`, `music_battle_1.ogg`, `music_tension.ogg`; jingles `jingle_victory.wav`, `jingle_game_over.wav`, `jingle_stage_clear.wav` | Ninja Adventure Asset Pack, Pixel-boy e AAA — associação registrada pelo projeto | A página do pacote declara **CC0 1.0**. Atribuição não é exigida; o autor agradece um link. [Página oficial do pacote](https://pixel-boy.itch.io/ninja-adventure-asset-pack). A correspondência exata dos arquivos renomeados com o pacote precisa ser verificada no arquivo original. |
+| `assets/legal/bomb.png` e parte de `assets/legal/tiles/tileset.png` (bomba, tijolos e destruição de tijolos) | Bomber Bots — Game Asset Pack, Yahallo Games, conforme crédito anterior | **Não é CC0.** A página permite uso e edição em projetos pessoais ou comerciais, mas proíbe revender, redistribuir ou reempacotar os assets, mesmo editados. Como esses PNGs estão no repositório, a distribuição do código-fonte precisa ser resolvida com o autor ou com assets substitutos. [Licença e página do pacote](https://yahallogames.itch.io/bomber-bots-assetpack). |
+| `assets/legal/explosion.png` | “Bomberman Explosion Effect”, Satik64 | **CC0**, conforme a página do OpenGameArt. A menção ao autor é opcional. [Página do asset](https://opengameart.org/content/bomberman-explosion-effect). |
+| Partes de pedra de `assets/legal/tiles/tileset.png` | Kenney Sokoban, segundo o crédito anterior | A página do pacote declara **Creative Commons CC0**. [Página oficial do Sokoban](https://kenney.nl/assets/sokoban). O atlas combina tiles de mais de uma origem; a separação exata dos tiles deve ser confirmada no arquivo original. |
+| `assets/legal/previews/stage_01.png` a `stage_12.png` | Pré-visualizações incluídas no projeto | Referenciadas pela campanha e pelo lobby. A origem/autoria independente não está registrada; não presumir CC0. |
+| `assets/menu/background_arena.png`, `character_hero.png`, `logo_bombastico.png`, `avatar_robot.png`, `map_preview_1.png` e `icon.svg` | Origem não registrada nos arquivos do projeto | São usados pela interface/ícone. Autor, origem e licença não foram identificados; confirmar os direitos antes de publicar. |
 
----
+Os efeitos sonoros de interface e jogabilidade são sintetizados em tempo de execução por `autoload/audio_manager.gd`; não são arquivos de terceiros.
 
-## 2. Bombas e Efeitos de Explosão
-* **Origem:** Bomber Bots & Bomberman Explosion Effect
-* **Autores:** Yahallo Games & OpenGameArt Community
-* **Licença:** **Creative Commons Zero (CC0 1.0 Universal - Domínio Público)**
-* **Uso no projeto:**
-  - Animação da bomba (3 quadros pulsantes em 16x16).
-  - Atlas modular de explosão em cruz (centro, vigas verticais/horizontais e pontas de fogo).
+## Assets presentes, mas sem referência no jogo
 
----
+- `assets/lpc_characters/` e `assets/lpc_monsters/` não aparecem referenciados por cenas ou scripts atuais. Os respectivos `credits_*.txt` listam créditos LPC e opções de licença **OGA-BY 3.0, CC-BY-SA 3.0 e GPL 3.0** para diferentes componentes. Essas licenças têm condições de atribuição e, conforme a opção escolhida, compartilhamento pela mesma licença ou GPL; não são CC0. Os arquivos foram preservados e não foram integrados. Os três presets agora excluem os oito PNGs LPC sem uso; a etapa de exportação precisa confirmar essa exclusão nos pacotes regenerados.
+- `assets/menu/character_crop.png`, `logo_crop.png` e `map_preview.png` não são referenciados pelas cenas/scripts atuais. A origem/licença também não está documentada. Os três presets agora os excluem; os pacotes regenerados precisam confirmar a exclusão.
+- Também não são carregados pelo `AudioManager`: `music_adventure.ogg`, `music_battle_2.ogg`, `music_dungeon.ogg`, `music_victory_theme.ogg` e `jingle_victory_alt.wav`.
 
-## 3. Blocos e Paredes das Arenas
-* **Origem:** Kenney Game Assets (Sokoban Pack) & Environment Tiles Free
-* **Autores:** [Kenney](https://kenney.nl/) & OpenGameArt Community
-* **Licença:** **Creative Commons Zero (CC0 1.0 Universal - Domínio Público)**
-* **Uso no projeto:**
-  - Textura de blocos indestrutíveis (paredes externas e pilares).
-  - Textura de blocos destrutíveis (tijolos quebráveis).
-  - Animação de desintegração de blocos.
-  - Prévia e paleta das 12 arenas temáticas.
+## Pendências de proveniência para publicação
 
----
-
-## 4. Músicas e Jingles (Trilha Sonora)
-* **Origem:** Ninja Adventure Asset Pack
-* **Autores:** [Pixel-boy](https://pixel-boy.itch.io/) & [AAA](https://www.instagram.com/challenger.aaa/)
-* **Licença:** **Creative Commons Zero (CC0 1.0 Universal - Domínio Público)**
-* **Arquivos em `assets/legal/audio/`:**
-  - `music_lobby.ogg` (Tema do lobby/menu)
-  - `music_battle_1.ogg` e `music_battle_2.ogg` (Temas de combate na arena)
-  - `music_tension.ogg` (Tema de tensão / tempo esgotando)
-  - `music_dungeon.ogg` (Tema de masmorra para a campanha)
-  - `music_victory_theme.ogg` (Tema de vitória final)
-  - `jingle_victory.wav` e `jingle_victory_alt.wav` (Jingle de vitória da rodada)
-  - `jingle_game_over.wav` (Jingle de derrota)
-  - `jingle_stage_clear.wav` (Jingle de mundo concluído)
-* **Efeitos Sonoros Sintetizados:** Gerador procedural de áudio PCM sintetizado em tempo real via código (`autoload/audio_manager.gd`).
-
----
-
-## 5. Tipografia / Fonte
-* **Origem:** Ninja Adventure Asset Pack (`NormalFont.ttf`)
-* **Autores:** [Pixel-boy](https://pixel-boy.itch.io/) & [AAA](https://www.instagram.com/challenger.aaa/)
-* **Licença:** **Creative Commons Zero (CC0 1.0 Universal - Domínio Público)**
-* **Arquivo:** `assets/legal/fonts/pixel_font.ttf`
-
+1. Identificar e registrar a origem/licença dos cinco assets ativos em `assets/menu/`, do ícone e das prévias das fases.
+2. Conferir os arquivos originais/manifests dos pacotes declarados e associar cada arquivo renomeado à origem correta.
+3. Resolver a restrição de redistribuição dos assets Bomber Bots incluídos no repositório.
+4. Conferir no pacote exportado se os assets LPC não usados são incluídos; se forem, filtrar a exportação ou resolver as licenças antes de distribuir.

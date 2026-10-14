@@ -2,16 +2,22 @@ class_name CharacterPortrait
 extends Control
 
 ## Exibe o retrato do personagem selecionado com transparência e escala corretas.
-@export var player_color: Color = Color(0.25, 0.65, 1.0):
-	set(val):
-		player_color = val
+var _player_color: Color = Color(0.25, 0.65, 1.0)
+@export var player_color: Color:
+	get:
+		return _player_color
+	set(value):
+		_player_color = value
 		queue_redraw()
 
+var _character_index: int = 0
 @export_range(0, 7) var character_index: int = 0:
-	set(val):
-		character_index = val
+	get:
+		return _character_index
+	set(value):
+		_character_index = posmod(value, BomberAssets.CHARACTER_TEXTURES.size())
 		if character_sprite:
-			set_character(character_index)
+			_update_character_sprite()
 
 var character_sprite: Sprite2D
 
@@ -23,13 +29,14 @@ func _ready() -> void:
 	queue_redraw()
 
 func set_character(index: int) -> void:
-	character_index = posmod(index, BomberAssets.CHARACTER_TEXTURES.size())
-	if character_sprite:
-		BomberAssets.configure_character_sprite(character_sprite, character_index, 0, 0, false)
-		var center_x: float = size.x * 0.5 if size.x > 0 else 24.0
-		var center_y: float = size.y * 0.5 if size.y > 0 else 24.0
-		character_sprite.position = Vector2(center_x, center_y)
-		character_sprite.scale = Vector2.ONE * 1.8
+	character_index = index
+
+func _update_character_sprite() -> void:
+	BomberAssets.configure_character_sprite(character_sprite, _character_index, 0, 0, false)
+	var center_x: float = size.x * 0.5 if size.x > 0 else 24.0
+	var center_y: float = size.y * 0.5 if size.y > 0 else 24.0
+	character_sprite.position = Vector2(center_x, center_y)
+	character_sprite.scale = Vector2.ONE * 1.8
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and character_sprite:

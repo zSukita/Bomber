@@ -37,7 +37,7 @@ layout_mode = 2
 
 [node name="BackToMenuBtn" type="Button" parent="HeaderBar/HBox"]
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 mouse_default_cursor_shape = 2
 text = "◀ MENU PRINCIPAL"
 
@@ -108,7 +108,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.8, 0.94, 1)
 theme_override_font_sizes/font_size = 12
-text = "ARENA TÁTICA RETRÔ  ·  CAMPANHA DE 10 MUNDOS  ·  BATALHA MULTIPLAYER"
+text = "ARENA TÁTICA RETRÔ  ·  CAMPANHA DE 12 FASES  ·  BATALHA MULTIPLAYER"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/MainPanel/Margin/ContentVBox"]
