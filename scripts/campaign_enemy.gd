@@ -133,32 +133,44 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 		var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
 		var cell_center: Vector2 = arena_grid.grid_to_world(current_cell)
 		
-		# Verifica se o monstro está alinhado ao centro da casa (ou alcançando-o neste passo)
-		var is_aligned: bool = false
+		# Verifica se o monstro está no centro da casa
+		var is_at_center: bool = false
 		if direction == Vector2.ZERO:
-			is_aligned = global_position.distance_to(cell_center) <= 4.0
+			is_at_center = true
+		elif absf(direction.x) > 0.0:
+			is_at_center = absf(cell_center.x - global_position.x) <= 4.0 and absf(cell_center.y - global_position.y) <= 6.0
 		else:
-			var to_center: float = (cell_center - global_position).dot(direction)
-			var perp_error: float = absf(cell_center.y - global_position.y) if absf(direction.x) > 0.0 else absf(cell_center.x - global_position.x)
-			if perp_error <= 6.0 and to_center >= -2.0 and to_center <= (move_speed * get_physics_process_delta_time() + 2.0):
-				is_aligned = true
+			is_at_center = absf(cell_center.y - global_position.y) <= 4.0 and absf(cell_center.x - global_position.x) <= 6.0
 
-		if is_aligned:
-			var next_cell_ahead: Vector2i = current_cell + Vector2i(direction)
-			var path_ahead_blocked: bool = direction != Vector2.ZERO and (not arena_grid.is_walkable(next_cell_ahead) or imminent_danger.has(next_cell_ahead))
-			
+		if is_at_center:
 			if queued_direction != Vector2.ZERO:
 				var q_step: Vector2i = Vector2i(queued_direction)
 				var q_target: Vector2i = current_cell + q_step
+				var old_dir: Vector2 = direction
 				if arena_grid.is_walkable(q_target) and not imminent_danger.has(q_target):
 					direction = queued_direction
+					direction_timer = randf_range(0.55, 1.15) if archetype == Archetype.HUNTER else randf_range(0.8, 1.5)
+					if direction != old_dir:
+						if absf(direction.x) > 0.0:
+							global_position.y = cell_center.y
+						else:
+							global_position.x = cell_center.x
 				else:
 					_select_next_direction(player_is_valid)
+					if direction != old_dir:
+						if absf(direction.x) > 0.0:
+							global_position.y = cell_center.y
+						else:
+							global_position.x = cell_center.x
 				queued_direction = Vector2.ZERO
-				global_position = cell_center
-			elif direction_timer <= 0.0 or path_ahead_blocked or direction == Vector2.ZERO:
-				global_position = cell_center
+			elif direction_timer <= 0.0 or direction == Vector2.ZERO:
+				var old_dir: Vector2 = direction
 				_select_next_direction(player_is_valid)
+				if direction != old_dir:
+					if absf(direction.x) > 0.0:
+						global_position.y = cell_center.y
+					else:
+						global_position.x = cell_center.x
 		elif direction_timer <= 0.0 and queued_direction == Vector2.ZERO:
 			# Temporizador expirou no meio do caminho: escolhe e guarda a próxima direção para aplicar ao centro da casa
 			var candidate: Vector2 = _get_candidate_direction(player_is_valid)
