@@ -49,17 +49,17 @@ func setup(target: Player, stage_index: int, grid: ArenaGrid, selected_archetype
 	accent_color = body_color.lightened(0.36)
 	match archetype:
 		Archetype.WANDERER:
-			move_speed = 76.0 + stage_level * 2.0
+			move_speed = 58.0 + stage_level * 2.0
 			max_health = 1
 		Archetype.HUNTER:
-			move_speed = 106.0 + stage_level * 3.0
+			move_speed = 72.0 + stage_level * 3.0
 			max_health = 1
 		Archetype.CHARGER:
-			move_speed = 92.0 + stage_level * 2.0
+			move_speed = 66.0 + stage_level * 2.5
 			max_health = 1
 		Archetype.BOSS:
-			move_speed = 88.0 + stage_level * 1.5
-			max_health = 3
+			move_speed = 62.0 + stage_level * 2.0
+			max_health = 4
 	health = max_health
 	if archetype == Archetype.BOSS:
 		var shape: CircleShape2D = $CollisionShape2D.shape.duplicate() as CircleShape2D
@@ -205,6 +205,7 @@ func _update_charger(delta: float) -> void:
 		is_winding_up = true
 		windup_remaining = 0.72 if archetype == Archetype.BOSS else 0.48
 		direction = charge_direction
+		AudioManager.play_enemy_alert()
 		return
 	_update_regular_movement(true)
 

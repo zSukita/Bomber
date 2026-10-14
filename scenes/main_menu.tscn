@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://mainmenu001"]
+[gd_scene load_steps=14 format=3 uid="uid://mainmenu001"]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/menu/background_arena.png" id="2_bg_tex"]
@@ -10,8 +10,9 @@
 [ext_resource type="Texture2D" path="res://assets/menu/map_preview_1.png" id="8_map_tex"]
 [ext_resource type="Script" path="res://scripts/ambient_particles.gd" id="9_particles_script"]
 [ext_resource type="Script" path="res://scripts/parallax_controller.gd" id="10_parallax_script"]
-[ext_resource type="Script" path="res://scripts/settings_modal.gd" id="11_settings_script"]
+[ext_resource type="PackedScene" uid="uid://dsettingsmodal01" path="res://scenes/settings_modal.tscn" id="11_settings_scene"]
 [ext_resource type="Script" path="res://scripts/profile_modal.gd" id="12_profile_script"]
+[ext_resource type="PackedScene" uid="uid://dhowtoplaymodal01" path="res://scenes/how_to_play_modal.tscn" id="13_how_to_play_scene"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -152,12 +153,19 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -118.0
+offset_left = -162.0
 offset_top = 18.0
 offset_right = -32.0
 offset_bottom = 54.0
 grow_horizontal = 0
 theme_override_constants/separation = 8
+
+[node name="HowToPlayTopBtn" type="Button" parent="UI/TopButtons"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+text = "❓"
 
 [node name="SettingsTopBtn" type="Button" parent="UI/TopButtons"]
 custom_minimum_size = Vector2(36, 36)
@@ -329,163 +337,9 @@ mid_layer = NodePath("../Background/AmbientParticlesFar")
 character_layer = NodePath("../CharacterRoot")
 particles_layer = NodePath("../ForegroundParticles")
 
-[node name="SettingsModal" type="Control" parent="."]
+[node name="SettingsModal" parent="." instance=ExtResource("11_settings_scene")]
 visible = false
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("11_settings_script")
-
-[node name="Backdrop" type="ColorRect" parent="SettingsModal"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.015, 0.025, 0.045, 0.82)
-
-[node name="CenterContainer" type="CenterContainer" parent="SettingsModal"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Panel" type="PanelContainer" parent="SettingsModal/CenterContainer"]
-custom_minimum_size = Vector2(440, 430)
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="SettingsModal/CenterContainer/Panel"]
-layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
-
-[node name="VBox" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="Title" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "⚙ CONFIGURAÇÕES DO JOGO"
-horizontal_alignment = 1
-
-[node name="HSep1" type="HSeparator" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-
-[node name="AudioSection" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="MasterRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
-layout_mode = 2
-
-[node name="MasterLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MasterRow"]
-custom_minimum_size = Vector2(130, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Volume Geral:"
-
-[node name="MasterSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MasterRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-value = 85.0
-
-[node name="MusicRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
-layout_mode = 2
-
-[node name="MusicLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MusicRow"]
-custom_minimum_size = Vector2(130, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Volume da Música:"
-
-[node name="MusicSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/MusicRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-value = 75.0
-
-[node name="SFXRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection"]
-layout_mode = 2
-
-[node name="SFXLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/SFXRow"]
-custom_minimum_size = Vector2(130, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Efeitos Sonoros:"
-
-[node name="SFXSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/AudioSection/SFXRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-value = 90.0
-
-[node name="HSep2" type="HSeparator" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-
-[node name="VideoSection" type="VBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="FullscreenCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Tela Cheia (Fullscreen)"
-
-[node name="EnhancedCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Modo Gráfico Melhorado [F10]"
-
-[node name="ShakeRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
-layout_mode = 2
-
-[node name="ShakeLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/ShakeRow"]
-custom_minimum_size = Vector2(130, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Tremor da Câmera:"
-
-[node name="ShakeSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/ShakeRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 100.0
-step = 5.0
-value = 100.0
-
-[node name="EffectsRow" type="HBoxContainer" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
-layout_mode = 2
-
-[node name="EffectsLabel" type="Label" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/EffectsRow"]
-custom_minimum_size = Vector2(130, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Efeitos Visuais:"
-
-[node name="EffectsSlider" type="HSlider" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection/EffectsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 100.0
-step = 5.0
-value = 100.0
-
-[node name="ReducedFlashesCheck" type="CheckBox" parent="SettingsModal/CenterContainer/Panel/Margin/VBox/VideoSection"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Reduzir flashes repetidos"
-
-[node name="CloseButton" type="Button" parent="SettingsModal/CenterContainer/Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 38)
-layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "✖ FECHAR"
 
 [node name="ProfileModal" type="Control" parent="."]
 visible = false
@@ -560,3 +414,6 @@ custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "✖ FECHAR"
+
+[node name="HowToPlayModal" parent="." instance=ExtResource("13_how_to_play_scene")]
+visible = false

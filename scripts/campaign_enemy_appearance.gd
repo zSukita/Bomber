@@ -83,10 +83,35 @@ func _draw() -> void:
 			draw_rect(Rect2(-charge_vector.x * 18 - 4, -charge_vector.y * 18 - 4, 8, 8), Color("ffe46b"))
 
 	if max_health > 1:
-		var bar_y: float = -120.0 if large else -42.0
-		draw_rect(Rect2(-20, bar_y, 40, 8), INK)
-		draw_rect(Rect2(-16, bar_y + 4, 32, 4), Color("493147"))
-		draw_rect(Rect2(-16, bar_y + 4, 32.0 * float(health) / float(max_health), 4), Color("ff534d"))
+		var bar_y: float = -38.0 if large else -28.0
+		var bar_w: float = 46.0 if large else 32.0
+		var bar_h: float = 8.0 if large else 5.0
+		var bar_x: float = -bar_w * 0.5
+		
+		# Borda e fundo escuro
+		draw_rect(Rect2(bar_x - 1.0, bar_y - 1.0, bar_w + 2.0, bar_h + 2.0), Color("121019"))
+		draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color("26131c"))
+		
+		# Pips/segmentos individuais de vida
+		var seg_gap: float = 2.0
+		var seg_w: float = (bar_w - (max_health - 1) * seg_gap) / float(max_health)
+		for s in range(max_health):
+			var seg_x: float = bar_x + float(s) * (seg_w + seg_gap)
+			var is_filled: bool = s < health
+			if is_filled:
+				var hp_col: Color = Color("ff4336")
+				if health == 1 and GameState.is_enhanced():
+					var pulse: float = sin(animation_time * 12.0) * 0.25 + 0.75
+					hp_col = Color(1.0, 0.25 * pulse, 0.2 * pulse)
+				draw_rect(Rect2(seg_x, bar_y + 1.0, seg_w, bar_h - 2.0), hp_col)
+				# Realce superior para aspecto tridimensional retrô
+				draw_rect(Rect2(seg_x, bar_y + 1.0, seg_w, 1.5), Color("ffa199"))
+			else:
+				draw_rect(Rect2(seg_x, bar_y + 1.0, seg_w, bar_h - 2.0), Color("381d24"))
+		
+		# Marcador "BOSS" sutil acima da barra no modo melhorado
+		if large and GameState.is_enhanced():
+			draw_rect(Rect2(-5.0, bar_y - 4.0, 10.0, 2.0), Color("ffd54f"))
 
 func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points: PackedVector2Array = PackedVector2Array()

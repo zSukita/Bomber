@@ -13,6 +13,10 @@ var grid_position: Vector2i = Vector2i.ZERO
 var owner_player: Player
 
 var is_detonated: bool = false
+var is_sliding: bool = false
+var slide_direction: Vector2 = Vector2.ZERO
+var slide_speed: float = 380.0
+var grid_map: ArenaGrid
 var overlapping_players: Array[CharacterBody2D] = []
 
 @onready var fuse_timer: Timer = $FuseTimer
@@ -21,6 +25,8 @@ var overlapping_players: Array[CharacterBody2D] = []
 var pulse_tween: Tween
 
 func _ready() -> void:
+	if not grid_map:
+		grid_map = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
 	fuse_timer.wait_time = fuse_time
 	fuse_timer.timeout.connect(_on_fuse_timeout)
 	fuse_timer.start()
@@ -57,22 +63,89 @@ func _remove_player_exception(player: CharacterBody2D) -> void:
 		remove_collision_exception_with(player)
 	overlapping_players.erase(player)
 
-func _physics_process(_delta: float) -> void:
-	if overlapping_players.is_empty():
+func _physics_process(delta: float) -> void:
+	if not overlapping_players.is_empty():
+		# Monitora a distância de cada jogador sobre a bomba.
+		# Quando o jogador se afasta do centro da bomba (sai do ladrilho da bomba),
+		# remove a exceção para que a bomba se torne um obstáculo sólido intransponível.
+		for i in range(overlapping_players.size() - 1, -1, -1):
+			var player: CharacterBody2D = overlapping_players[i]
+			if not is_instance_valid(player):
+				overlapping_players.remove_at(i)
+				continue
+			
+			var dist: float = global_position.distance_to(player.global_position)
+			if dist > 34.0:
+				_remove_player_exception(player)
+
+	if is_sliding and not is_detonated:
+		var move_step: Vector2 = slide_direction * slide_speed * delta
+		global_position += move_step
+		
+		if grid_map:
+			var curr_cell: Vector2i = grid_map.world_to_grid(global_position)
+			if curr_cell != grid_position:
+				if grid_map.has_bomb_at(grid_position) and grid_map.get_bomb_at(grid_position) == self:
+					grid_map.unregister_bomb(grid_position)
+				grid_position = curr_cell
+				grid_map.active_bombs[grid_position] = self
+			
+			var next_cell: Vector2i = grid_position + Vector2i(int(slide_direction.x), int(slide_direction.y))
+			var cell_center: Vector2 = grid_map.grid_to_world(grid_position)
+			
+			var to_center: Vector2 = cell_center - global_position
+			var passed_center: bool = to_center.dot(slide_direction) <= 0.0
+			
+			if passed_center and _is_cell_blocked_for_sliding(next_cell):
+				is_sliding = false
+				global_position = cell_center
+				AudioManager.play_bump()
+
+## Chuta a bomba na direção ortogonal indicada
+func kick(dir: Vector2) -> void:
+	if is_detonated or is_sliding:
+		return
+	if abs(dir.x) > abs(dir.y):
+		slide_direction = Vector2(sign(dir.x), 0)
+	else:
+		slide_direction = Vector2(0, sign(dir.y))
+	
+	if slide_direction == Vector2.ZERO:
 		return
 	
-	# Monitora a distância de cada jogador sobre a bomba.
-	# Quando o jogador se afasta do centro da bomba (sai do ladrilho da bomba),
-	# remove a exceção para que a bomba se torne um obstáculo sólido intransponível.
-	for i in range(overlapping_players.size() - 1, -1, -1):
-		var player: CharacterBody2D = overlapping_players[i]
-		if not is_instance_valid(player):
-			overlapping_players.remove_at(i)
-			continue
-		
-		var dist: float = global_position.distance_to(player.global_position)
-		if dist > 34.0:
-			_remove_player_exception(player)
+	if grid_map:
+		var next_cell: Vector2i = grid_position + Vector2i(int(slide_direction.x), int(slide_direction.y))
+		if _is_cell_blocked_for_sliding(next_cell):
+			AudioManager.play_bump()
+			return
+	
+	is_sliding = true
+	AudioManager.play_kick()
+	_clear_all_exceptions()
+
+func _is_cell_blocked_for_sliding(cell: Vector2i) -> bool:
+	if not grid_map:
+		return true
+	if not grid_map.is_in_bounds(cell):
+		return true
+	var cell_type: GameState.CellType = grid_map.get_cell_type(cell)
+	if cell_type != GameState.CellType.EMPTY:
+		return true
+	if grid_map.has_bomb_at(cell) and grid_map.get_bomb_at(cell) != self:
+		return true
+	var players: Array[Node] = get_tree().get_nodes_in_group("players")
+	for p in players:
+		if p is CharacterBody2D and is_instance_valid(p) and p.get("is_alive") == true:
+			var p_cell: Vector2i = grid_map.world_to_grid(p.global_position)
+			if p_cell == cell:
+				return true
+	var enemies: Array[Node] = get_tree().get_nodes_in_group("campaign_enemies")
+	for e in enemies:
+		if is_instance_valid(e) and e.get("is_alive") == true:
+			var e_cell: Vector2i = grid_map.world_to_grid(e.global_position)
+			if e_cell == cell:
+				return true
+	return false
 
 func _process(_delta: float) -> void:
 	if is_detonated or not fuse_timer:

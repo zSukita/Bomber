@@ -1,0 +1,305 @@
+[gd_scene load_steps=2 format=3 uid="uid://dsettingsmodal01"]
+
+[ext_resource type="Script" path="res://scripts/settings_modal.gd" id="1_script"]
+
+[node name="SettingsModal" type="Control"]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.025, 0.045, 0.82)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(480, 480)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "⚙ CONFIGURAÇÕES DO JOGO"
+horizontal_alignment = 1
+
+[node name="TabBar" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TabAudioVideoBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+text = "🔊 Áudio & Vídeo"
+
+[node name="TabControlsBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+text = "⌨️ Controles"
+
+[node name="HSep1" type="HSeparator" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="AudioVideoView" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="AudioSection" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MasterRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection"]
+layout_mode = 2
+
+[node name="MasterLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MasterRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Volume Geral:"
+
+[node name="MasterSlider" type="HSlider" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MasterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 85.0
+
+[node name="MusicRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection"]
+layout_mode = 2
+
+[node name="MusicLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MusicRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Volume da Música:"
+
+[node name="MusicSlider" type="HSlider" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MusicRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 75.0
+
+[node name="SFXRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection"]
+layout_mode = 2
+
+[node name="SFXLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/SFXRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Efeitos Sonoros:"
+
+[node name="SFXSlider" type="HSlider" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/SFXRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 90.0
+
+[node name="HSep2" type="HSeparator" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+
+[node name="VideoSection" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="FullscreenCheck" type="CheckBox" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Tela Cheia (Fullscreen)"
+
+[node name="EnhancedCheck" type="CheckBox" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Modo Gráfico Melhorado [F10]"
+
+[node name="ShakeRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection"]
+layout_mode = 2
+
+[node name="ShakeLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/ShakeRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Tremor da Câmera:"
+
+[node name="ShakeSlider" type="HSlider" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/ShakeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+step = 5.0
+value = 100.0
+
+[node name="EffectsRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection"]
+layout_mode = 2
+
+[node name="EffectsLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/EffectsRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Efeitos Visuais:"
+
+[node name="EffectsSlider" type="HSlider" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/EffectsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+step = 5.0
+value = 100.0
+
+[node name="ReducedFlashesCheck" type="CheckBox" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Reduzir flashes repetidos"
+
+[node name="ControlsView" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ControlsHelp" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Clique em uma tecla para remapear. Pressione ESC para cancelar."
+horizontal_alignment = 1
+
+[node name="MoveUpRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveUpRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Mover para Cima:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveUpRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "W / Seta Cima"
+
+[node name="MoveDownRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveDownRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Mover para Baixo:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveDownRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "S / Seta Baixo"
+
+[node name="MoveLeftRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveLeftRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Mover para a Esquerda:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveLeftRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "A / Seta Esquerda"
+
+[node name="MoveRightRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveRightRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Mover para a Direita:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/MoveRightRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "D / Seta Direita"
+
+[node name="DropBombRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/DropBombRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Soltar Bomba:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/DropBombRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "Espaço"
+
+[node name="PauseRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/PauseRow"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Pausar Jogo:"
+
+[node name="Btn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView/PauseRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "Esc"
+
+[node name="ResetControlsBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "🔄 Restaurar Controles Padrão"
+
+[node name="CloseButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "✖ FECHAR"

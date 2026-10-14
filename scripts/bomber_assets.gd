@@ -29,6 +29,7 @@ const WALL_TEXTURE: String = "res://assets/legal/tiles/tileset.png"
 const BOMB_TEXTURE: String = "res://assets/legal/bomb.png"
 const EXPLOSION_TEXTURE: String = "res://assets/legal/explosion.png"
 const ITEMS_TEXTURE: String = "res://assets/legal/items.png"
+const ITEM_KICK_TEXTURE: String = "res://assets/legal/item_kick.png"
 const PUFF_TEXTURE: String = "res://assets/legal/puff.png"
 const PIXEL_FONT: String = "res://assets/legal/fonts/pixel_font.ttf"
 
@@ -65,7 +66,8 @@ const POWERUP_REGIONS: Dictionary = {
 	GameState.PowerUpType.BOMB: Rect2(0, 0, 16, 16),
 	GameState.PowerUpType.RANGE: Rect2(16, 0, 16, 16),
 	GameState.PowerUpType.SPEED: Rect2(32, 0, 16, 16),
-	GameState.PowerUpType.HEART: Rect2(48, 0, 16, 16)
+	GameState.PowerUpType.HEART: Rect2(48, 0, 16, 16),
+	GameState.PowerUpType.KICK: Rect2(0, 0, 16, 16)
 }
 
 # Efeito de fumaça / destruição de item
@@ -127,10 +129,14 @@ static func configure_explosion_sprite(sprite: Sprite2D, segment: int, anim_fram
 	sprite.material = null
 
 static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpType) -> void:
-	sprite.texture = load(ITEMS_TEXTURE) as Texture2D
-	sprite.region_enabled = true
-	var rect: Rect2 = POWERUP_REGIONS.get(type, Rect2(0, 0, 16, 16))
-	sprite.region_rect = rect
+	if type == GameState.PowerUpType.KICK:
+		sprite.texture = load(ITEM_KICK_TEXTURE) as Texture2D
+		sprite.region_enabled = false
+	else:
+		sprite.texture = load(ITEMS_TEXTURE) as Texture2D
+		sprite.region_enabled = true
+		var rect: Rect2 = POWERUP_REGIONS.get(type, Rect2(0, 0, 16, 16))
+		sprite.region_rect = rect
 	sprite.scale = Vector2.ONE * 3.0
 	sprite.position = Vector2.ZERO
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

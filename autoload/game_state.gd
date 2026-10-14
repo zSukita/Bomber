@@ -25,7 +25,8 @@ enum PowerUpType {
 	BOMB = 0,
 	RANGE = 1,
 	SPEED = 2,
-	HEART = 3
+	HEART = 3,
+	KICK = 4
 }
 
 const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES
@@ -47,9 +48,23 @@ var campaign_max_bombs: int = 1
 var campaign_bomb_range: int = 2
 var campaign_speed_multiplier: float = 1.0
 var campaign_has_heart: bool = false
+var campaign_has_kick: bool = false
 var campaign_progress_initialized: bool = false
 var local_pause_menu_open: bool = false
 var preferred_character_index: int = 0
+
+# ----------------- CONFIGURAÇÕES DE TECLAS (INPUT REMAPPER) -----------------
+const DEFAULT_KEYBINDINGS: Dictionary = {
+	"move_up": [KEY_UP, KEY_W],
+	"move_down": [KEY_DOWN, KEY_S],
+	"move_left": [KEY_LEFT, KEY_A],
+	"move_right": [KEY_RIGHT, KEY_D],
+	"drop_bomb": [KEY_SPACE, KEY_ENTER],
+	"pause_game": [KEY_ESCAPE, KEY_P]
+}
+
+var custom_keybindings: Dictionary = {}
+signal keybindings_updated
 
 # ----------------- CONFIGURAÇÕES DO MODO MELHORADO -----------------
 signal enhanced_mode_toggled(is_enhanced: bool)
@@ -125,6 +140,13 @@ func _load_user_preferences() -> void:
 		screen_shake_intensity = clampf(float(settings.get_value("video", "screen_shake", screen_shake_intensity)), 0.0, 1.0)
 		visual_effects_intensity = clampf(float(settings.get_value("video", "visual_effects", visual_effects_intensity)), 0.0, 1.0)
 		reduced_flashes_enabled = bool(settings.get_value("video", "reduced_flashes", reduced_flashes_enabled))
+		custom_keybindings.clear()
+		for action in DEFAULT_KEYBINDINGS.keys():
+			if settings.has_section_key("keybindings", action):
+				var saved_val: Variant = settings.get_value("keybindings", action)
+				if saved_val is Array and not saved_val.is_empty():
+					custom_keybindings[action] = saved_val
+	apply_keybindings_to_input_map()
 	if had_saved_settings and enhanced_mode != loaded_enhanced_mode:
 		enhanced_mode = loaded_enhanced_mode
 		if not enhanced_mode and is_inside_tree():
@@ -150,7 +172,72 @@ func save_user_preferences() -> bool:
 	settings.set_value("video", "screen_shake", screen_shake_intensity)
 	settings.set_value("video", "visual_effects", visual_effects_intensity)
 	settings.set_value("video", "reduced_flashes", reduced_flashes_enabled)
+	for action in custom_keybindings:
+		settings.set_value("keybindings", action, custom_keybindings[action])
 	return settings.save(USER_SETTINGS_PATH) == OK
+
+func apply_keybindings_to_input_map() -> void:
+	for action in DEFAULT_KEYBINDINGS.keys():
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		
+		# Limpa eventos de teclado anteriores para reatribuição limpa
+		var old_events: Array[InputEvent] = InputMap.action_get_events(action)
+		for ev in old_events:
+			if ev is InputEventKey:
+				InputMap.action_erase_event(action, ev)
+		
+		var keycodes: Array = custom_keybindings.get(action, DEFAULT_KEYBINDINGS[action])
+		for code in keycodes:
+			var int_code := int(code)
+			var key_event := InputEventKey.new()
+			key_event.physical_keycode = int_code as Key
+			key_event.keycode = int_code as Key
+			InputMap.action_add_event(action, key_event)
+	keybindings_updated.emit()
+
+func rebind_action(action: String, new_keycode: int) -> void:
+	if not DEFAULT_KEYBINDINGS.has(action):
+		return
+	custom_keybindings[action] = [new_keycode]
+	apply_keybindings_to_input_map()
+	save_user_preferences()
+
+func reset_default_keybindings() -> void:
+	custom_keybindings.clear()
+	apply_keybindings_to_input_map()
+	save_user_preferences()
+
+func get_action_display_name(action: String) -> String:
+	match action:
+		"move_up": return "Mover para Cima"
+		"move_down": return "Mover para Baixo"
+		"move_left": return "Mover para a Esquerda"
+		"move_right": return "Mover para a Direita"
+		"drop_bomb": return "Soltar Bomba"
+		"pause_game": return "Pausar Jogo"
+		_: return action.capitalize()
+
+func get_action_key_text(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "Nenhuma"
+	var events: Array[InputEvent] = InputMap.action_get_events(action)
+	var names: Array[String] = []
+	for ev in events:
+		if ev is InputEventKey:
+			var code: int = ev.physical_keycode if ev.physical_keycode != 0 else ev.keycode
+			var name_str: String = OS.get_keycode_string(code as Key)
+			match code:
+				KEY_UP: name_str = "Seta Cima"
+				KEY_DOWN: name_str = "Seta Baixo"
+				KEY_LEFT: name_str = "Seta Esquerda"
+				KEY_RIGHT: name_str = "Seta Direita"
+				KEY_SPACE: name_str = "Espaço"
+				KEY_ESCAPE: name_str = "Esc"
+				KEY_ENTER: name_str = "Enter"
+			if not names.has(name_str):
+				names.append(name_str)
+	return " / ".join(names) if not names.is_empty() else "Nenhuma"
 
 func is_enhanced() -> bool:
 	return enhanced_mode
@@ -214,8 +301,9 @@ func load_campaign_progress() -> bool:
 	campaign_blue_choices = maxi(0, int(save.get_value("campaign", "blue_choices", 0)))
 	campaign_max_bombs = clampi(int(save.get_value("player", "max_bombs", 1)), 1, 8)
 	campaign_bomb_range = clampi(int(save.get_value("player", "bomb_range", 2)), 1, 8)
-	campaign_speed_multiplier = clampf(float(save.get_value("player", "speed_multiplier", 1.0)), 1.0, 2.2)
+	campaign_speed_multiplier = clampf(float(save.get_value("player", "speed_multiplier", 1.0)), 1.0, 1.8)
 	campaign_has_heart = bool(save.get_value("player", "has_heart", false))
+	campaign_has_kick = bool(save.get_value("player", "has_kick", false))
 	campaign_progress_initialized = true
 	return true
 
@@ -235,6 +323,7 @@ func save_campaign_progress() -> bool:
 	save.set_value("player", "bomb_range", campaign_bomb_range)
 	save.set_value("player", "speed_multiplier", campaign_speed_multiplier)
 	save.set_value("player", "has_heart", campaign_has_heart)
+	save.set_value("player", "has_kick", campaign_has_kick)
 	return save.save(CAMPAIGN_SAVE_PATH) == OK
 
 func clear_campaign_progress() -> void:
@@ -248,6 +337,7 @@ func reset_campaign_upgrades() -> void:
 	campaign_bomb_range = 2
 	campaign_speed_multiplier = 1.0
 	campaign_has_heart = false
+	campaign_has_kick = false
 
 func _validated_stage_list(value: Variant) -> Array[int]:
 	var stages: Array[int] = []

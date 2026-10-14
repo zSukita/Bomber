@@ -18,6 +18,9 @@ var sfx_block_break: AudioStreamWAV
 var sfx_hover: AudioStreamWAV
 var sfx_menu_open: AudioStreamWAV
 var sfx_menu_back: AudioStreamWAV
+var sfx_enemy_alert: AudioStreamWAV
+var sfx_kick: AudioStreamWAV
+var sfx_bump: AudioStreamWAV
 
 # Música de fundo e trilhas legais
 var menu_music_stream: AudioStreamWAV
@@ -56,10 +59,16 @@ func _ready() -> void:
 func _load_legal_audio() -> void:
 	if ResourceLoader.exists("res://assets/legal/audio/music/music_lobby.ogg"):
 		bgm_lobby = load("res://assets/legal/audio/music/music_lobby.ogg")
+		if bgm_lobby is AudioStreamOggVorbis:
+			(bgm_lobby as AudioStreamOggVorbis).loop = true
 	if ResourceLoader.exists("res://assets/legal/audio/music/music_battle_1.ogg"):
 		bgm_battle = load("res://assets/legal/audio/music/music_battle_1.ogg")
+		if bgm_battle is AudioStreamOggVorbis:
+			(bgm_battle as AudioStreamOggVorbis).loop = true
 	if ResourceLoader.exists("res://assets/legal/audio/music/music_tension.ogg"):
 		bgm_tension = load("res://assets/legal/audio/music/music_tension.ogg")
+		if bgm_tension is AudioStreamOggVorbis:
+			(bgm_tension as AudioStreamOggVorbis).loop = true
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_victory.wav"):
 		sfx_victory = load("res://assets/legal/audio/jingles/jingle_victory.wav")
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_game_over.wav"):
@@ -78,7 +87,11 @@ func _generate_all_sfx() -> void:
 	sfx_hover = _create_hover_sfx()
 	sfx_menu_open = _create_menu_open_sfx()
 	sfx_menu_back = _create_menu_back_sfx()
+	sfx_enemy_alert = _create_enemy_alert_sfx()
+	sfx_kick = _create_kick_sfx()
+	sfx_bump = _create_bump_sfx()
 	menu_music_stream = _create_ambient_music()
+	menu_music_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 
 func play_bomb_drop() -> void:
 	_play_stream(sfx_bomb_drop, -4.0)
@@ -107,6 +120,15 @@ func play_menu_open() -> void:
 func play_menu_back() -> void:
 	_play_stream(sfx_menu_back, -7.0)
 
+func play_enemy_alert() -> void:
+	_play_stream(sfx_enemy_alert, -3.5)
+
+func play_kick() -> void:
+	_play_stream(sfx_kick, -2.5)
+
+func play_bump() -> void:
+	_play_stream(sfx_bump, -4.0)
+
 func play_menu_music() -> void:
 	var stream_to_play: AudioStream = bgm_lobby if bgm_lobby else menu_music_stream
 	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
@@ -125,19 +147,22 @@ func play_tension_music() -> void:
 		music_player.play()
 
 func play_victory_jingle() -> void:
+	stop_music()
 	if sfx_victory:
 		_play_stream(sfx_victory, -2.0)
 
 func play_game_over_jingle() -> void:
+	stop_music()
 	if sfx_game_over:
 		_play_stream(sfx_game_over, -2.0)
 
 func play_stage_clear_jingle() -> void:
+	stop_music()
 	if sfx_stage_clear:
 		_play_stream(sfx_stage_clear, -2.0)
 
 func stop_music() -> void:
-	if music_player.playing:
+	if music_player and music_player.playing:
 		music_player.stop()
 
 func stop_menu_music() -> void:
@@ -180,6 +205,32 @@ func _play_stream(stream: AudioStream, volume_db: float = 0.0) -> void:
 	players_pool[0].play()
 
 # ----------------- GERADORES DE ONDAS SINTETIZADAS -----------------
+
+## Som de alerta de carga dos inimigos (Charger e Boss)
+func _create_enemy_alert_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration: float = 0.38
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / float(samples_count)
+		var freq: float = lerp(160.0, 480.0, progress * progress)
+		var tremolo: float = sin(t * 32.0 * TAU) * 0.35 + 0.65
+		var wave: float = sin(t * freq * TAU)
+		wave = clampf(wave * 2.2, -0.9, 0.9)
+		var envelope: float = sin(progress * PI)
+		var val: float = wave * envelope * tremolo * 0.65
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+	
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
 
 ## Som de colocar bomba: impacto surdo / pop grave
 func _create_thud_sfx() -> AudioStreamWAV:
@@ -444,5 +495,55 @@ func _create_ambient_music() -> AudioStreamWAV:
 	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	wav.loop_end = samples_count
 	return wav
+
+## Efeito de chute seco e enérgico (kick da bomba)
+func _create_kick_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 22050
+	var duration: float = 0.14
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var env: float = (1.0 - progress) * (1.0 - progress)
+		# Frequência decai rapidamente de 280Hz para 60Hz com um clique inicial
+		var freq: float = lerp(280.0, 60.0, progress)
+		var click: float = (1.0 if i < 15 else 0.0) * 0.4
+		var val: float = (sin(t * freq * TAU) + click) * 0.7 * env
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+## Efeito de impacto/batida da bomba deslizando em bloco ou parede (bump)
+func _create_bump_sfx() -> AudioStreamWAV:
+	var sample_rate: int = 22050
+	var duration: float = 0.09
+	var samples_count: int = int(sample_rate * duration)
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(samples_count * 2)
+	
+	for i in range(samples_count):
+		var t: float = float(i) / sample_rate
+		var progress: float = float(i) / samples_count
+		var env: float = 1.0 - progress
+		# Impacto amadeirado/sólido com frequência de 360Hz a 140Hz
+		var freq: float = lerp(360.0, 140.0, progress)
+		var val: float = sin(t * freq * TAU) * 0.55 * env
+		var sample_16: int = clampi(int(val * 32767.0), -32768, 32767)
+		data.encode_s16(i * 2, sample_16)
+		
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
 
 

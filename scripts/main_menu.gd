@@ -22,6 +22,7 @@ extends Control
 @onready var color_swatches_box: HBoxContainer = $UI/PlayerPanel/Margin/VBox/SuitColorsBox/SwatchesRow
 
 # Botões Topo e Rodapé
+@onready var how_to_play_top_btn: Button = $UI/TopButtons/HowToPlayTopBtn
 @onready var settings_top_btn: Button = $UI/TopButtons/SettingsTopBtn
 @onready var profile_top_btn: Button = $UI/TopButtons/ProfileTopBtn
 @onready var footer_exit_btn: Button = $UI/Footer/HBox/FooterExitBtn
@@ -35,6 +36,7 @@ extends Control
 # Modais
 @onready var settings_modal: Control = $SettingsModal
 @onready var profile_modal: Control = $ProfileModal
+@onready var how_to_play_modal: Control = $HowToPlayModal
 
 # Controlador de Parallax
 @onready var parallax_ctrl: Node = $ParallaxManager
@@ -261,10 +263,15 @@ func _setup_interactions() -> void:
 	new_campaign_btn.pressed.connect(_on_new_campaign_pressed)
 	multiplayer_btn.pressed.connect(_on_multiplayer_pressed)
 	
+	how_to_play_top_btn.pressed.connect(how_to_play_modal.open)
 	settings_top_btn.pressed.connect(settings_modal.open)
 	profile_top_btn.pressed.connect(profile_modal.open)
 	profile_modal.closed.connect(_refresh_player_identity)
+	how_to_play_modal.closed.connect(_on_how_to_play_closed)
 	footer_exit_btn.pressed.connect(_on_exit_pressed)
+
+func _on_how_to_play_closed() -> void:
+	how_to_play_top_btn.grab_focus()
 
 func _on_settings_closed() -> void:
 	settings_top_btn.grab_focus()

@@ -10,8 +10,10 @@ signal game_started(map_seed: int)
 signal player_left(peer_id: int)
 signal status_message(text: String, is_error: bool)
 signal map_selection_updated(map_index: int)
+signal server_discovered(server_info: Dictionary)
 
 const DEFAULT_PORT: int = 8910
+const BROADCAST_PORT: int = 8912
 const MAX_PLAYERS: int = 4
 
 # Dicionário de jogadores: chave = peer_id (int), valor = Dictionary com dados
@@ -35,6 +37,13 @@ var peer: ENetMultiplayerPeer = null
 var pending_status_message: String = ""
 var pending_status_is_error: bool = false
 
+# Descoberta de Servidores na Rede Local (LAN Broadcast)
+var udp_broadcaster: PacketPeerUDP = null
+var udp_listener: PacketPeerUDP = null
+var broadcast_timer: float = 0.0
+var discovered_servers: Dictionary = {} # "ip:port" -> Dictionary
+var is_discovering: bool = false
+
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -43,6 +52,66 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	
 	_check_cli_arguments()
+
+func _physics_process(delta: float) -> void:
+	# Envia sinalizador UDP para a rede local se formos o servidor e a partida ainda não começou
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not is_game_active:
+		broadcast_timer -= delta
+		if broadcast_timer <= 0.0:
+			broadcast_timer = 1.0
+			_send_lan_broadcast()
+	
+	# Escuta pacotes de broadcast na porta LAN se estivermos na aba de busca
+	if is_discovering and udp_listener and udp_listener.is_bound():
+		while udp_listener.get_available_packet_count() > 0:
+			var packet: PackedByteArray = udp_listener.get_packet()
+			var sender_ip: String = udp_listener.get_packet_ip()
+			var text: String = packet.get_string_from_utf8()
+			var json = JSON.parse_string(text)
+			if json is Dictionary and json.get("game") == "BOMBASTICO":
+				var s_port: int = int(json.get("port", DEFAULT_PORT))
+				var s_key: String = "%s:%d" % [sender_ip, s_port]
+				var s_info: Dictionary = {
+					"key": s_key,
+					"ip": sender_ip,
+					"port": s_port,
+					"name": str(json.get("name", "Servidor")),
+					"players": int(json.get("players", 1)),
+					"max_players": int(json.get("max_players", MAX_PLAYERS)),
+					"last_seen": Time.get_ticks_msec()
+				}
+				discovered_servers[s_key] = s_info
+				server_discovered.emit(s_info)
+
+func _send_lan_broadcast() -> void:
+	if udp_broadcaster == null:
+		udp_broadcaster = PacketPeerUDP.new()
+		udp_broadcaster.set_broadcast_enabled(true)
+	var data: Dictionary = {
+		"game": "BOMBASTICO",
+		"name": local_player_name if not is_dedicated_server else "Servidor Dedicado",
+		"port": DEFAULT_PORT,
+		"players": players.size(),
+		"max_players": MAX_PLAYERS
+	}
+	var msg: String = JSON.stringify(data)
+	udp_broadcaster.set_dest_address("255.255.255.255", BROADCAST_PORT)
+	udp_broadcaster.put_packet(msg.to_utf8_buffer())
+
+func start_lan_discovery() -> void:
+	is_discovering = true
+	discovered_servers.clear()
+	if udp_listener == null:
+		udp_listener = PacketPeerUDP.new()
+	if not udp_listener.is_bound():
+		var err := udp_listener.bind(BROADCAST_PORT)
+		if err != OK:
+			print("[Rede] Porta de broadcast LAN já em uso ou indisponível: ", err)
+
+func stop_lan_discovery() -> void:
+	is_discovering = false
+	if udp_listener and udp_listener.is_bound():
+		udp_listener.close()
 
 ## Detecta parâmetros de linha de comando para Servidor Dedicado Headless
 func _check_cli_arguments() -> void:
@@ -126,6 +195,11 @@ func disconnect_from_server(show_status_message: bool = true) -> void:
 	if peer != null:
 		peer.close()
 		peer = null
+	
+	if udp_broadcaster:
+		udp_broadcaster.close()
+		udp_broadcaster = null
+	stop_lan_discovery()
 	
 	multiplayer.multiplayer_peer = null
 	players.clear()

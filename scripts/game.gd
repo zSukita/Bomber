@@ -53,6 +53,13 @@ var is_campaign_choosing_portal: bool = false
 var campaign_blocks_broken: int = 0
 var campaign_heart_spawned: bool = false
 
+# Estatísticas da Partida / Campanha
+var stat_bombs_dropped: int = 0
+var stat_blocks_broken: int = 0
+var stat_enemies_defeated: int = 0
+var stat_powerups_collected: int = 0
+var stat_match_seconds: float = 0.0
+
 # Screen Shake (Impacto de Câmera)
 var shake_trauma: float = 0.0
 var shake_time: float = 0.0
@@ -128,6 +135,7 @@ func _init_multiplayer_match() -> void:
 		is_round_active = true
 	
 	_refresh_all_hud_cards()
+	AudioManager.play_battle_music()
 
 func _init_singleplayer_match() -> void:
 	grid_map.generate_map()
@@ -142,6 +150,7 @@ func _init_singleplayer_match() -> void:
 	hud.update_round_info(1, WINS_REQUIRED)
 	_refresh_all_hud_cards()
 	hud.update_campaign_info(0, GameState.MAP_NAMES.size(), 0, false)
+	AudioManager.play_battle_music()
 
 func _init_campaign_match() -> void:
 	is_campaign_choosing_portal = false
@@ -167,6 +176,7 @@ func _init_campaign_match() -> void:
 	_spawn_campaign_enemies(player)
 	_refresh_all_hud_cards()
 	_save_campaign_player_progress(player)
+	AudioManager.play_battle_music()
 
 func _spawn_campaign_enemies(player: Player) -> void:
 	campaign_enemies = campaign_enemy_spawner.spawn(
@@ -215,18 +225,21 @@ func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	_refresh_all_hud_cards()
 	_save_campaign_player_progress(player)
 	GameState.save_campaign_progress()
+	AudioManager.play_battle_music()
 
 func _apply_campaign_player_progress(player: Player) -> void:
 	player.max_bombs = GameState.campaign_max_bombs
 	player.bomb_range = GameState.campaign_bomb_range
 	player.speed_multiplier = GameState.campaign_speed_multiplier
 	player.has_heart = GameState.campaign_has_heart
+	player.has_kick = GameState.campaign_has_kick
 
 func _save_campaign_player_progress(player: Player) -> void:
 	GameState.campaign_max_bombs = player.max_bombs
 	GameState.campaign_bomb_range = player.bomb_range
 	GameState.campaign_speed_multiplier = player.speed_multiplier
 	GameState.campaign_has_heart = player.has_heart
+	GameState.campaign_has_kick = player.has_kick
 	GameState.save_campaign_progress()
 
 func _clear_campaign_entities() -> void:
@@ -240,9 +253,11 @@ func _clear_campaign_entities() -> void:
 	campaign_portals.clear()
 
 func _on_campaign_enemy_defeated(enemy: CampaignEnemy) -> void:
+	stat_enemies_defeated += 1
 	campaign_enemies.erase(enemy)
 	_update_campaign_objective()
 	if campaign_enemies.is_empty() and GameState.game_mode == GameState.GameMode.CAMPAIGN:
+		AudioManager.play_stage_clear_jingle()
 		if GameState.campaign_stage_index == GameState.MAP_NAMES.size() - 1:
 			_show_campaign_ending()
 		else:
@@ -317,6 +332,7 @@ func _campaign_lose_life(reason: String) -> void:
 		return
 	is_round_active = false
 	is_campaign_choosing_portal = false
+	AudioManager.play_game_over_jingle()
 	GameState.campaign_lives = maxi(0, GameState.campaign_lives - 1)
 	GameState.reset_campaign_upgrades()
 	if GameState.campaign_lives > 0:
@@ -332,6 +348,7 @@ func _campaign_lose_life(reason: String) -> void:
 	for child in score_list_vbox.get_children():
 		child.queue_free()
 	if GameState.campaign_lives <= 0:
+		_populate_match_stats(score_list_vbox)
 		next_round_label.text = "FIM DE JOGO  ·  Voltando ao menu..."
 		get_tree().create_timer(6.0).timeout.connect(_return_to_main_menu)
 	else:
@@ -358,6 +375,7 @@ func _show_campaign_ending() -> void:
 	route_label.text = "Mundos visitados: %d/%d" % [GameState.campaign_visited_stages.size(), GameState.MAP_NAMES.size()]
 	route_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_list_vbox.add_child(route_label)
+	_populate_match_stats(score_list_vbox)
 	next_round_label.text = "A aventura terminou  ·  Voltando ao menu..."
 	get_tree().create_timer(8.0).timeout.connect(_return_to_main_menu)
 
@@ -384,6 +402,7 @@ func _spawn_player_instance(peer_id: int, p_name: String, color_index: int, char
 	return player
 
 func _on_player_powerup_changed(player: Player) -> void:
+	stat_powerups_collected += 1
 	_refresh_player_hud(player.peer_id)
 	if GameState.game_mode == GameState.GameMode.CAMPAIGN and player.peer_id == 1:
 		_save_campaign_player_progress(player)
@@ -396,11 +415,16 @@ func _physics_process(delta: float) -> void:
 	if not is_round_active:
 		return
 	
+	if is_round_active and not is_campaign_choosing_portal:
+		stat_match_seconds += delta
+	
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		if not is_campaign_choosing_portal:
 			var current_sec: int = match_round.clock.advance(delta)
 			if current_sec >= 0:
 				hud.update_timer_display(current_sec)
+				if current_sec <= 30 and current_sec > 0:
+					AudioManager.play_tension_music()
 				if multiplayer.has_multiplayer_peer():
 					sync_round_timer.rpc(current_sec)
 			if match_round.clock.is_expired():
@@ -414,6 +438,8 @@ func _physics_process(delta: float) -> void:
 @rpc("authority", "call_remote", "unreliable")
 func sync_round_timer(seconds_left: int) -> void:
 	hud.update_timer_display(seconds_left)
+	if seconds_left <= 30 and seconds_left > 0:
+		AudioManager.play_tension_music()
 
 func _end_round_by_timeout() -> void:
 	print("[Rodada] Tempo esgotado!")
@@ -422,12 +448,14 @@ func _end_round_by_timeout() -> void:
 # ----------------- BOMBAS E EXPLOSÕES -----------------
 
 func _on_player_bomb_drop_requested(player: Player, _world_pos: Vector2) -> void:
+	stat_bombs_dropped += 1
 	bomb_system.call("drop_bomb", player)
 
 @rpc("authority", "call_remote", "reliable")
 func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int) -> void:
 	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range)
 func _roll_powerup_drop_type() -> int:
+	stat_blocks_broken += 1
 	var is_campaign: bool = GameState.game_mode == GameState.GameMode.CAMPAIGN
 	if is_campaign:
 		campaign_blocks_broken += 1
@@ -437,7 +465,7 @@ func _roll_powerup_drop_type() -> int:
 			return GameState.PowerUpType.HEART
 	if randf() > grid_map.powerup_drop_chance:
 		return -1
-	var power_types: Array[int] = [GameState.PowerUpType.BOMB, GameState.PowerUpType.RANGE, GameState.PowerUpType.SPEED]
+	var power_types: Array[int] = [GameState.PowerUpType.BOMB, GameState.PowerUpType.RANGE, GameState.PowerUpType.SPEED, GameState.PowerUpType.KICK]
 	if is_campaign and not campaign_heart_spawned:
 		power_types.append(GameState.PowerUpType.HEART)
 	var p_type: int = power_types.pick_random()
@@ -457,7 +485,7 @@ func sync_powerup_collected(cell: Vector2i, collector_id: int, p_type: int) -> v
 func _refresh_player_hud(peer_id: int) -> void:
 	var p: Player = spawned_players.get(peer_id, null)
 	if p:
-		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart)
+		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick)
 
 func _refresh_all_hud_cards() -> void:
 	for id in spawned_players:
@@ -514,9 +542,11 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 	round_title.text = "🏁 FIM DA RODADA %d" % current_round
 	
 	if winner_id == 0:
+		AudioManager.stop_music()
 		winner_label.text = "EMPATE! Ninguém sobreviveu!"
 		winner_label.modulate = Color(1.0, 0.4, 0.4)
 	else:
+		AudioManager.play_victory_jingle()
 		var w_name: String = spawned_players[winner_id].player_name if spawned_players.has(winner_id) else "Jogador %d" % winner_id
 		winner_label.text = "🏆 Vencedor da Rodada: %s!" % w_name
 		winner_label.modulate = Color(1.0, 0.85, 0.3)
@@ -540,6 +570,7 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 			match_winner_name = p_name
 	
 	if has_match_winner:
+		_populate_match_stats(score_list_vbox)
 		round_title.text = "🎉 FIM DE PARTIDA! 🎉"
 		winner_label.text = "CAMPEÃO DO BOMBÁSTICO: %s!" % match_winner_name
 		next_round_label.text = "Voltando ao lobby em 5 segundos..."
@@ -581,6 +612,7 @@ func sync_start_new_round(next_seed: int, round_num: int) -> void:
 	hud.update_round_info(current_round, WINS_REQUIRED)
 	hud.update_timer_display(ROUND_TIME_LIMIT)
 	_refresh_all_hud_cards()
+	AudioManager.play_battle_music()
 
 func _start_round_server(round_num: int) -> void:
 	alive_players.clear()
@@ -610,6 +642,7 @@ func _on_player_disconnected(peer_id: int) -> void:
 	_refresh_all_hud_cards()
 
 func _on_leave_requested() -> void:
+	AudioManager.stop_music()
 	get_tree().paused = false
 	if not NetworkManager.is_dedicated_server:
 		NetworkManager.disconnect_from_server()
@@ -667,3 +700,49 @@ func _configure_controller_inputs() -> void:
 	bomb_button.button_index = JOY_BUTTON_A
 	if not InputMap.action_has_event("drop_bomb", bomb_button):
 		InputMap.action_add_event("drop_bomb", bomb_button)
+
+func _populate_match_stats(container: VBoxContainer) -> void:
+	var total_seconds: int = int(stat_match_seconds)
+	var minutes: int = total_seconds / 60
+	var seconds: int = total_seconds % 60
+	var time_str: String = "%02d:%02d" % [minutes, seconds]
+	
+	var sep := HSeparator.new()
+	container.add_child(sep)
+	
+	var header := Label.new()
+	header.text = "📊 ESTATÍSTICAS DA PARTIDA"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
+	container.add_child(header)
+	
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 28)
+	grid.add_theme_constant_override("v_separation", 4)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	
+	var stats: Array[Array] = [
+		["⏱️ Tempo de Batalha:", time_str],
+		["💣 Bombas Lançadas:", str(stat_bombs_dropped)],
+		["🧱 Blocos Destruídos:", str(stat_blocks_broken)],
+		["⚡ Itens Coletados:", str(stat_powerups_collected)]
+	]
+	if GameState.game_mode == GameState.GameMode.CAMPAIGN:
+		stats.append(["👾 Inimigos Derrotados:", str(stat_enemies_defeated)])
+		stats.append(["🌟 Portais (Ouro/Azul):", "%d / %d" % [GameState.campaign_golden_choices, GameState.campaign_blue_choices]])
+	
+	for pair in stats:
+		var k := Label.new()
+		k.text = pair[0]
+		k.add_theme_font_size_override("font_size", 12)
+		k.add_theme_color_override("font_color", Color(0.75, 0.82, 0.95))
+		var v := Label.new()
+		v.text = pair[1]
+		v.add_theme_font_size_override("font_size", 12)
+		v.add_theme_color_override("font_color", Color(1.0, 0.95, 0.6))
+		grid.add_child(k)
+		grid.add_child(v)
+	
+	container.add_child(grid)

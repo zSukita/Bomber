@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dhud0001"]
+[gd_scene load_steps=3 format=3 uid="uid://dhud0001"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dsettingsmodal01" path="res://scenes/settings_modal.tscn" id="2_settings_modal"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -138,7 +139,15 @@ custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 text = "▶️ Continuar Partida"
 
+[node name="SettingsButton" type="Button" parent="PauseOverlay/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "⚙️ Configurações"
+
 [node name="ExitButton" type="Button" parent="PauseOverlay/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 text = "🏠 Voltar para o Lobby"
+
+[node name="SettingsModal" parent="." instance=ExtResource("2_settings_modal")]
+visible = false

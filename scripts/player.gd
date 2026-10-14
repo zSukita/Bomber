@@ -25,7 +25,7 @@ var player_index: int = 0
 var target_sync_position: Vector2 = Vector2.ZERO
 
 # Configurações de Movimento
-@export var base_speed: float = 220.0
+@export var base_speed: float = 150.0
 var speed_multiplier: float = 1.0
 var current_direction: Vector2 = Vector2.ZERO
 var facing_direction: Vector2 = Vector2.DOWN
@@ -37,6 +37,7 @@ var active_bombs: int = 0
 var last_bomb_request_msec: int = -10000
 var bomb_range: int = 2
 var has_heart: bool = false
+var has_kick: bool = false
 var invulnerability_seconds: float = 0.0
 var bomb_buffer_timer: float = 0.0
 
@@ -107,6 +108,9 @@ func _physics_process(delta: float) -> void:
 		var move_dir: Vector2 = _apply_corner_slide(current_direction)
 		velocity = move_dir * effective_speed
 		move_and_slide()
+		
+		if has_kick:
+			_check_bomb_kicking()
 		
 		# Sincroniza a posição autorizada para todos os clientes
 		if multiplayer.has_multiplayer_peer():
@@ -237,6 +241,57 @@ func server_drop_bomb() -> void:
 		# A posição usada para a bomba é a calculada pelo servidor.
 		bomb_drop_requested.emit(self, global_position)
 
+## Cliente solicita chute de bomba no servidor
+@rpc("any_peer", "call_local", "reliable")
+func server_kick_bomb(bomb_cell: Vector2i, kick_dir: Vector2) -> void:
+	if not multiplayer.is_server():
+		return
+	if not is_alive or not has_kick:
+		return
+	var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+	if grid_map and grid_map.has_bomb_at(bomb_cell):
+		var b: Bomb = grid_map.get_bomb_at(bomb_cell)
+		if is_instance_valid(b) and not b.is_sliding:
+			b.kick(kick_dir)
+			sync_kick_bomb.rpc(bomb_cell, kick_dir)
+
+## Servidor replica o chute de bomba para todos os clientes
+@rpc("authority", "call_local", "reliable")
+func sync_kick_bomb(bomb_cell: Vector2i, kick_dir: Vector2) -> void:
+	var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+	if grid_map and grid_map.has_bomb_at(bomb_cell):
+		var b: Bomb = grid_map.get_bomb_at(bomb_cell)
+		if is_instance_valid(b) and not b.is_sliding:
+			b.kick(kick_dir)
+
+func _check_bomb_kicking() -> void:
+	if not is_alive or not has_kick:
+		return
+	for i in range(get_slide_collision_count()):
+		var col: KinematicCollision2D = get_slide_collision(i)
+		var collider: Object = col.get_collider()
+		if collider is Bomb:
+			var bomb := collider as Bomb
+			if not bomb.is_sliding:
+				var push_dir: Vector2 = facing_direction
+				if push_dir == Vector2.ZERO:
+					push_dir = current_direction
+				if push_dir != Vector2.ZERO:
+					var to_bomb: Vector2 = bomb.global_position - global_position
+					if to_bomb.normalized().dot(push_dir.normalized()) > 0.35:
+						var kick_dir: Vector2 = Vector2.ZERO
+						if abs(push_dir.x) > abs(push_dir.y):
+							kick_dir = Vector2(sign(push_dir.x), 0)
+						else:
+							kick_dir = Vector2(0, sign(push_dir.y))
+						
+						if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+							server_kick_bomb.rpc_id(1, bomb.grid_position, kick_dir)
+						else:
+							bomb.kick(kick_dir)
+							if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+								sync_kick_bomb.rpc(bomb.grid_position, kick_dir)
+
 # ----------------- CICLO DE VIDA E POWER-UPS -----------------
 
 func on_bomb_exploded() -> void:
@@ -249,9 +304,11 @@ func apply_power_up(type: int) -> void:
 		GameState.PowerUpType.RANGE:
 			bomb_range = mini(bomb_range + 1, 8)
 		GameState.PowerUpType.SPEED:
-			speed_multiplier = minf(speed_multiplier + 0.18, 2.2)
+			speed_multiplier = minf(speed_multiplier + 0.10, 1.8)
 		GameState.PowerUpType.HEART:
 			has_heart = true
+		GameState.PowerUpType.KICK:
+			has_kick = true
 	powerup_changed.emit(self)
 	
 	var flash_tween: Tween = create_tween()

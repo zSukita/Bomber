@@ -355,6 +355,20 @@ size_flags_horizontal = 3
 text = "8910"
 placeholder_text = "8910"
 
+[node name="LanSection" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LanLabel" type="Label" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/LanSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 0.65, 1)
+theme_override_font_sizes/font_size = 11
+text = "📡 SALAS NA REDE LOCAL (LAN):"
+
+[node name="LanServersList" type="VBoxContainer" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/LanSection"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
 [node name="JoinSpacer" type="Control" parent="CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel"]
 layout_mode = 2
 size_flags_vertical = 3

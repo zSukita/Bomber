@@ -35,10 +35,10 @@ extends Control
 @onready var host_port_input: LineEdit = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel/PortRow/PortInput
 @onready var host_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/HostPanel/HostButton
 
-# Join Controls
 @onready var join_ip_input: LineEdit = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/IPRow/IPInput
 @onready var join_port_input: LineEdit = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/JoinPortRow/JoinPortInput
 @onready var join_btn: Button = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/JoinButton
+@onready var lan_servers_list: VBoxContainer = $CenterContainer/MainPanel/Margin/ContentVBox/ConnectionSection/RightColumn/MultiplayerCard/Margin/VBox/JoinPanel/LanSection/LanServersList
 
 # Sala de Espera (Room)
 @onready var room_title: Label = $CenterContainer/MainPanel/Margin/ContentVBox/RoomSection/RoomHeader/RoomTitle
@@ -73,10 +73,10 @@ func _ready() -> void:
 	
 	back_to_menu_btn.pressed.connect(_on_back_to_menu_pressed)
 	
-	# Sinais de rede
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.status_message.connect(_on_status_message)
 	NetworkManager.map_selection_updated.connect(_on_map_selection_updated)
+	NetworkManager.server_discovered.connect(_on_server_discovered)
 	if not NetworkManager.pending_status_message.is_empty():
 		_on_status_message(NetworkManager.pending_status_message, NetworkManager.pending_status_is_error)
 		NetworkManager.pending_status_message = ""
@@ -267,15 +267,56 @@ func _switch_mp_tab(show_host: bool) -> void:
 	inactive_style.set_corner_radius_all(8)
 	
 	if show_host:
+		NetworkManager.stop_lan_discovery()
 		tab_host_btn.add_theme_stylebox_override("normal", active_style)
 		tab_host_btn.add_theme_color_override("font_color", Color(0.9, 0.96, 1.0))
 		tab_join_btn.add_theme_stylebox_override("normal", inactive_style)
 		tab_join_btn.add_theme_color_override("font_color", Color(0.55, 0.65, 0.78))
 	else:
+		NetworkManager.start_lan_discovery()
+		_refresh_lan_server_list()
 		tab_join_btn.add_theme_stylebox_override("normal", active_style)
 		tab_join_btn.add_theme_color_override("font_color", Color(0.9, 0.96, 1.0))
 		tab_host_btn.add_theme_stylebox_override("normal", inactive_style)
 		tab_host_btn.add_theme_color_override("font_color", Color(0.55, 0.65, 0.78))
+
+func _on_server_discovered(_info: Dictionary) -> void:
+	if join_panel.visible:
+		_refresh_lan_server_list()
+
+func _refresh_lan_server_list() -> void:
+	if not lan_servers_list:
+		return
+	for child in lan_servers_list.get_children():
+		child.queue_free()
+	
+	if NetworkManager.discovered_servers.is_empty():
+		var searching_lbl := Label.new()
+		searching_lbl.text = "🔍 Buscando salas na mesma rede Wi-Fi/LAN..."
+		searching_lbl.add_theme_font_size_override("font_size", 11)
+		searching_lbl.add_theme_color_override("font_color", Color(0.6, 0.7, 0.82))
+		lan_servers_list.add_child(searching_lbl)
+		return
+	
+	for s_key in NetworkManager.discovered_servers:
+		var s_info: Dictionary = NetworkManager.discovered_servers[s_key]
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(0, 32)
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn.text = "🎮 %s (%d/%d)  ·  %s:%d" % [
+			s_info["name"], s_info["players"], s_info["max_players"], s_info["ip"], s_info["port"]
+		]
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.add_theme_color_override("font_color", Color(0.95, 1.0, 0.85))
+		var s_ip: String = s_info["ip"]
+		var s_port: int = s_info["port"]
+		btn.pressed.connect(func():
+			AudioManager.play_click()
+			join_ip_input.text = s_ip
+			join_port_input.text = str(s_port)
+			_on_join_pressed()
+		)
+		lan_servers_list.add_child(btn)
 
 # ----------------- BOTÃO MODO MELHORADO (HEADER) -----------------
 

@@ -52,6 +52,7 @@ var ambience_node: ArenaAmbience
 @onready var explosions_container: Node2D = $ExplosionsContainer
 
 func _ready() -> void:
+	add_to_group("grid_map")
 	rng.randomize()
 	floor_node.z_index = -2
 	ambience_node = ArenaAmbience.new()
@@ -184,6 +185,7 @@ func place_bomb(cell: Vector2i, player: Player) -> Bomb:
 	bomb.grid_position = cell
 	bomb.bomb_range = player.bomb_range
 	bomb.owner_player = player
+	bomb.grid_map = self
 	
 	active_bombs[cell] = bomb
 	bombs_container.add_child(bomb)

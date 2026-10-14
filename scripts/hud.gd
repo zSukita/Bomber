@@ -14,6 +14,7 @@ extends Control
 @onready var campaign_help: Label = $CampaignHelp
 @onready var players_card_container: HBoxContainer = $TopBar/BarLayout/LeftBox/PlayerCards
 @onready var pause_panel: CenterContainer = $PauseOverlay
+@onready var settings_modal: SettingsModal = $SettingsModal
 
 signal leave_match_requested
 
@@ -31,6 +32,7 @@ func update_pause_status(is_online: bool) -> void:
 func _ready() -> void:
 	pause_panel.visible = false
 	var resume_btn: Button = $PauseOverlay/Panel/Margin/VBox/ResumeButton
+	var settings_btn: Button = $PauseOverlay/Panel/Margin/VBox/SettingsButton
 	var exit_btn: Button = $PauseOverlay/Panel/Margin/VBox/ExitButton
 	
 	resume_btn.pressed.connect(func():
@@ -38,6 +40,11 @@ func _ready() -> void:
 		get_tree().paused = false
 		GameState.local_pause_menu_open = false
 		pause_panel.visible = false
+	)
+	settings_btn.pressed.connect(func():
+		AudioManager.play_click()
+		if settings_modal:
+			settings_modal.open()
 	)
 	exit_btn.pressed.connect(func():
 		AudioManager.play_click()
@@ -173,7 +180,7 @@ func setup_players(players_data: Dictionary) -> void:
 		player_card_nodes[peer_id] = card
 
 ## Atualiza os atributos exibidos no cartão de um jogador específico
-func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range: int, speed_mult: float, has_heart: bool = false) -> void:
+func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range: int, speed_mult: float, has_heart: bool = false, has_kick: bool = false) -> void:
 	if not player_card_nodes.has(peer_id):
 		return
 	var card: PanelContainer = player_card_nodes[peer_id]
@@ -185,7 +192,9 @@ func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range
 	
 	if stats_lbl:
 		if is_alive:
-			stats_lbl.text = "💣%d  🔥%d  ⚡%.1fx%s" % [max_bombs, bomb_range, speed_mult, "  ♥" if has_heart else ""]
+			var heart_str: String = "  ♥" if has_heart else ""
+			var kick_str: String = "  🥾" if has_kick else ""
+			stats_lbl.text = "💣%d  🔥%d  ⚡%.1fx%s%s" % [max_bombs, bomb_range, speed_mult, heart_str, kick_str]
 			stats_lbl.modulate = Color.WHITE
 			if GameState.is_enhanced():
 				stats_lbl.pivot_offset = stats_lbl.size * 0.5
