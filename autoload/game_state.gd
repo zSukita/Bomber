@@ -194,7 +194,72 @@ func apply_keybindings_to_input_map() -> void:
 			key_event.physical_keycode = int_code as Key
 			key_event.keycode = int_code as Key
 			InputMap.action_add_event(action, key_event)
+	
+	_ensure_joypad_inputs()
 	keybindings_updated.emit()
+
+## Garante suporte total a controles/joysticks (D-Pad, Analógico Esquerdo, Botões A/X/B/RB e Start/Back)
+func _ensure_joypad_inputs() -> void:
+	var joy_configs: Dictionary = {
+		"move_up": [
+			{"type": "button", "index": JOY_BUTTON_DPAD_UP},
+			{"type": "motion", "axis": JOY_AXIS_LEFT_Y, "value": -1.0}
+		],
+		"move_down": [
+			{"type": "button", "index": JOY_BUTTON_DPAD_DOWN},
+			{"type": "motion", "axis": JOY_AXIS_LEFT_Y, "value": 1.0}
+		],
+		"move_left": [
+			{"type": "button", "index": JOY_BUTTON_DPAD_LEFT},
+			{"type": "motion", "axis": JOY_AXIS_LEFT_X, "value": -1.0}
+		],
+		"move_right": [
+			{"type": "button", "index": JOY_BUTTON_DPAD_RIGHT},
+			{"type": "motion", "axis": JOY_AXIS_LEFT_X, "value": 1.0}
+		],
+		"drop_bomb": [
+			{"type": "button", "index": JOY_BUTTON_A},
+			{"type": "button", "index": JOY_BUTTON_X},
+			{"type": "button", "index": JOY_BUTTON_B},
+			{"type": "button", "index": JOY_BUTTON_RIGHT_SHOULDER}
+		],
+		"pause_game": [
+			{"type": "button", "index": JOY_BUTTON_START},
+			{"type": "button", "index": JOY_BUTTON_BACK}
+		]
+	}
+	
+	for action in joy_configs:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var current_events: Array[InputEvent] = InputMap.action_get_events(action)
+		for entry: Dictionary in joy_configs[action]:
+			if entry["type"] == "button":
+				var b_idx: int = entry["index"]
+				var has_btn: bool = false
+				for ev in current_events:
+					if ev is InputEventJoypadButton and ev.button_index == b_idx:
+						has_btn = true
+						break
+				if not has_btn:
+					var joy_btn := InputEventJoypadButton.new()
+					joy_btn.device = -1
+					joy_btn.button_index = b_idx as JoyButton
+					InputMap.action_add_event(action, joy_btn)
+			elif entry["type"] == "motion":
+				var a_idx: int = entry["axis"]
+				var a_val: float = entry["value"]
+				var has_mot: bool = false
+				for ev in current_events:
+					if ev is InputEventJoypadMotion and ev.axis == a_idx and is_equal_approx(ev.axis_value, a_val):
+						has_mot = true
+						break
+				if not has_mot:
+					var joy_mot := InputEventJoypadMotion.new()
+					joy_mot.device = -1
+					joy_mot.axis = a_idx as JoyAxis
+					joy_mot.axis_value = a_val
+					InputMap.action_add_event(action, joy_mot)
 
 func rebind_action(action: String, new_keycode: int) -> void:
 	if not DEFAULT_KEYBINDINGS.has(action):

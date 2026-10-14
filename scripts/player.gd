@@ -161,21 +161,9 @@ func _apply_corner_slide(dir: Vector2) -> Vector2:
 			adjusted = adjusted.normalized()
 	return adjusted
 
-## Captura teclado apenas se for o jogador local
+## Captura input local (suporte total a teclado e joystick/gamepad)
 func _capture_local_input() -> void:
-	var input_vector: Vector2 = Vector2.ZERO
-	
-	if Input.is_action_pressed("move_left"):
-		input_vector.x -= 1.0
-	if Input.is_action_pressed("move_right"):
-		input_vector.x += 1.0
-	if Input.is_action_pressed("move_up"):
-		input_vector.y -= 1.0
-	if Input.is_action_pressed("move_down"):
-		input_vector.y += 1.0
-	
-	if input_vector.x != 0.0 and input_vector.y != 0.0:
-		input_vector = input_vector.normalized()
+	var input_vector: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.25)
 	
 	current_direction = input_vector
 	

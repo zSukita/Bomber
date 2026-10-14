@@ -32,6 +32,7 @@ signal closed
 @onready var btn_reset_controls: Button = $CenterContainer/Panel/Margin/VBox/ControlsView/ResetControlsBtn
 
 @onready var close_btn: Button = $CenterContainer/Panel/Margin/VBox/CloseButton
+@onready var gamepad_info_card: PanelContainer = $CenterContainer/Panel/Margin/VBox/ControlsView/GamepadInfoCard
 
 var listening_action: String = ""
 var active_tab_index: int = 0
@@ -39,6 +40,14 @@ var active_tab_index: int = 0
 func _ready() -> void:
 	visible = false
 	modulate.a = 0.0
+	
+	if gamepad_info_card:
+		var g_style := StyleBoxFlat.new()
+		g_style.bg_color = Color(0.04, 0.08, 0.15, 0.8)
+		g_style.border_color = Color("00d4ff") * Color(1, 1, 1, 0.5)
+		g_style.set_border_width_all(1)
+		g_style.set_corner_radius_all(6)
+		gamepad_info_card.add_theme_stylebox_override("panel", g_style)
 	
 	close_btn.pressed.connect(close)
 	tab_audio_video_btn.pressed.connect(func(): _switch_tab(0))

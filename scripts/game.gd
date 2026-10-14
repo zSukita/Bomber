@@ -674,32 +674,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _configure_controller_inputs() -> void:
-	if not InputMap.has_action("pause_game"):
-		InputMap.add_action("pause_game")
-	var escape_key := InputEventKey.new()
-	escape_key.keycode = KEY_ESCAPE
-	if not InputMap.action_has_event("pause_game", escape_key):
-		InputMap.action_add_event("pause_game", escape_key)
-	var start_button := InputEventJoypadButton.new()
-	start_button.button_index = JOY_BUTTON_START
-	if not InputMap.action_has_event("pause_game", start_button):
-		InputMap.action_add_event("pause_game", start_button)
-	var axis_bindings: Array[Dictionary] = [
-		{"action": "move_left", "axis": JOY_AXIS_LEFT_X, "value": -1.0},
-		{"action": "move_right", "axis": JOY_AXIS_LEFT_X, "value": 1.0},
-		{"action": "move_up", "axis": JOY_AXIS_LEFT_Y, "value": -1.0},
-		{"action": "move_down", "axis": JOY_AXIS_LEFT_Y, "value": 1.0}
-	]
-	for binding in axis_bindings:
-		var motion := InputEventJoypadMotion.new()
-		motion.axis = binding["axis"]
-		motion.axis_value = binding["value"]
-		if not InputMap.action_has_event(binding["action"], motion):
-			InputMap.action_add_event(binding["action"], motion)
-	var bomb_button := InputEventJoypadButton.new()
-	bomb_button.button_index = JOY_BUTTON_A
-	if not InputMap.action_has_event("drop_bomb", bomb_button):
-		InputMap.action_add_event("drop_bomb", bomb_button)
+	GameState.apply_keybindings_to_input_map()
 
 func _populate_match_stats(container: VBoxContainer) -> void:
 	var total_seconds: int = int(stat_match_seconds)

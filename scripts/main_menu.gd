@@ -20,6 +20,11 @@ extends Control
 @onready var player_panel: PanelContainer = $UI/PlayerPanel
 @onready var player_name_label: Label = $UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox/NameLabel
 @onready var color_swatches_box: HBoxContainer = $UI/PlayerPanel/Margin/VBox/SuitColorsBox/SwatchesRow
+@onready var avatar_frame: PanelContainer = $UI/PlayerPanel/Margin/VBox/ProfileRow/AvatarFrame
+@onready var avatar_rect: TextureRect = $UI/PlayerPanel/Margin/VBox/ProfileRow/AvatarFrame/AvatarRect
+@onready var profile_click_btn: Button = $UI/PlayerPanel/Margin/VBox/ProfileRow/ProfileClickBtn
+
+var avatar_shader_mat: ShaderMaterial
 
 # Botões Topo e Rodapé
 @onready var how_to_play_top_btn: Button = $UI/TopButtons/HowToPlayTopBtn
@@ -68,6 +73,14 @@ var _intro_finished: bool = false
 var _base_char_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
+	# Inicializa material do avatar do jogador com shader de tingimento
+	var shader := load("res://shaders/suit_tint.gdshader") as Shader
+	if shader:
+		avatar_shader_mat = ShaderMaterial.new()
+		avatar_shader_mat.shader = shader
+		avatar_shader_mat.set_shader_parameter("tint_strength", 0.88)
+		avatar_rect.material = avatar_shader_mat
+		
 	_apply_tactical_styles()
 	_setup_player_data()
 	_set_continue_available(GameState.has_campaign_save())
@@ -220,6 +233,20 @@ func _select_suit_color(idx: int, persist: bool = true) -> void:
 	if character_node:
 		character_node.set_suit_color(idx)
 		
+	if avatar_shader_mat:
+		avatar_shader_mat.set_shader_parameter("color_index", idx)
+		
+	var suit_color: Color = Player.PLAYER_COLORS[idx]
+	if avatar_frame:
+		var a_style: StyleBoxFlat = StyleBoxFlat.new()
+		a_style.bg_color = Color(0.03, 0.06, 0.11, 0.95)
+		a_style.border_color = suit_color
+		a_style.set_border_width_all(2)
+		a_style.set_corner_radius_all(8)
+		a_style.shadow_color = suit_color * Color(1, 1, 1, 0.45)
+		a_style.shadow_size = 6
+		avatar_frame.add_theme_stylebox_override("panel", a_style)
+		
 	for i in range(color_buttons.size()):
 		var btn: Button = color_buttons[i]
 		var col: Color = Player.PLAYER_COLORS[i]
@@ -266,6 +293,7 @@ func _setup_interactions() -> void:
 	how_to_play_top_btn.pressed.connect(how_to_play_modal.open)
 	settings_top_btn.pressed.connect(settings_modal.open)
 	profile_top_btn.pressed.connect(profile_modal.open)
+	profile_click_btn.pressed.connect(profile_modal.open)
 	profile_modal.closed.connect(_refresh_player_identity)
 	how_to_play_modal.closed.connect(_on_how_to_play_closed)
 	footer_exit_btn.pressed.connect(_on_exit_pressed)
@@ -337,6 +365,20 @@ func _apply_tactical_styles() -> void:
 		sh.shadow_color = Color("00d4ff") * Color(1, 1, 1, 0.4)
 		sh.shadow_size = 6
 		btn.add_theme_stylebox_override("hover", sh)
+		
+	# Estilo do botão de edição rápida de perfil
+	var edit_btn_style: StyleBoxFlat = StyleBoxFlat.new()
+	edit_btn_style.bg_color = Color(0.08, 0.15, 0.25, 0.85)
+	edit_btn_style.border_color = Color("00d4ff")
+	edit_btn_style.set_border_width_all(1)
+	edit_btn_style.set_corner_radius_all(6)
+	profile_click_btn.add_theme_stylebox_override("normal", edit_btn_style)
+	
+	var edit_btn_hover: StyleBoxFlat = edit_btn_style.duplicate() as StyleBoxFlat
+	edit_btn_hover.bg_color = Color(0.16, 0.30, 0.48, 0.95)
+	edit_btn_hover.shadow_color = Color("00d4ff") * Color(1, 1, 1, 0.45)
+	edit_btn_hover.shadow_size = 4
+	profile_click_btn.add_theme_stylebox_override("hover", edit_btn_hover)
 
 # ----------------- AUTO-TESTE VIA CLI -----------------
 

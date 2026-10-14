@@ -186,57 +186,77 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -256.0
+offset_left = -268.0
 offset_top = 66.0
 offset_right = -32.0
-offset_bottom = 210.0
+offset_bottom = 226.0
 grow_horizontal = 0
 
 [node name="Margin" type="MarginContainer" parent="UI/PlayerPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 12
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 12
 
 [node name="VBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="ProfileRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="AvatarRect" type="TextureRect" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
-custom_minimum_size = Vector2(36, 36)
+[node name="AvatarFrame" type="PanelContainer" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(46, 46)
+layout_mode = 2
+
+[node name="AvatarRect" type="TextureRect" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/AvatarFrame"]
+custom_minimum_size = Vector2(42, 42)
 layout_mode = 2
 texture = ExtResource("7_avatar_tex")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="InfoVBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+alignment = 1
 
 [node name="NameLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.96, 1, 1)
-theme_override_font_sizes/font_size = 13
-text = "JOGADOR_799"
+theme_override_colors/font_color = Color(0.95, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "JOGADOR"
+
+[node name="ProfileEditHint" type="Label" parent="UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.75, 1, 0.85)
+theme_override_font_sizes/font_size = 10
+text = "PERFIL ATIVO"
+
+[node name="ProfileClickBtn" type="Button" parent="UI/PlayerPanel/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(42, 24)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "EDIT"
 
 [node name="SuitColorsBox" type="VBoxContainer" parent="UI/PlayerPanel/Margin/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 
 [node name="SuitLabel" type="Label" parent="UI/PlayerPanel/Margin/VBox/SuitColorsBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.65, 0.8, 1)
-theme_override_font_sizes/font_size = 10
-text = "COR DO TRAJE"
+theme_override_colors/font_color = Color(0.65, 0.78, 0.95, 1)
+theme_override_font_sizes/font_size = 11
+text = "COR  DO  TRAJE"
 
 [node name="SwatchesRow" type="HBoxContainer" parent="UI/PlayerPanel/Margin/VBox/SuitColorsBox"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="NewsPanel" type="PanelContainer" parent="UI"]
 layout_mode = 1
@@ -393,20 +413,37 @@ horizontal_alignment = 1
 [node name="HSep1" type="HSeparator" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
 layout_mode = 2
 
-[node name="NameRow" type="HBoxContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
+[node name="ProfileRow" type="HBoxContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 14
 
-[node name="NameLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/NameRow"]
-custom_minimum_size = Vector2(90, 0)
+[node name="ModalAvatarFrame" type="PanelContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/ProfileRow"]
+custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Apelido:"
 
-[node name="NameInput" type="LineEdit" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/NameRow"]
+[node name="ModalAvatarRect" type="TextureRect" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/ProfileRow/ModalAvatarFrame"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+texture = ExtResource("7_avatar_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="NameColumn" type="VBoxContainer" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/ProfileRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "JOGADOR_799"
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/ProfileRow/NameColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Apelido do Combatente:"
+
+[node name="NameInput" type="LineEdit" parent="ProfileModal/CenterContainer/Panel/Margin/VBox/ProfileRow/NameColumn"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "JOGADOR"
 max_length = 16
 
 [node name="CloseButton" type="Button" parent="ProfileModal/CenterContainer/Panel/Margin/VBox"]

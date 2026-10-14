@@ -186,8 +186,34 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 11
-text = "Clique em uma tecla para remapear. Pressione ESC para cancelar."
+text = "Clique em uma tecla para remapear o teclado. ESC cancela."
 horizontal_alignment = 1
+
+[node name="GamepadInfoCard" type="PanelContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView/GamepadInfoCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView/GamepadInfoCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/GamepadInfoCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.88, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "🎮 SUPORTE A JOYSTICK / GAMEPAD ATIVO"
+
+[node name="Desc" type="Label" parent="CenterContainer/Panel/Margin/VBox/ControlsView/GamepadInfoCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.88, 0.98, 0.9)
+theme_override_font_sizes/font_size = 10
+text = "• Mover: D-Pad ou Analógico Esquerdo  |  Bomba: Botão A, X, B ou RB  |  Pausar: Start"
 
 [node name="MoveUpRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ControlsView"]
 layout_mode = 2
