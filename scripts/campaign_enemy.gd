@@ -100,7 +100,7 @@ func _physics_process(delta: float) -> void:
 	var current_cell: Vector2i = arena_grid.world_to_grid(global_position) if arena_grid else Vector2i.ZERO
 	var forward_step: Vector2i = Vector2i(roundi(direction.x), roundi(direction.y))
 	var next_cell: Vector2i = current_cell + forward_step if arena_grid else current_cell
-	var path_is_dangerous: bool = imminent_danger.has(current_cell) or imminent_danger.has(next_cell)
+	var path_is_dangerous: bool = imminent_danger.has(current_cell) or (direction != Vector2.ZERO and imminent_danger.has(next_cell))
 	if path_is_dangerous:
 		if is_charging or is_winding_up:
 			is_charging = false
@@ -109,10 +109,8 @@ func _physics_process(delta: float) -> void:
 			windup_remaining = 0.0
 			charge_cooldown = 0.8
 		if escape_refresh <= 0.0:
-			queued_direction = Vector2.ZERO
-			last_decision_cell = Vector2i(-999, -999)
 			_choose_escape_direction()
-			escape_refresh = 0.12
+			escape_refresh = 0.25
 
 	if (archetype == Archetype.CHARGER or archetype == Archetype.BOSS) and player_is_valid:
 		_update_charger(delta)
@@ -203,6 +201,12 @@ func _update_regular_movement(player_is_valid: bool) -> void:
 				break
 
 func _select_next_direction(player_is_valid: bool) -> void:
+	if arena_grid:
+		var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+		if imminent_danger.has(current_cell):
+			_choose_escape_direction()
+			return
+
 	if player_is_valid:
 		var dist: float = global_position.distance_to(target_player.global_position)
 		var can_chase: bool = false
@@ -256,6 +260,10 @@ func _choose_wander_direction() -> void:
 		direction = Vector2.ZERO
 		return
 	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+	if imminent_danger.has(current_cell):
+		_choose_escape_direction()
+		return
+
 	var all_safe_steps: Array[Vector2i] = []
 	for step in DIRECTIONS:
 		var neighbor: Vector2i = current_cell + step
@@ -263,7 +271,7 @@ func _choose_wander_direction() -> void:
 			all_safe_steps.append(step)
 
 	if all_safe_steps.is_empty():
-		direction = Vector2.ZERO
+		_choose_escape_direction()
 		return
 
 	var forward_step: Vector2i = Vector2i(roundi(direction.x), roundi(direction.y)) if direction != Vector2.ZERO else Vector2i.ZERO
@@ -407,62 +415,61 @@ func _choose_chase_direction() -> void:
 
 func _choose_escape_direction() -> void:
 	if arena_grid == null:
-		_choose_direction()
 		return
 	var start_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var pending: Array[Vector2i] = [start_cell]
+	var queue: Array[Vector2i] = [start_cell]
 	var came_from: Dictionary = {start_cell: start_cell}
-	var distance_from_start: Dictionary = {start_cell: 0}
-	var first_step: Dictionary = {}
-	var best_direction: Vector2 = Vector2.ZERO
-	var best_safety: int = -1
-	var best_path_length: int = 1 << 30
-	while not pending.is_empty():
-		var cell: Vector2i = pending.pop_front()
-		var path_length: int = distance_from_start[cell]
+	var safe_target: Vector2i = Vector2i(-999, -999)
+
+	while not queue.is_empty():
+		var cell: Vector2i = queue.pop_front()
 		if cell != start_cell and not imminent_danger.has(cell):
-			var nearest_danger: int = 1 << 30
-			for danger_cell_variant in imminent_danger.keys():
-				var danger_cell: Vector2i = danger_cell_variant
-				nearest_danger = mini(nearest_danger, absi(cell.x - danger_cell.x) + absi(cell.y - danger_cell.y))
-			if nearest_danger > best_safety or (nearest_danger == best_safety and path_length < best_path_length):
-				best_safety = nearest_danger
-				best_path_length = path_length
-				best_direction = first_step[cell]
+			safe_target = cell
+			break
+
 		for step in DIRECTIONS:
 			var next_cell: Vector2i = cell + step
-			if came_from.has(next_cell) or not arena_grid.is_walkable(next_cell) or imminent_danger.has(next_cell):
+			if came_from.has(next_cell) or not arena_grid.is_in_bounds(next_cell):
+				continue
+			# Pode atravessar células sob ameaça para alcançar a saída segura, mas não paredes ou bombas
+			if arena_grid.get_cell_type(next_cell) != GameState.CellType.EMPTY:
+				continue
+			if arena_grid.has_bomb_at(next_cell):
 				continue
 			came_from[next_cell] = cell
-			distance_from_start[next_cell] = path_length + 1
-			first_step[next_cell] = Vector2(step) if cell == start_cell else first_step[cell]
-			pending.append(next_cell)
-	if best_direction != Vector2.ZERO:
-		direction = best_direction
-		direction_timer = 0.12
+			queue.append(next_cell)
+
+	if safe_target != Vector2i(-999, -999):
+		var step_back: Vector2i = safe_target
+		while came_from[step_back] != start_cell:
+			step_back = came_from[step_back]
+		direction = Vector2(step_back - start_cell)
 		is_chasing = false
-		last_decision_cell = Vector2i(-999, -999)
+		last_decision_cell = start_cell
 	else:
-		var fallback_directions: Array[Vector2i] = []
-		var fallback_safety: int = -1
+		# Beco sem saída: afasta-se da bomba mais próxima sem alternar direções repetidamente
+		var best_dist: int = -1
+		var best_step: Vector2i = Vector2i.ZERO
 		for step in DIRECTIONS:
-			var next_cell: Vector2i = start_cell + step
-			if not arena_grid.is_walkable(next_cell):
+			var candidate: Vector2i = start_cell + step
+			if not arena_grid.is_in_bounds(candidate):
 				continue
-			var nearest_danger: int = 1 << 30
-			for danger_cell_variant in imminent_danger.keys():
-				var danger_cell: Vector2i = danger_cell_variant
-				nearest_danger = mini(nearest_danger, absi(next_cell.x - danger_cell.x) + absi(next_cell.y - danger_cell.y))
-			if nearest_danger > fallback_safety:
-				fallback_safety = nearest_danger
-				fallback_directions.clear()
-				fallback_directions.append(step)
-			elif nearest_danger == fallback_safety:
-				fallback_directions.append(step)
-		direction = Vector2(fallback_directions.pick_random()) if not fallback_directions.is_empty() else Vector2.ZERO
-		direction_timer = 0.12
+			if arena_grid.get_cell_type(candidate) != GameState.CellType.EMPTY or arena_grid.has_bomb_at(candidate):
+				continue
+			var min_bomb_dist: int = 1 << 30
+			for bomb_cell_variant in arena_grid.active_bombs.keys():
+				var b_cell: Vector2i = bomb_cell_variant
+				min_bomb_dist = mini(min_bomb_dist, absi(candidate.x - b_cell.x) + absi(candidate.y - b_cell.y))
+			if min_bomb_dist > best_dist:
+				best_dist = min_bomb_dist
+				best_step = step
+
+		if best_step != Vector2i.ZERO:
+			direction = Vector2(best_step)
+		else:
+			direction = Vector2.ZERO
 		is_chasing = false
-		last_decision_cell = Vector2i(-999, -999)
+		last_decision_cell = start_cell
 
 func _find_path_direction(start_cell: Vector2i, goals: Array[Vector2i], allow_danger: bool) -> Vector2:
 	if goals.is_empty():
