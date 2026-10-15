@@ -29,7 +29,15 @@ enum PowerUpType {
 	KICK = 4,
 	PIERCE = 5,
 	REMOTE = 6,
-	SKULL = 7
+	SKULL = 7,
+	MOUNT_EGG = 8
+}
+
+enum MountType {
+	NONE = 0,
+	GREEN = 1,
+	BLUE = 2,
+	YELLOW = 3
 }
 
 const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES

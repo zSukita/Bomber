@@ -578,7 +578,8 @@ func _refresh_player_hud(peer_id: int) -> void:
 		var has_pierce_val: bool = p.has_pierce if "has_pierce" in p else false
 		var has_remote_val: bool = p.has_remote if "has_remote" in p else false
 		var curse_val: int = p.skull_curse if "skull_curse" in p else -1
-		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick, has_pierce_val, has_remote_val, curse_val)
+		var mount_val: int = p.current_mount if "current_mount" in p else 0
+		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick, has_pierce_val, has_remote_val, curse_val, mount_val)
 
 func _refresh_all_hud_cards() -> void:
 	for id in spawned_players:

@@ -33,8 +33,15 @@ const ITEM_KICK_TEXTURE: String = "res://assets/legal/item_kick.png"
 const ITEM_PIERCE_TEXTURE: String = "res://assets/legal/item_pierce.png"
 const ITEM_REMOTE_TEXTURE: String = "res://assets/legal/item_remote.png"
 const ITEM_SKULL_TEXTURE: String = "res://assets/legal/item_skull.png"
+const ITEM_EGG_TEXTURE: String = "res://assets/legal/item_egg.png"
 const PUFF_TEXTURE: String = "res://assets/legal/puff.png"
 const PIXEL_FONT: String = "res://assets/legal/fonts/pixel_font.ttf"
+
+const MOUNT_TEXTURES: Dictionary = {
+	GameState.MountType.GREEN: "res://assets/legal/mounts/mount_green.png",
+	GameState.MountType.BLUE: "res://assets/legal/mounts/mount_blue.png",
+	GameState.MountType.YELLOW: "res://assets/legal/mounts/mount_yellow.png"
+}
 
 const ENEMY_TEXTURES: Dictionary = {
 	CampaignEnemy.Archetype.WANDERER: "res://assets/legal/enemies/enemy_0.png",
@@ -145,6 +152,9 @@ static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpTy
 		GameState.PowerUpType.SKULL:
 			sprite.texture = load(ITEM_SKULL_TEXTURE) as Texture2D
 			sprite.region_enabled = false
+		GameState.PowerUpType.MOUNT_EGG:
+			sprite.texture = load(ITEM_EGG_TEXTURE) as Texture2D
+			sprite.region_enabled = false
 		_:
 			sprite.texture = load(ITEMS_TEXTURE) as Texture2D
 			sprite.region_enabled = true
@@ -152,6 +162,20 @@ static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpTy
 			sprite.region_rect = rect
 	sprite.scale = Vector2.ONE * 3.0
 	sprite.position = Vector2.ZERO
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.material = null
+
+static func configure_mount_sprite(sprite: Sprite2D, mount_type: int, frame: int = 0, direction_col: int = 0) -> void:
+	if not MOUNT_TEXTURES.has(mount_type):
+		return
+	sprite.texture = load(MOUNT_TEXTURES[mount_type]) as Texture2D
+	sprite.region_enabled = true
+	var clamped_frame := clampi(frame, 0, 3)
+	var clamped_col := clampi(direction_col, 0, 3)
+	# Spritesheet 64x64 do Ninja Adventure: 4 colunas (0=baixo, 1=cima, 2=esquerda, 3=direita) e 4 linhas de passo
+	sprite.region_rect = Rect2(clamped_col * 16, clamped_frame * 16, 16, 16)
+	sprite.position = Vector2(0, -6)
+	sprite.scale = Vector2.ONE * 3.8
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.material = null
 

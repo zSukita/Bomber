@@ -130,9 +130,11 @@ func _distribute_sb3_items(block_cells: Array[Vector2i]) -> void:
 				0: item_bag.append(GameState.PowerUpType.KICK)
 				1: item_bag.append(GameState.PowerUpType.PIERCE)
 				2: item_bag.append(GameState.PowerUpType.REMOTE)
+		if stage_idx % 2 == 1:
+			item_bag.append(GameState.PowerUpType.MOUNT_EGG)
 	else:
-		# Modo Batalha: Cesta clássica equilibrada de Super Bomberman 3 (~15 itens por arena)
-		# Proporções: ~35% Bomba, ~28% Fogo, ~14% Patins, especiais raros e 1 Caveira
+		# Modo Batalha: Cesta clássica equilibrada de Super Bomberman 3 (~16 itens por arena)
+		# Proporções: ~32% Bomba, ~25% Fogo, ~13% Patins, especiais raros, 1 Caveira e 1 Ovo de Montaria
 		for _i in range(5):
 			item_bag.append(GameState.PowerUpType.BOMB)
 		for _i in range(4):
@@ -144,6 +146,7 @@ func _distribute_sb3_items(block_cells: Array[Vector2i]) -> void:
 		item_bag.append(GameState.PowerUpType.PIERCE)
 		item_bag.append(GameState.PowerUpType.REMOTE)
 		item_bag.append(GameState.PowerUpType.SKULL)
+		item_bag.append(GameState.PowerUpType.MOUNT_EGG)
 	
 	# Distribui a cesta nas células sorteadas
 	for item_type in item_bag:

@@ -40,6 +40,7 @@ var has_heart: bool = false
 var has_kick: bool = false
 var has_pierce: bool = false
 var has_remote: bool = false
+var current_mount: int = GameState.MountType.NONE
 var skull_curse: int = -1 # -1: sem maldição, 0: lentidão, 1: diarreia de bombas, 2: hiper velocidade
 var skull_timer: float = 0.0
 var diarrhea_timer: float = 0.0
@@ -130,6 +131,8 @@ func _physics_process(delta: float) -> void:
 
 		# O servidor simula o movimento autoritativo e aplica a assistência de quina.
 		var effective_speed: float = base_speed * speed_multiplier
+		if current_mount != GameState.MountType.NONE:
+			effective_speed *= 1.15
 		if skull_curse == 0:
 			effective_speed *= 0.55
 		elif skull_curse == 2:
@@ -360,11 +363,34 @@ func apply_power_up(type: int) -> void:
 			has_remote = true
 		GameState.PowerUpType.SKULL:
 			apply_curse(randi_range(0, 2), 12.0)
+		GameState.PowerUpType.MOUNT_EGG:
+			var candidates: Array[int] = [
+				GameState.MountType.GREEN,
+				GameState.MountType.BLUE,
+				GameState.MountType.YELLOW
+			]
+			var next_mount: int = candidates.pick_random()
+			set_mount(next_mount)
 	powerup_changed.emit(self)
 	
 	var flash_tween: Tween = create_tween()
 	flash_tween.tween_property(visuals_root, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.1)
 	flash_tween.tween_property(visuals_root, "modulate", Color(1.0, 1.0, 1.0, 1.0) if skull_curse < 0 else Color(1.3, 0.6, 1.4, 1.0), 0.1)
+
+func set_mount(mount_type: int) -> void:
+	current_mount = mount_type
+	if visuals_root and visuals_root.has_method("set_mount"):
+		visuals_root.set_mount(mount_type)
+	powerup_changed.emit(self)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_mount.rpc(mount_type)
+
+@rpc("authority", "call_local", "reliable")
+func sync_mount(mount_type: int) -> void:
+	current_mount = mount_type
+	if visuals_root and visuals_root.has_method("set_mount"):
+		visuals_root.set_mount(mount_type)
+	powerup_changed.emit(self)
 
 func apply_curse(curse_type: int, duration: float = 12.0) -> void:
 	skull_curse = curse_type
@@ -414,6 +440,9 @@ func die() -> void:
 		return
 	if invulnerability_seconds > 0.0:
 		return
+	if current_mount != GameState.MountType.NONE:
+		dismount_sacrifice()
+		return
 	if has_heart:
 		has_heart = false
 		invulnerability_seconds = 1.5
@@ -426,6 +455,30 @@ func die() -> void:
 		sync_death.rpc()
 	else:
 		_execute_death_effects()
+
+func dismount_sacrifice() -> void:
+	current_mount = GameState.MountType.NONE
+	invulnerability_seconds = 2.0
+	AudioManager.play_powerup()
+	if visuals_root and visuals_root.has_method("set_mount"):
+		visuals_root.set_mount(GameState.MountType.NONE)
+	_spawn_dismount_puff()
+	powerup_changed.emit(self)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_mount.rpc(GameState.MountType.NONE)
+
+func _spawn_dismount_puff() -> void:
+	var puff_sprite := Sprite2D.new()
+	add_child(puff_sprite)
+	puff_sprite.position = Vector2(0, -10)
+	var p_tween: Tween = create_tween()
+	for f in range(4):
+		p_tween.tween_callback(func():
+			if is_instance_valid(puff_sprite):
+				BomberAssets.configure_powerup_puff(puff_sprite, f)
+		)
+		p_tween.tween_interval(0.06)
+	p_tween.chain().tween_callback(puff_sprite.queue_free)
 
 @rpc("authority", "call_local", "reliable")
 func sync_death() -> void:
@@ -459,6 +512,10 @@ func respawn(at_position: Vector2, preserve_upgrades: bool = false) -> void:
 		has_kick = false
 		has_pierce = false
 		has_remote = false
+		set_mount(GameState.MountType.NONE)
+	else:
+		if visuals_root and visuals_root.has_method("set_mount"):
+			visuals_root.set_mount(current_mount)
 	clear_curse()
 	invulnerability_seconds = 1.5 if GameState.game_mode == GameState.GameMode.CAMPAIGN else 0.0
 	collision_shape.set_deferred("disabled", false)
