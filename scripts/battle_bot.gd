@@ -26,6 +26,10 @@ var active_bombs: int = 0
 var bomb_range: int = 2
 var has_heart: bool = false
 var has_kick: bool = false
+var has_pierce: bool = false
+var has_remote: bool = false
+var skull_curse: int = -1
+var skull_timer: float = 0.0
 var invulnerability_seconds: float = 0.0
 var bomb_buffer_timer: float = 0.0
 var speed_multiplier: float = 1.0
@@ -53,12 +57,26 @@ var stuck_time: float = 0.0
 @onready var visuals_root: Node2D = $Visuals
 @onready var name_label: Label = $Visuals/NameLabel
 
-func setup(grid: ArenaGrid, players: Array[Player], bot_peer_id: int, color_idx: int, char_idx: int, p_name: String) -> void:
+var difficulty: int = 1 # 0: EASY, 1: MEDIUM, 2: HARD
+
+func setup(grid: ArenaGrid, players: Array[Player], bot_peer_id: int, color_idx: int, char_idx: int, p_name: String, diff: int = -1) -> void:
 	arena_grid = grid
 	all_players = players
 	peer_id = bot_peer_id
 	player_index = color_idx
 	player_name = p_name
+	difficulty = diff if diff >= 0 else int(GameState.bot_difficulty)
+	match difficulty:
+		0: # EASY
+			base_speed = 115.0
+			bomb_cooldown = 2.4
+		1: # MEDIUM
+			base_speed = 132.0
+			bomb_cooldown = 1.5
+		2: # HARD
+			base_speed = 148.0
+			bomb_cooldown = 0.95
+	speed_multiplier = 1.0
 
 func _ready() -> void:
 	add_to_group("players")
@@ -90,6 +108,13 @@ func apply_power_up(type: int) -> void:
 			has_heart = true
 		GameState.PowerUpType.KICK:
 			has_kick = true
+		GameState.PowerUpType.PIERCE:
+			has_pierce = true
+		GameState.PowerUpType.REMOTE:
+			has_remote = true
+		GameState.PowerUpType.SKULL:
+			skull_curse = randi_range(0, 2)
+			skull_timer = 10.0
 	powerup_changed.emit(self)
 
 func respawn(at_position: Vector2, preserve_upgrades: bool = false) -> void:
@@ -102,6 +127,11 @@ func respawn(at_position: Vector2, preserve_upgrades: bool = false) -> void:
 		bomb_range = 2
 		speed_multiplier = 1.0
 		has_heart = false
+		has_kick = false
+		has_pierce = false
+		has_remote = false
+	skull_curse = -1
+	skull_timer = 0.0
 	invulnerability_seconds = 0.0
 	collision_shape.set_deferred("disabled", false)
 	if visuals_root:
@@ -164,10 +194,22 @@ func _physics_process(delta: float) -> void:
 	_pick_target()
 	_update_movement()
 	_try_drop_bomb()
+	if has_kick:
+		_check_bot_kick()
 
 	if visuals_root and visuals_root.has_method("update_state"):
 		var is_moving: bool = velocity.length() > 5.0
 		visuals_root.update_state(facing_direction, is_moving, is_alive)
+
+func _check_bot_kick() -> void:
+	for i in range(get_slide_collision_count()):
+		var col: KinematicCollision2D = get_slide_collision(i)
+		var collider: Object = col.get_collider()
+		if collider is Bomb and not collider.is_sliding:
+			var push_dir: Vector2 = facing_direction if facing_direction != Vector2.ZERO else direction
+			if push_dir != Vector2.ZERO:
+				collider.kick(push_dir)
+				AudioManager.play_kick()
 
 ## Escolhe o jogador humano mais próximo como alvo (evita perseguir bots).
 func _pick_target() -> void:

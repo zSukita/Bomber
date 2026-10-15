@@ -26,7 +26,10 @@ enum PowerUpType {
 	RANGE = 1,
 	SPEED = 2,
 	HEART = 3,
-	KICK = 4
+	KICK = 4,
+	PIERCE = 5,
+	REMOTE = 6,
+	SKULL = 7
 }
 
 const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES
@@ -52,6 +55,14 @@ var campaign_has_kick: bool = false
 var campaign_progress_initialized: bool = false
 var local_pause_menu_open: bool = false
 var preferred_character_index: int = 0
+
+enum BotDifficulty {
+	EASY = 0,
+	MEDIUM = 1,
+	HARD = 2
+}
+var bot_difficulty: BotDifficulty = BotDifficulty.MEDIUM
+var battle_bot_count: int = 3
 
 # ----------------- CONFIGURAÇÕES DE TECLAS (INPUT REMAPPER) -----------------
 const DEFAULT_KEYBINDINGS: Dictionary = {
@@ -117,11 +128,50 @@ var input_buffer_window: float = 0.15
 ## Variação de pitch e ambiência nos efeitos sonoros
 var sfx_pitch_variation: bool = true
 
-## Número de bots de IA no Modo Batalha offline (0 = sem bots, máx 3)
-var battle_bot_count: int = 1
+## Idioma do jogo (pt, en, es)
+var current_locale: String = "pt"
+
+signal locale_changed(new_locale: String)
 
 func _ready() -> void:
+	_setup_translations()
 	call_deferred("_load_user_preferences")
+
+func _setup_translations() -> void:
+	if not FileAccess.file_exists("res://assets/translations.csv"):
+		return
+	var file := FileAccess.open("res://assets/translations.csv", FileAccess.READ)
+	if not file:
+		return
+	var header := file.get_csv_line()
+	if header.size() < 2:
+		return
+	
+	var translations: Dictionary = {}
+	for i in range(1, header.size()):
+		var loc: String = header[i].strip_edges()
+		var tr := Translation.new()
+		tr.locale = loc
+		translations[i] = tr
+	
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.is_empty() or row[0].strip_edges().is_empty():
+			continue
+		var key: String = row[0].strip_edges()
+		for i in range(1, mini(row.size(), header.size())):
+			if translations.has(i):
+				var tr: Translation = translations[i]
+				tr.add_message(key, row[i])
+	
+	for i in translations:
+		TranslationServer.add_translation(translations[i])
+
+func set_game_locale(new_locale: String) -> void:
+	current_locale = new_locale
+	TranslationServer.set_locale(new_locale)
+	locale_changed.emit(new_locale)
+	save_user_preferences()
 
 func _load_user_preferences() -> void:
 	var settings := ConfigFile.new()
@@ -135,6 +185,7 @@ func _load_user_preferences() -> void:
 		NetworkManager.preferred_color_index = clampi(int(settings.get_value("profile", "color_index", 0)), 0, Player.PLAYER_COLORS.size() - 1)
 		preferred_character_index = clampi(int(settings.get_value("profile", "character_index", 0)), 0, BomberAssets.CHARACTER_NAMES.size() - 1)
 		NetworkManager.preferred_character_index = preferred_character_index
+		current_locale = str(settings.get_value("general", "locale", "pt"))
 		master_volume_percent = clampf(float(settings.get_value("audio", "master", DEFAULT_MASTER_VOLUME)), 0.0, 100.0)
 		music_volume_percent = clampf(float(settings.get_value("audio", "music", DEFAULT_MUSIC_VOLUME)), 0.0, 100.0)
 		sfx_volume_percent = clampf(float(settings.get_value("audio", "sfx", DEFAULT_SFX_VOLUME)), 0.0, 100.0)
@@ -144,6 +195,7 @@ func _load_user_preferences() -> void:
 		visual_effects_intensity = clampf(float(settings.get_value("video", "visual_effects", visual_effects_intensity)), 0.0, 1.0)
 		reduced_flashes_enabled = bool(settings.get_value("video", "reduced_flashes", reduced_flashes_enabled))
 		battle_bot_count = clampi(int(settings.get_value("gameplay", "battle_bot_count", 1)), 0, 3)
+		bot_difficulty = clampi(int(settings.get_value("gameplay", "bot_difficulty", BotDifficulty.MEDIUM)), 0, 2) as BotDifficulty
 		custom_keybindings.clear()
 		for action in DEFAULT_KEYBINDINGS.keys():
 			if settings.has_section_key("keybindings", action):
@@ -151,6 +203,7 @@ func _load_user_preferences() -> void:
 				if saved_val is Array and not saved_val.is_empty():
 					custom_keybindings[action] = saved_val
 	apply_keybindings_to_input_map()
+	TranslationServer.set_locale(current_locale)
 	if had_saved_settings and enhanced_mode != loaded_enhanced_mode:
 		enhanced_mode = loaded_enhanced_mode
 		if not enhanced_mode and is_inside_tree():
@@ -165,6 +218,7 @@ func _load_user_preferences() -> void:
 
 func save_user_preferences() -> bool:
 	var settings := ConfigFile.new()
+	settings.set_value("general", "locale", current_locale)
 	settings.set_value("profile", "player_name", NetworkManager.local_player_name)
 	settings.set_value("profile", "color_index", NetworkManager.preferred_color_index)
 	settings.set_value("profile", "character_index", NetworkManager.preferred_character_index)
@@ -177,6 +231,7 @@ func save_user_preferences() -> bool:
 	settings.set_value("video", "visual_effects", visual_effects_intensity)
 	settings.set_value("video", "reduced_flashes", reduced_flashes_enabled)
 	settings.set_value("gameplay", "battle_bot_count", battle_bot_count)
+	settings.set_value("gameplay", "bot_difficulty", bot_difficulty)
 	for action in custom_keybindings:
 		settings.set_value("keybindings", action, custom_keybindings[action])
 	return settings.save(USER_SETTINGS_PATH) == OK

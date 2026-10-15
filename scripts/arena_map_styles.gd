@@ -94,3 +94,6 @@ static func should_spawn_block(cell: Vector2i, map_style: int, block_density: fl
 		BlockPattern.HORIZONTAL:
 			return cell.y % 4 != 0
 	return true
+
+static func is_ice_map(map_style: int) -> bool:
+	return posmod(map_style, NAMES.size()) == 4

@@ -42,9 +42,30 @@ A imagem exige o executável exportado e o `.pck` na pasta `builds/server/`; a c
 
 O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e Linux Dedicated Server. Os arquivos exportados vão para `builds/`, que não precisa ser incluída no controle de versão; gere-os novamente antes de executar os scripts de servidor ou construir a imagem Docker.
 
+## Novas Mecânicas e Melhorias
+
+- **Power-ups & Hazards:**
+  - 🏹 **Bomba Perfurante (Pierce):** O fogo atravessa blocos maciços sem ser bloqueado no primeiro obstáculo.
+  - 📡 **Detonador Remoto:** Permite plantar bombas com fusível estático e detoná-las quando desejar com outro toque no botão de bomba.
+  - ☠️ **Maldição do Crânio:** Maldição temporária (lentidão extrema, diarreia contínua de bombas ou hiper-velocidade descontrolada) que se transmite ao tocar em outros jogadores.
+  - 🧊 **Inércia do Gelo:** No mapa de Neve/Gelo, os jogadores deslizam suavemente por inércia ao mudar de direção.
+- **Inteligência Artificial (BattleBot):**
+  - Três níveis de dificuldade configuráveis: **Fácil**, **Médio** e **Difícil (Mestre)**.
+  - Bots no modo difícil avaliam risco em tempo real, chutam bombas perigosas para longe e posicionam armadilhas mais agressivas.
+- **Áudio Dinâmico & Juice:**
+  - Trilhas musicais temáticas dinâmicas por bioma de mapa (`music_adventure`, `music_dungeon`, `music_battle_2`) e tema de vitória (`music_victory_theme`).
+  - Slow-motion cinematográfico no golpe decisivo de rodada ou perda de vida.
+  - Estatísticas de partida enriquecidas com concessão de medalhas e títulos comemorativos ("Demolidor de Paredes", "Mestre da Pólvora", etc.).
+- **Multiplayer & Rede:**
+  - **UPnP Automático Assíncrono:** Abre portas UDP automaticamente no roteador do host via UPnP em background, facilitando partidas online sem necessidade de abrir portas manualmente no NAT.
+  - **Client-Side Prediction:** Predição local imediata no cliente remoto com reconciliação suave autoritativa, eliminando sensação de atraso (input-lag) nos comandos.
+- **Internacionalização & CI/CD:**
+  - Suporte multilíngue com seletor em tempo real (**Português**, **Inglês** e **Espanhol**) em `assets/translations.csv`.
+  - Workflow de CI/CD automatizado no GitHub Actions (`.github/workflows/build.yml`) para compilar executáveis de Windows Desktop, Linux e construir a imagem Docker.
+
 ## Estrutura do código
 
-- Consulte [CREDITS.md](CREDITS.md) para a lista de assets em uso e suas fontes/licenças conhecidas. `assets/legal/` é apenas o nome da pasta: ela inclui conteúdo atribuído a CC0 e assets com condições próprias. Em particular, Bomber Bots permite uso em jogos comerciais, mas proíbe redistribuir ou reempacotar os arquivos do asset; os PNGs correspondentes ainda estão no repositório. A arte principal do menu e algumas prévias não têm origem/licença documentadas. Esses pontos precisam ser resolvidos antes da publicação.
+- Consulte [CREDITS.md](CREDITS.md) para a lista de assets em uso e suas fontes/licenças conhecidas. O pacote Bomber Bots utiliza a versão Free oficial do Yahallo Games (uso comercial e pessoal liberado no jogo). A arte principal do menu e algumas prévias não têm origem/licença documentadas; confirme antes da publicação.
 - `assets/lpc_characters/` e `assets/lpc_monsters/` contêm arte LPC não referenciada pelas cenas/scripts atuais. Seus créditos listam OGA-BY 3.0, CC-BY-SA 3.0 e GPL 3.0 para componentes diferentes; não são assets CC0. Os PNGs foram preservados no projeto e excluídos dos três presets de publicação; confirme a ausência nos pacotes gerados.
 
 - `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.

@@ -180,7 +180,7 @@ func setup_players(players_data: Dictionary) -> void:
 		player_card_nodes[peer_id] = card
 
 ## Atualiza os atributos exibidos no cartão de um jogador específico
-func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range: int, speed_mult: float, has_heart: bool = false, has_kick: bool = false) -> void:
+func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range: int, speed_mult: float, has_heart: bool = false, has_kick: bool = false, has_pierce: bool = false, has_remote: bool = false, skull_curse: int = -1) -> void:
 	if not player_card_nodes.has(peer_id):
 		return
 	var card: PanelContainer = player_card_nodes[peer_id]
@@ -192,10 +192,13 @@ func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range
 	
 	if stats_lbl:
 		if is_alive:
-			var heart_str: String = "  ♥" if has_heart else ""
-			var kick_str: String = "  🥾" if has_kick else ""
-			stats_lbl.text = "💣%d  🔥%d  ⚡%.1fx%s%s" % [max_bombs, bomb_range, speed_mult, heart_str, kick_str]
-			stats_lbl.modulate = Color.WHITE
+			var heart_str: String = " ♥" if has_heart else ""
+			var kick_str: String = " 🥾" if has_kick else ""
+			var pierce_str: String = " 🏹" if has_pierce else ""
+			var remote_str: String = " 📡" if has_remote else ""
+			var curse_str: String = " ☠️" if skull_curse >= 0 else ""
+			stats_lbl.text = "💣%d 🔥%d ⚡%.1f%s%s%s%s%s" % [max_bombs, bomb_range, speed_mult, heart_str, kick_str, pierce_str, remote_str, curse_str]
+			stats_lbl.modulate = Color.WHITE if skull_curse < 0 else Color(1.3, 0.6, 1.4)
 			if GameState.is_enhanced():
 				stats_lbl.pivot_offset = stats_lbl.size * 0.5
 				var pop_tween: Tween = stats_lbl.create_tween()

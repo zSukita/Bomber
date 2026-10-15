@@ -1,0 +1,105 @@
+name: Build & Export Bombástico
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.3-stable"
+
+jobs:
+  export:
+    name: Export Multiplatform Builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Godot Engine & Templates
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends wget unzip
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}
+          
+          # Download Godot Headless Engine
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          unzip -q Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          sudo mv Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+          
+          # Download Export Templates
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz
+          unzip -q Godot_v${GODOT_VERSION}_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}/
+          rm -f *.zip *.tpz
+
+      - name: Prepare Build Output Directories
+        run: |
+          mkdir -p builds/windows
+          mkdir -p builds/linux
+          mkdir -p builds/server
+
+      - name: Export Windows Desktop
+        run: |
+          godot --headless --export-release "Windows Desktop" builds/windows/Bombastico.exe
+
+      - name: Export Linux Desktop
+        run: |
+          godot --headless --export-release "Linux/X11" builds/linux/Bombastico.x86_64
+
+      - name: Export Linux Dedicated Server
+        run: |
+          godot --headless --export-release "Linux Dedicated Server" builds/server/Bombastico_Server.x86_64
+
+      - name: Package Archives
+        run: |
+          cd builds/windows && zip -r ../Bombastico-Windows-x86_64.zip . && cd ../..
+          cd builds/linux && zip -r ../Bombastico-Linux-x86_64.zip . && cd ../..
+          cd builds/server && zip -r ../Bombastico-Dedicated-Server-Linux.zip . && cd ../..
+
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bombastico-Windows-x86_64
+          path: builds/Bombastico-Windows-x86_64.zip
+
+      - name: Upload Linux Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bombastico-Linux-x86_64
+          path: builds/Bombastico-Linux-x86_64.zip
+
+      - name: Upload Server Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bombastico-Dedicated-Server-Linux
+          path: builds/Bombastico-Dedicated-Server-Linux.zip
+
+  docker:
+    name: Build Docker Dedicated Server Image
+    needs: export
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Server Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Bombastico-Dedicated-Server-Linux
+          path: builds/
+
+      - name: Extract Server Binary for Container
+        run: |
+          mkdir -p builds/server
+          unzip -q builds/Bombastico-Dedicated-Server-Linux.zip -d builds/server/
+          chmod +x builds/server/Bombastico_Server.x86_64
+
+      - name: Build Docker Image
+        run: |
+          docker build -t bombastico-dedicated-server:latest .

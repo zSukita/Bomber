@@ -14,6 +14,8 @@ var owner_player: CharacterBody2D
 
 var is_detonated: bool = false
 var is_sliding: bool = false
+var is_pierce: bool = false
+var is_remote: bool = false
 var slide_direction: Vector2 = Vector2.ZERO
 var slide_speed: float = 380.0
 var grid_map: ArenaGrid
@@ -29,7 +31,12 @@ func _ready() -> void:
 		grid_map = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
 	fuse_timer.wait_time = fuse_time
 	fuse_timer.timeout.connect(_on_fuse_timeout)
-	fuse_timer.start()
+	if not is_remote:
+		fuse_timer.start()
+	else:
+		visual_root.modulate = Color(1.25, 0.5, 0.5, 1.0)
+	if is_pierce:
+		visual_root.modulate = Color(1.3, 1.2, 0.4, 1.0)
 	
 	if exit_detector:
 		exit_detector.body_exited.connect(_on_body_exited_exit_detector)

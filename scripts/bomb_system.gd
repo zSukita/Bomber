@@ -18,14 +18,22 @@ func drop_bomb(player: Player) -> void:
 	var bomb: Bomb = game.grid_map.place_bomb(cell, player)
 	if bomb == null:
 		return
+	bomb.is_pierce = player.has_pierce if "has_pierce" in player else false
+	bomb.is_remote = player.has_remote if "has_remote" in player else false
 	player.active_bombs += 1
 	bomb.exploded.connect(resolve_explosion)
 	AudioManager.play_bomb_drop()
 	if multiplayer.has_multiplayer_peer():
-		game.sync_spawn_bomb.rpc(cell, player.peer_id, player.bomb_range)
+		game.sync_spawn_bomb.rpc(cell, player.peer_id, player.bomb_range, bomb.is_pierce, bomb.is_remote)
 	game._refresh_player_hud(player.peer_id)
 
-func spawn_bomb_replica(cell: Vector2i, owner_peer_id: int, bomb_range: int) -> void:
+func detonate_remote_bombs(player: CharacterBody2D) -> void:
+	var bombs: Array[Node] = game.get_tree().get_nodes_in_group("bombs")
+	for b in bombs:
+		if b is Bomb and is_instance_valid(b) and b.owner_player == player and not b.is_detonated:
+			b.detonate()
+
+func spawn_bomb_replica(cell: Vector2i, owner_peer_id: int, bomb_range: int, is_pierce: bool = false, is_remote: bool = false) -> void:
 	var player: Player = game.spawned_players.get(owner_peer_id, null)
 	if player == null:
 		return
@@ -33,6 +41,8 @@ func spawn_bomb_replica(cell: Vector2i, owner_peer_id: int, bomb_range: int) -> 
 	if bomb == null:
 		return
 	bomb.bomb_range = bomb_range
+	bomb.is_pierce = is_pierce
+	bomb.is_remote = is_remote
 	player.active_bombs += 1
 	game._refresh_player_hud(owner_peer_id)
 	AudioManager.play_bomb_drop()
@@ -40,6 +50,7 @@ func spawn_bomb_replica(cell: Vector2i, owner_peer_id: int, bomb_range: int) -> 
 func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> void:
 	if not is_instance_valid(bomb):
 		return
+	var is_pierce: bool = bomb.is_pierce
 	var owner_player: Player = bomb.owner_player
 	if is_instance_valid(owner_player):
 		owner_player.on_bomb_exploded()
@@ -68,7 +79,10 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 				if powerup_type >= 0:
 					dropped_powerups.append({"cell": target_cell, "type": powerup_type})
 					game.grid_map.spawn_powerup(target_cell, powerup_type)
-				break
+				flame_cells.append(target_cell)
+				if not is_pierce:
+					break
+				continue
 			if cell_type == GameState.CellType.EMPTY:
 				flame_cells.append(target_cell)
 				if game.grid_map.has_powerup_at(target_cell):

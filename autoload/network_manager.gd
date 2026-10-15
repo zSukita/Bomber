@@ -44,6 +44,11 @@ var broadcast_timer: float = 0.0
 var discovered_servers: Dictionary = {} # "ip:port" -> Dictionary
 var is_discovering: bool = false
 
+# Suporte a UPnP automático para facilitar conexões pela Internet sem abrir portas manualmente no roteador
+var upnp_thread: Thread = null
+var upnp_mapped_port: int = 0
+var upnp_external_ip: String = ""
+
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -172,6 +177,7 @@ func create_server(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 	else:
 		print("[Rede] Servidor dedicado criado na porta %d." % port)
 	
+	_setup_upnp_async(port)
 	lobby_updated.emit()
 	return OK
 
@@ -200,6 +206,7 @@ func disconnect_from_server(show_status_message: bool = true) -> void:
 		udp_broadcaster.close()
 		udp_broadcaster = null
 	stop_lan_discovery()
+	_cleanup_upnp()
 	
 	multiplayer.multiplayer_peer = null
 	players.clear()
@@ -208,6 +215,58 @@ func disconnect_from_server(show_status_message: bool = true) -> void:
 	if show_status_message:
 		status_message.emit("Desconectado da sala.", false)
 	lobby_updated.emit()
+
+func _exit_tree() -> void:
+	_cleanup_upnp()
+
+# ----------------- SUPORTE A UPNP ASSÍNCRONO -----------------
+
+func _setup_upnp_async(port: int) -> void:
+	if upnp_thread and upnp_thread.is_started():
+		upnp_thread.wait_to_finish()
+	upnp_thread = Thread.new()
+	upnp_thread.start(_upnp_worker.bind(port))
+
+func _upnp_worker(port: int) -> void:
+	var upnp := UPNP.new()
+	var discover_result: int = upnp.discover(1500, 2, "InternetGatewayDevice")
+	if discover_result != UPNP.UPNP_RESULT_SUCCESS:
+		discover_result = upnp.discover()
+	
+	if discover_result == UPNP.UPNP_RESULT_SUCCESS:
+		var gateway: UPNPDevice = upnp.get_gateway()
+		if gateway and gateway.is_valid_gateway():
+			var map_udp: int = upnp.add_port_mapping(port, port, "Bombastico", "UDP")
+			if map_udp == UPNP.UPNP_RESULT_SUCCESS:
+				var ext_ip: String = upnp.query_external_address()
+				call_deferred("_on_upnp_success", ext_ip, port)
+				return
+			else:
+				call_deferred("_on_upnp_failed", "Código %d" % map_udp)
+				return
+	call_deferred("_on_upnp_failed", "Roteador sem suporte a UPnP ativo")
+
+func _on_upnp_success(ext_ip: String, port: int) -> void:
+	upnp_external_ip = ext_ip
+	upnp_mapped_port = port
+	print("[Rede] UPnP mapeado com sucesso! IP Externo: %s:%d" % [ext_ip, port])
+	status_message.emit("UPnP ativo! Para amigos na internet conectarem: %s:%d" % [ext_ip, port], false)
+
+func _on_upnp_failed(reason: String) -> void:
+	print("[Rede] UPnP não disponível: %s (conexão LAN/VPN local continua normal)" % reason)
+
+func _cleanup_upnp() -> void:
+	if upnp_thread and upnp_thread.is_started():
+		upnp_thread.wait_to_finish()
+		upnp_thread = null
+	if upnp_mapped_port > 0:
+		var port_to_remove: int = upnp_mapped_port
+		upnp_mapped_port = 0
+		upnp_external_ip = ""
+		# Executa remoção rápida do mapeamento no roteador
+		var upnp := UPNP.new()
+		if upnp.discover(500, 2, "InternetGatewayDevice") == UPNP.UPNP_RESULT_SUCCESS:
+			upnp.delete_port_mapping(port_to_remove, "UDP")
 
 # ----------------- CALLBACKS DE CONEXÃO MULTIPLAYER -----------------
 

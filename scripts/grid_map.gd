@@ -10,7 +10,7 @@ const CellType = GameState.CellType
 const WIDTH: int = 15
 const HEIGHT: int = 13
 const TILE_SIZE: int = 64
-const MAP_NAMES: Array[String] = GameState.MAP_NAMES
+const MAP_NAMES: Array[String] = ArenaMapStyles.NAMES
 
 # Densidade de blocos destrutíveis nas posições válidas
 @export_range(0.0, 1.0) var block_density: float = 0.85

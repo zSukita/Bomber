@@ -27,7 +27,11 @@ var sfx_sudden_death: AudioStreamWAV
 var menu_music_stream: AudioStreamWAV
 var bgm_lobby: AudioStream
 var bgm_battle: AudioStream
+var bgm_battle_2: AudioStream
+var bgm_adventure: AudioStream
+var bgm_dungeon: AudioStream
 var bgm_tension: AudioStream
+var bgm_victory_theme: AudioStream
 var sfx_victory: AudioStream
 var sfx_game_over: AudioStream
 var sfx_stage_clear: AudioStream
@@ -66,10 +70,26 @@ func _load_legal_audio() -> void:
 		bgm_battle = load("res://assets/legal/audio/music/music_battle_1.ogg")
 		if bgm_battle is AudioStreamOggVorbis:
 			(bgm_battle as AudioStreamOggVorbis).loop = true
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_battle_2.ogg"):
+		bgm_battle_2 = load("res://assets/legal/audio/music/music_battle_2.ogg")
+		if bgm_battle_2 is AudioStreamOggVorbis:
+			(bgm_battle_2 as AudioStreamOggVorbis).loop = true
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_adventure.ogg"):
+		bgm_adventure = load("res://assets/legal/audio/music/music_adventure.ogg")
+		if bgm_adventure is AudioStreamOggVorbis:
+			(bgm_adventure as AudioStreamOggVorbis).loop = true
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_dungeon.ogg"):
+		bgm_dungeon = load("res://assets/legal/audio/music/music_dungeon.ogg")
+		if bgm_dungeon is AudioStreamOggVorbis:
+			(bgm_dungeon as AudioStreamOggVorbis).loop = true
 	if ResourceLoader.exists("res://assets/legal/audio/music/music_tension.ogg"):
 		bgm_tension = load("res://assets/legal/audio/music/music_tension.ogg")
 		if bgm_tension is AudioStreamOggVorbis:
 			(bgm_tension as AudioStreamOggVorbis).loop = true
+	if ResourceLoader.exists("res://assets/legal/audio/music/music_victory_theme.ogg"):
+		bgm_victory_theme = load("res://assets/legal/audio/music/music_victory_theme.ogg")
+		if bgm_victory_theme is AudioStreamOggVorbis:
+			(bgm_victory_theme as AudioStreamOggVorbis).loop = true
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_victory.wav"):
 		sfx_victory = load("res://assets/legal/audio/jingles/jingle_victory.wav")
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_game_over.wav"):
@@ -140,8 +160,20 @@ func play_menu_music() -> void:
 		music_player.stream = stream_to_play
 		music_player.play()
 
-func play_battle_music() -> void:
-	var stream_to_play: AudioStream = bgm_battle if bgm_battle else menu_music_stream
+func play_battle_music(map_style: int = 0, is_boss: bool = false) -> void:
+	var stream_to_play: AudioStream = bgm_battle
+	if is_boss and bgm_battle_2:
+		stream_to_play = bgm_battle_2
+	else:
+		match posmod(map_style, 4):
+			0:
+				stream_to_play = bgm_battle if bgm_battle else menu_music_stream
+			1:
+				stream_to_play = bgm_dungeon if bgm_dungeon else bgm_battle
+			2:
+				stream_to_play = bgm_adventure if bgm_adventure else bgm_battle
+			3:
+				stream_to_play = bgm_battle_2 if bgm_battle_2 else bgm_battle
 	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
 		music_player.stream = stream_to_play
 		music_player.play()
@@ -149,6 +181,12 @@ func play_battle_music() -> void:
 func play_tension_music() -> void:
 	if bgm_tension and (music_player.stream != bgm_tension or not music_player.playing):
 		music_player.stream = bgm_tension
+		music_player.play()
+
+func play_victory_theme() -> void:
+	var stream_to_play: AudioStream = bgm_victory_theme if bgm_victory_theme else bgm_lobby
+	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
+		music_player.stream = stream_to_play
 		music_player.play()
 
 func play_victory_jingle() -> void:

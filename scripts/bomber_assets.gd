@@ -30,6 +30,9 @@ const BOMB_TEXTURE: String = "res://assets/legal/bomb.png"
 const EXPLOSION_TEXTURE: String = "res://assets/legal/explosion.png"
 const ITEMS_TEXTURE: String = "res://assets/legal/items.png"
 const ITEM_KICK_TEXTURE: String = "res://assets/legal/item_kick.png"
+const ITEM_PIERCE_TEXTURE: String = "res://assets/legal/item_pierce.png"
+const ITEM_REMOTE_TEXTURE: String = "res://assets/legal/item_remote.png"
+const ITEM_SKULL_TEXTURE: String = "res://assets/legal/item_skull.png"
 const PUFF_TEXTURE: String = "res://assets/legal/puff.png"
 const PIXEL_FONT: String = "res://assets/legal/fonts/pixel_font.ttf"
 
@@ -63,11 +66,11 @@ const BOMB_FRAMES: Array[Rect2] = [
 
 # Regiões dos Power-Ups (16x16)
 const POWERUP_REGIONS: Dictionary = {
-	GameState.PowerUpType.BOMB: Rect2(0, 0, 16, 16),
-	GameState.PowerUpType.RANGE: Rect2(16, 0, 16, 16),
-	GameState.PowerUpType.SPEED: Rect2(32, 0, 16, 16),
-	GameState.PowerUpType.HEART: Rect2(48, 0, 16, 16),
-	GameState.PowerUpType.KICK: Rect2(0, 0, 16, 16)
+	0: Rect2(0, 0, 16, 16), # BOMB
+	1: Rect2(16, 0, 16, 16), # RANGE
+	2: Rect2(32, 0, 16, 16), # SPEED
+	3: Rect2(48, 0, 16, 16), # HEART
+	4: Rect2(0, 0, 16, 16)   # KICK
 }
 
 # Efeito de fumaça / destruição de item
@@ -129,14 +132,24 @@ static func configure_explosion_sprite(sprite: Sprite2D, segment: int, anim_fram
 	sprite.material = null
 
 static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpType) -> void:
-	if type == GameState.PowerUpType.KICK:
-		sprite.texture = load(ITEM_KICK_TEXTURE) as Texture2D
-		sprite.region_enabled = false
-	else:
-		sprite.texture = load(ITEMS_TEXTURE) as Texture2D
-		sprite.region_enabled = true
-		var rect: Rect2 = POWERUP_REGIONS.get(type, Rect2(0, 0, 16, 16))
-		sprite.region_rect = rect
+	match type:
+		GameState.PowerUpType.KICK:
+			sprite.texture = load(ITEM_KICK_TEXTURE) as Texture2D
+			sprite.region_enabled = false
+		GameState.PowerUpType.PIERCE:
+			sprite.texture = load(ITEM_PIERCE_TEXTURE) as Texture2D
+			sprite.region_enabled = false
+		GameState.PowerUpType.REMOTE:
+			sprite.texture = load(ITEM_REMOTE_TEXTURE) as Texture2D
+			sprite.region_enabled = false
+		GameState.PowerUpType.SKULL:
+			sprite.texture = load(ITEM_SKULL_TEXTURE) as Texture2D
+			sprite.region_enabled = false
+		_:
+			sprite.texture = load(ITEMS_TEXTURE) as Texture2D
+			sprite.region_enabled = true
+			var rect: Rect2 = POWERUP_REGIONS.get(int(type), Rect2(0, 0, 16, 16))
+			sprite.region_rect = rect
 	sprite.scale = Vector2.ONE * 3.0
 	sprite.position = Vector2.ZERO
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

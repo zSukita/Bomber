@@ -122,6 +122,37 @@ layout_mode = 2
 size_flags_horizontal = 3
 value = 90.0
 
+[node name="HSepLang" type="HSeparator" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+
+[node name="LanguageRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+
+[node name="LanguageLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/LanguageRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Idioma / Language:"
+
+[node name="LanguageOption" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/LanguageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+
+[node name="BotDifficultyRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
+layout_mode = 2
+
+[node name="BotDifficultyLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/BotDifficultyRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Dificuldade dos Bots:"
+
+[node name="BotDifficultyOption" type="OptionButton" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView/BotDifficultyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+
 [node name="HSep2" type="HSeparator" parent="CenterContainer/Panel/Margin/VBox/AudioVideoView"]
 layout_mode = 2
 

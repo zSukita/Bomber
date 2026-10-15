@@ -16,6 +16,8 @@ signal closed
 @onready var master_slider: HSlider = $CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MasterRow/MasterSlider
 @onready var music_slider: HSlider = $CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/MusicRow/MusicSlider
 @onready var sfx_slider: HSlider = $CenterContainer/Panel/Margin/VBox/AudioVideoView/AudioSection/SFXRow/SFXSlider
+@onready var language_option: OptionButton = $CenterContainer/Panel/Margin/VBox/AudioVideoView/LanguageRow/LanguageOption
+@onready var bot_difficulty_option: OptionButton = $CenterContainer/Panel/Margin/VBox/AudioVideoView/BotDifficultyRow/BotDifficultyOption
 @onready var fullscreen_check: CheckBox = $CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/FullscreenCheck
 @onready var enhanced_check: CheckBox = $CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/EnhancedCheck
 @onready var shake_slider: HSlider = $CenterContainer/Panel/Margin/VBox/AudioVideoView/VideoSection/ShakeRow/ShakeSlider
@@ -52,6 +54,27 @@ func _ready() -> void:
 	close_btn.pressed.connect(close)
 	tab_audio_video_btn.pressed.connect(func(): _switch_tab(0))
 	tab_controls_btn.pressed.connect(func(): _switch_tab(1))
+	
+	# Idioma
+	if language_option:
+		language_option.clear()
+		language_option.add_item("🇧🇷 Português (Brasil)", 0)
+		language_option.add_item("🇺🇸 English", 1)
+		language_option.add_item("🇪🇸 Español", 2)
+		match GameState.current_locale:
+			"en": language_option.selected = 1
+			"es": language_option.selected = 2
+			_: language_option.selected = 0
+		language_option.item_selected.connect(_on_language_selected)
+	
+	# Dificuldade do Bot
+	if bot_difficulty_option:
+		bot_difficulty_option.clear()
+		bot_difficulty_option.add_item("Fácil", GameState.BotDifficulty.EASY)
+		bot_difficulty_option.add_item("Médio", GameState.BotDifficulty.MEDIUM)
+		bot_difficulty_option.add_item("Difícil (Mestre)", GameState.BotDifficulty.HARD)
+		bot_difficulty_option.selected = int(GameState.bot_difficulty)
+		bot_difficulty_option.item_selected.connect(_on_bot_difficulty_selected)
 	
 	# Áudio e Vídeo
 	music_slider.value_changed.connect(_on_music_changed)
@@ -215,6 +238,18 @@ func _sync_enhanced_check(is_enhanced: bool) -> void:
 	if is_instance_valid(enhanced_check):
 		enhanced_check.set_pressed_no_signal(is_enhanced)
 
+func _on_language_selected(idx: int) -> void:
+	AudioManager.play_click()
+	match idx:
+		1: GameState.set_game_locale("en")
+		2: GameState.set_game_locale("es")
+		_: GameState.set_game_locale("pt")
+
+func _on_bot_difficulty_selected(idx: int) -> void:
+	AudioManager.play_click()
+	GameState.bot_difficulty = idx as GameState.BotDifficulty
+	GameState.save_user_preferences()
+
 func _on_shake_changed(value: float) -> void:
 	GameState.screen_shake_intensity = clampf(value / 100.0, 0.0, 1.0)
 	GameState.save_user_preferences()
@@ -230,6 +265,13 @@ func _on_reduced_flashes_toggled(enabled: bool) -> void:
 func _sync_controls_from_active_settings() -> void:
 	if not is_node_ready():
 		return
+	if language_option:
+		match GameState.current_locale:
+			"en": language_option.selected = 1
+			"es": language_option.selected = 2
+			_: language_option.selected = 0
+	if bot_difficulty_option:
+		bot_difficulty_option.selected = int(GameState.bot_difficulty)
 	master_slider.set_value_no_signal(AudioServer.get_bus_volume_linear(AudioServer.get_bus_index("Master")) * 100.0)
 	music_slider.set_value_no_signal(AudioManager.music_volume_scale * 100.0)
 	sfx_slider.set_value_no_signal(AudioManager.sfx_volume_scale * 100.0)

@@ -38,6 +38,11 @@ var last_bomb_request_msec: int = -10000
 var bomb_range: int = 2
 var has_heart: bool = false
 var has_kick: bool = false
+var has_pierce: bool = false
+var has_remote: bool = false
+var skull_curse: int = -1 # -1: sem maldição, 0: lentidão, 1: diarreia de bombas, 2: hiper velocidade
+var skull_timer: float = 0.0
+var diarrhea_timer: float = 0.0
 var invulnerability_seconds: float = 0.0
 var bomb_buffer_timer: float = 0.0
 
@@ -103,10 +108,39 @@ func _physics_process(delta: float) -> void:
 		if is_local_player():
 			_capture_local_input()
 		
+		# Processa maldição do Crânio
+		if skull_timer > 0.0:
+			skull_timer -= delta
+			if skull_curse == 1: # Diarreia de bombas
+				diarrhea_timer -= delta
+				if diarrhea_timer <= 0.0:
+					diarrhea_timer = 1.3
+					if active_bombs < max_bombs:
+						request_drop_bomb()
+			if skull_timer <= 0.0:
+				clear_curse()
+			else:
+				# Transmite a maldição por proximidade para outros jogadores
+				for other in get_tree().get_nodes_in_group("players"):
+					if other != self and is_instance_valid(other) and other.is_alive and ("skull_curse" in other):
+						if global_position.distance_to(other.global_position) < 36.0 and other.skull_curse < 0:
+							other.apply_curse(skull_curse, skull_timer)
+							clear_curse()
+							break
+
 		# O servidor simula o movimento autoritativo e aplica a assistência de quina.
 		var effective_speed: float = base_speed * speed_multiplier
+		if skull_curse == 0:
+			effective_speed *= 0.55
+		elif skull_curse == 2:
+			effective_speed *= 1.75
+		
 		var move_dir: Vector2 = _apply_corner_slide(current_direction)
-		velocity = move_dir * effective_speed
+		var grid: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+		if grid and ArenaMapStyles.is_ice_map(grid.map_style):
+			velocity = velocity.lerp(move_dir * effective_speed, clampf(delta * 4.5, 0.0, 1.0))
+		else:
+			velocity = move_dir * effective_speed
 		move_and_slide()
 		
 		if has_kick:
@@ -122,12 +156,29 @@ func _physics_process(delta: float) -> void:
 	else:
 		if is_local_player():
 			_capture_local_input()
-			# O servidor aplica a assistência uma única vez, na posição autoritativa.
 			send_input.rpc_id(1, current_direction)
-		
-		# Interpolação suave em direção à posição autoritativa confirmada pelo servidor
-		if target_sync_position != Vector2.ZERO:
-			global_position = global_position.lerp(target_sync_position, clampf(22.0 * delta, 0.0, 1.0))
+			
+			# Predição de movimento local imediata para resposta sem latência
+			var effective_speed: float = base_speed * speed_multiplier
+			if skull_curse == 0:
+				effective_speed *= 0.55
+			elif skull_curse == 2:
+				effective_speed *= 1.75
+			
+			velocity = current_direction * effective_speed
+			move_and_slide()
+			
+			# Reconciliação suave com a posição confirmada pelo servidor
+			if target_sync_position != Vector2.ZERO:
+				var dist: float = global_position.distance_to(target_sync_position)
+				if dist > 64.0:
+					global_position = global_position.lerp(target_sync_position, clampf(28.0 * delta, 0.0, 1.0))
+				elif dist > 1.0:
+					global_position = global_position.lerp(target_sync_position, clampf(8.0 * delta, 0.0, 1.0))
+		else:
+			# Para os outros jogadores conectados: interpolação suave direta
+			if target_sync_position != Vector2.ZERO:
+				global_position = global_position.lerp(target_sync_position, clampf(22.0 * delta, 0.0, 1.0))
 		
 		_update_facing_visual()
 
@@ -184,6 +235,9 @@ func request_drop_bomb() -> void:
 	if not is_alive:
 		return
 	if active_bombs >= max_bombs:
+		if has_remote and active_bombs > 0:
+			request_detonate_remote()
+			return
 		if GameState.input_buffering_enabled:
 			bomb_buffer_timer = GameState.input_buffer_window
 		return
@@ -300,11 +354,60 @@ func apply_power_up(type: int) -> void:
 			has_heart = true
 		GameState.PowerUpType.KICK:
 			has_kick = true
+		GameState.PowerUpType.PIERCE:
+			has_pierce = true
+		GameState.PowerUpType.REMOTE:
+			has_remote = true
+		GameState.PowerUpType.SKULL:
+			apply_curse(randi_range(0, 2), 12.0)
 	powerup_changed.emit(self)
 	
 	var flash_tween: Tween = create_tween()
 	flash_tween.tween_property(visuals_root, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.1)
-	flash_tween.tween_property(visuals_root, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
+	flash_tween.tween_property(visuals_root, "modulate", Color(1.0, 1.0, 1.0, 1.0) if skull_curse < 0 else Color(1.3, 0.6, 1.4, 1.0), 0.1)
+
+func apply_curse(curse_type: int, duration: float = 12.0) -> void:
+	skull_curse = curse_type
+	skull_timer = duration
+	diarrhea_timer = 1.0
+	AudioManager.play_enemy_alert()
+	if visuals_root:
+		visuals_root.modulate = Color(1.3, 0.6, 1.4, 1.0)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_curse.rpc(skull_curse, skull_timer)
+
+func clear_curse() -> void:
+	skull_curse = -1
+	skull_timer = 0.0
+	if visuals_root:
+		visuals_root.modulate = Color.WHITE
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_curse.rpc(-1, 0.0)
+
+@rpc("authority", "call_local", "reliable")
+func sync_curse(curse_type: int, duration: float) -> void:
+	skull_curse = curse_type
+	skull_timer = duration
+	if visuals_root:
+		visuals_root.modulate = Color(1.3, 0.6, 1.4, 1.0) if skull_curse >= 0 else Color.WHITE
+
+func request_detonate_remote() -> void:
+	if not is_alive or not has_remote or active_bombs == 0:
+		return
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		server_detonate_remote.rpc_id(1)
+	else:
+		var game_node: Node = get_tree().get_first_node_in_group("game_orchestrator")
+		if game_node and game_node.bomb_system:
+			game_node.bomb_system.call("detonate_remote_bombs", self)
+
+@rpc("any_peer", "call_local", "reliable")
+func server_detonate_remote() -> void:
+	if not multiplayer.is_server() or not is_alive or not has_remote:
+		return
+	var game_node: Node = get_tree().get_first_node_in_group("game_orchestrator")
+	if game_node and game_node.bomb_system:
+		game_node.bomb_system.call("detonate_remote_bombs", self)
 
 func die() -> void:
 	if not is_alive:
@@ -353,6 +456,10 @@ func respawn(at_position: Vector2, preserve_upgrades: bool = false) -> void:
 		bomb_range = 2
 		speed_multiplier = 1.0
 		has_heart = false
+		has_kick = false
+		has_pierce = false
+		has_remote = false
+	clear_curse()
 	invulnerability_seconds = 1.5 if GameState.game_mode == GameState.GameMode.CAMPAIGN else 0.0
 	collision_shape.set_deferred("disabled", false)
 	visuals_root.rotation = 0.0

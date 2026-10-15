@@ -142,7 +142,7 @@ func _init_multiplayer_match() -> void:
 		is_round_active = true
 	
 	_refresh_all_hud_cards()
-	AudioManager.play_battle_music()
+	AudioManager.play_battle_music(grid_map.map_style if grid_map else 0)
 
 func _init_singleplayer_match() -> void:
 	grid_map.generate_map()
@@ -166,7 +166,7 @@ func _init_singleplayer_match() -> void:
 	# Reinicia a Morte Súbita
 	sudden_death_banner_shown = false
 	sudden_death.start(grid_map)
-	AudioManager.play_battle_music()
+	AudioManager.play_battle_music(grid_map.map_style if grid_map else 0)
 
 func _init_campaign_match() -> void:
 	is_campaign_choosing_portal = false
@@ -192,7 +192,7 @@ func _init_campaign_match() -> void:
 	_spawn_campaign_enemies(player)
 	_refresh_all_hud_cards()
 	_save_campaign_player_progress(player)
-	AudioManager.play_battle_music()
+	AudioManager.play_battle_music(grid_map.map_style if grid_map else 0, CampaignRules.BOSS_STAGES.has(GameState.campaign_stage_index))
 
 func _spawn_campaign_enemies(player: Player) -> void:
 	campaign_enemies = campaign_enemy_spawner.spawn(
@@ -241,7 +241,7 @@ func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
 	_refresh_all_hud_cards()
 	_save_campaign_player_progress(player)
 	GameState.save_campaign_progress()
-	AudioManager.play_battle_music()
+	AudioManager.play_battle_music(grid_map.map_style if grid_map else 0, CampaignRules.BOSS_STAGES.has(GameState.campaign_stage_index))
 
 func _apply_campaign_player_progress(player: Player) -> void:
 	player.max_bombs = GameState.campaign_max_bombs
@@ -347,6 +347,7 @@ func _campaign_lose_life(reason: String) -> void:
 	if GameState.game_mode != GameState.GameMode.CAMPAIGN or not is_round_active:
 		return
 	is_round_active = false
+	_trigger_decisive_slowmo()
 	is_campaign_choosing_portal = false
 	AudioManager.play_game_over_jingle()
 	GameState.campaign_lives = maxi(0, GameState.campaign_lives - 1)
@@ -372,6 +373,7 @@ func _campaign_lose_life(reason: String) -> void:
 		get_tree().create_timer(1.8).timeout.connect(_restart_campaign_stage)
 
 func _restart_campaign_stage() -> void:
+	Engine.time_scale = 1.0
 	if GameState.game_mode == GameState.GameMode.CAMPAIGN:
 		_start_campaign_stage(GameState.campaign_stage_index, false)
 
@@ -396,6 +398,7 @@ func _show_campaign_ending() -> void:
 	get_tree().create_timer(8.0).timeout.connect(_return_to_main_menu)
 
 func _return_to_main_menu() -> void:
+	Engine.time_scale = 1.0
 	GameState.game_mode = GameState.GameMode.BATTLE
 	NetworkManager.is_game_active = false
 	TransitionManager.change_scene("res://scenes/main_menu.tscn")
@@ -445,7 +448,7 @@ func _spawn_bots(count: int, mock_players: Dictionary, peer_ids: Array[int]) -> 
 		var bot_color: int = (1 + i) % Player.PLAYER_COLORS.size()
 
 		var bot: BattleBot = BOT_SCENE.instantiate() as BattleBot
-		bot.setup(grid_map, human_players, bot_peer_id, bot_color, 0, bot_name)
+		bot.setup(grid_map, human_players, bot_peer_id, bot_color, 0, bot_name, int(GameState.bot_difficulty))
 		bot.global_position = grid_map.get_spawn_world_pos(bot_index)
 		bot.bomb_drop_requested.connect(_on_bot_bomb_drop_requested)
 		bot.died.connect(_on_bot_died)
@@ -470,6 +473,8 @@ func _on_bot_bomb_drop_requested(bot: BattleBot, _world_pos: Vector2) -> void:
 	var bomb: Bomb = grid_map.place_bomb(cell, bot as CharacterBody2D)
 	if bomb == null:
 		return
+	bomb.is_pierce = bot.has_pierce
+	bomb.is_remote = bot.has_remote
 	bot.active_bombs += 1
 	bomb.exploded.connect(func(b: Bomb, c: Vector2i, r: int): bot.on_bomb_exploded(); grid_map.unregister_bomb(c); bomb_system.call("resolve_explosion", b, c, r))
 	AudioManager.play_bomb_drop()
@@ -540,8 +545,9 @@ func _on_player_bomb_drop_requested(player: Player, _world_pos: Vector2) -> void
 	bomb_system.call("drop_bomb", player)
 
 @rpc("authority", "call_remote", "reliable")
-func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int) -> void:
-	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range)
+func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int, is_pierce: bool = false, is_remote: bool = false) -> void:
+	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range, is_pierce, is_remote)
+
 func _roll_powerup_drop_type() -> int:
 	stat_blocks_broken += 1
 	var is_campaign: bool = GameState.game_mode == GameState.GameMode.CAMPAIGN
@@ -553,7 +559,15 @@ func _roll_powerup_drop_type() -> int:
 			return GameState.PowerUpType.HEART
 	if randf() > grid_map.powerup_drop_chance:
 		return -1
-	var power_types: Array[int] = [GameState.PowerUpType.BOMB, GameState.PowerUpType.RANGE, GameState.PowerUpType.SPEED, GameState.PowerUpType.KICK]
+	var power_types: Array[int] = [
+		GameState.PowerUpType.BOMB,
+		GameState.PowerUpType.RANGE,
+		GameState.PowerUpType.SPEED,
+		GameState.PowerUpType.KICK,
+		GameState.PowerUpType.PIERCE,
+		GameState.PowerUpType.REMOTE,
+		GameState.PowerUpType.SKULL
+	]
 	if is_campaign and not campaign_heart_spawned:
 		power_types.append(GameState.PowerUpType.HEART)
 	var p_type: int = power_types.pick_random()
@@ -571,9 +585,12 @@ func sync_explosion(center: Vector2i, flame_cells: Array, destroyed_blocks: Arra
 func sync_powerup_collected(cell: Vector2i, collector_id: int, p_type: int) -> void:
 	bomb_system.call("apply_powerup_collected", cell, collector_id, p_type)
 func _refresh_player_hud(peer_id: int) -> void:
-	var p: Player = spawned_players.get(peer_id, null)
+	var p = spawned_players.get(peer_id, null)
 	if p:
-		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick)
+		var has_pierce_val: bool = p.has_pierce if "has_pierce" in p else false
+		var has_remote_val: bool = p.has_remote if "has_remote" in p else false
+		var curse_val: int = p.skull_curse if "skull_curse" in p else -1
+		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick, has_pierce_val, has_remote_val, curse_val)
 
 func _refresh_all_hud_cards() -> void:
 	for id in spawned_players:
@@ -624,6 +641,7 @@ func _end_round_server() -> void:
 @rpc("authority", "call_local", "reliable")
 func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 	match_round.end()
+	_trigger_decisive_slowmo()
 	NetworkManager.scores = updated_scores
 	round_overlay.visible = true
 	spectator_banner.visible = false
@@ -659,6 +677,7 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 	
 	if has_match_winner:
 		_populate_match_stats(score_list_vbox)
+		AudioManager.play_victory_theme()
 		round_title.text = "🎉 FIM DE PARTIDA! 🎉"
 		winner_label.text = "CAMPEÃO DO BOMBÁSTICO: %s!" % match_winner_name
 		next_round_label.text = "Voltando ao lobby em 5 segundos..."
@@ -681,6 +700,7 @@ func _advance_to_next_round_server() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func sync_start_new_round(next_seed: int, round_num: int) -> void:
+	Engine.time_scale = 1.0
 	current_round = round_num
 	round_overlay.visible = false
 	spectator_banner.visible = false
@@ -711,7 +731,7 @@ func sync_start_new_round(next_seed: int, round_num: int) -> void:
 	hud.update_round_info(current_round, WINS_REQUIRED)
 	hud.update_timer_display(ROUND_TIME_LIMIT)
 	_refresh_all_hud_cards()
-	AudioManager.play_battle_music()
+	AudioManager.play_battle_music(grid_map.map_style if grid_map else 0)
 
 func _start_round_server(round_num: int) -> void:
 	alive_players.clear()
@@ -741,12 +761,20 @@ func _on_player_disconnected(peer_id: int) -> void:
 	_refresh_all_hud_cards()
 
 func _on_leave_requested() -> void:
+	Engine.time_scale = 1.0
 	AudioManager.stop_music()
 	get_tree().paused = false
 	if not NetworkManager.is_dedicated_server:
 		NetworkManager.disconnect_from_server()
 	GameState.game_mode = GameState.GameMode.BATTLE
 	TransitionManager.change_scene("res://scenes/main_menu.tscn")
+
+func _trigger_decisive_slowmo() -> void:
+	Engine.time_scale = 0.35
+	if hud and hud.has_method("trigger_screen_shake"):
+		hud.trigger_screen_shake(10.0)
+	var tween: Tween = create_tween()
+	tween.tween_property(Engine, "time_scale", 1.0, 0.65).set_delay(0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F10:
@@ -820,3 +848,57 @@ func _populate_match_stats(container: VBoxContainer) -> void:
 		grid.add_child(v)
 	
 	container.add_child(grid)
+	
+	# Medalhas e Títulos comemorativos
+	var badges: Array[Dictionary] = []
+	if stat_blocks_broken >= 15:
+		badges.append({"title": "🏆 Demolidor de Paredes", "color": Color(1.0, 0.75, 0.3)})
+	if stat_bombs_dropped >= 20:
+		badges.append({"title": "💣 Mestre da Pólvora", "color": Color(1.0, 0.45, 0.35)})
+	if stat_powerups_collected >= 6:
+		badges.append({"title": "⭐ Colecionador Nato", "color": Color(0.4, 0.95, 0.6)})
+	if stat_match_seconds < 75.0 and stat_bombs_dropped >= 5:
+		badges.append({"title": "⚡ Velocista Tático", "color": Color(0.35, 0.85, 1.0)})
+	elif stat_match_seconds >= 120.0:
+		badges.append({"title": "🛡️ Sobrevivente Épico", "color": Color(0.85, 0.6, 1.0)})
+	if GameState.game_mode == GameState.GameMode.CAMPAIGN and stat_enemies_defeated >= 5:
+		badges.append({"title": "👾 Exterminador", "color": Color(1.0, 0.5, 0.8)})
+
+	if not badges.is_empty():
+		var badge_sep := HSeparator.new()
+		container.add_child(badge_sep)
+		
+		var badge_header := Label.new()
+		badge_header.text = "🎖️ TÍTULOS E CONQUISTAS"
+		badge_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge_header.add_theme_font_size_override("font_size", 13)
+		badge_header.add_theme_color_override("font_color", Color(0.5, 1.0, 0.7))
+		container.add_child(badge_header)
+		
+		var badge_box := HFlowContainer.new()
+		badge_box.alignment = FlowContainer.ALIGNMENT_CENTER
+		badge_box.add_theme_constant_override("h_separation", 10)
+		badge_box.add_theme_constant_override("v_separation", 6)
+		badge_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		for b in badges:
+			var panel := PanelContainer.new()
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0.12, 0.16, 0.24, 0.85)
+			style.border_color = b.color
+			style.set_border_width_all(1)
+			style.set_corner_radius_all(6)
+			style.content_margin_left = 8
+			style.content_margin_right = 8
+			style.content_margin_top = 4
+			style.content_margin_bottom = 4
+			panel.add_theme_stylebox_override("panel", style)
+			
+			var badge_lbl := Label.new()
+			badge_lbl.text = b.title
+			badge_lbl.add_theme_font_size_override("font_size", 11)
+			badge_lbl.add_theme_color_override("font_color", b.color)
+			panel.add_child(badge_lbl)
+			badge_box.add_child(panel)
+		
+		container.add_child(badge_box)
