@@ -14,6 +14,8 @@ var current_mount: int = GameState.MountType.NONE
 var sprite_frame: int = -1
 var sprite_row: int = -1
 var sprite_flip: bool = false
+var emote_sprite: Sprite2D
+var emote_tween: Tween
 
 func _ready() -> void:
 	mount_sprite = Sprite2D.new()
@@ -26,6 +28,14 @@ func _ready() -> void:
 	character_sprite.name = "CharacterSprite"
 	character_sprite.z_index = 0
 	add_child(character_sprite)
+
+	emote_sprite = Sprite2D.new()
+	emote_sprite.name = "EmoteBubble"
+	emote_sprite.z_index = 10
+	emote_sprite.visible = false
+	emote_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(emote_sprite)
+
 	set_character(character_index)
 	set_mount(current_mount)
 	queue_redraw()
@@ -129,3 +139,31 @@ func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 		var angle: float = TAU * float(i) / 16.0
 		points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
 	draw_colored_polygon(points, color)
+
+func show_emote(emote_index: int) -> void:
+	if not emote_sprite:
+		return
+	var idx := clampi(emote_index, 1, 30)
+	var path := "res://assets/legal/emotes/emote%d.png" % idx
+	if not ResourceLoader.exists(path):
+		return
+	emote_sprite.texture = load(path) as Texture2D
+	emote_sprite.visible = true
+	var base_y: float = -54.0 if current_mount != GameState.MountType.NONE else -42.0
+	emote_sprite.position = Vector2(0, base_y)
+	emote_sprite.scale = Vector2(0.2, 0.2)
+	emote_sprite.modulate.a = 1.0
+	
+	if emote_tween and emote_tween.is_valid():
+		emote_tween.kill()
+	
+	emote_tween = create_tween()
+	# Pop bounce: surge rapidamente com efeito mola
+	emote_tween.tween_property(emote_sprite, "scale", Vector2.ONE * 2.8, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Flutuação suave para cima
+	emote_tween.parallel().tween_property(emote_sprite, "position:y", base_y - 8.0, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	emote_tween.tween_interval(1.8)
+	emote_tween.parallel().tween_property(emote_sprite, "modulate:a", 0.0, 0.3)
+	emote_tween.chain().tween_callback(func():
+		emote_sprite.visible = false
+	)

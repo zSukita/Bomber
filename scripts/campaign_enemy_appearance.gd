@@ -44,12 +44,13 @@ func show_enemy_state(enemy: CampaignEnemy) -> void:
 
 	if is_alive:
 		enemy_sprite.visible = true
-		var frame_idx: int = clampi(int(animation_time * 6.0) % 4, 0, 3)
+		var frame_idx: int = int(animation_time * 6.0)
 		if direction.x < 0:
 			facing_h_flip = true
 		elif direction.x > 0:
 			facing_h_flip = false
-		BomberAssets.configure_enemy_sprite(enemy_sprite, archetype, frame_idx, facing_h_flip)
+		var is_action: bool = is_winding_up or is_charging
+		BomberAssets.configure_enemy_sprite(enemy_sprite, archetype, frame_idx, facing_h_flip, enemy.stage_index, is_action, direction)
 	queue_redraw()
 
 func _draw() -> void:

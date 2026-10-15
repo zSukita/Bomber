@@ -49,6 +49,7 @@ var boss_stomp_timer: float = 5.0
 var boss_illusion_spawned: bool = false
 var boss_enraged: bool = false
 var boss_time_bomb_timer: float = 4.0
+var freeze_timer: float = 0.0
 
 @onready var appearance: Node2D = $Appearance
 
@@ -116,6 +117,14 @@ func _physics_process(delta: float) -> void:
 	direction_timer -= delta
 	hurt_invulnerability = maxf(0.0, hurt_invulnerability - delta)
 	charge_cooldown = maxf(0.0, charge_cooldown - delta)
+	if freeze_timer > 0.0:
+		freeze_timer = maxf(0.0, freeze_timer - delta)
+		velocity = Vector2.ZERO
+		modulate = Color(0.4, 0.8, 1.4, 1.0)
+		if freeze_timer <= 0.0:
+			modulate = Color.WHITE
+		_update_appearance()
+		return
 	danger_refresh -= delta
 	escape_refresh -= delta
 	if danger_refresh <= 0.0:
@@ -592,6 +601,14 @@ func take_bomb_hit() -> void:
 			flash.tween_property(self, "modulate", Color.WHITE, GameState.impact_flash_duration)
 	_update_appearance()
 
+func freeze_enemy(duration: float = 3.0) -> void:
+	if not is_alive:
+		return
+	freeze_timer = duration
+	velocity = Vector2.ZERO
+	modulate = Color(0.4, 0.8, 1.4, 1.0)
+	_update_appearance()
+
 # ----------------- HABILIDADES EXCLUSIVAS DE CHEFES -----------------
 
 func _update_boss_mechanics(delta: float) -> void:
@@ -622,20 +639,31 @@ func _on_boss_damaged() -> void:
 		if health <= 3 and not boss_enraged:
 			_boss_trigger_enrage()
 
-## Fase 5: Terremoto que treme a tela e destrói blocos adjacentes
+## Fase 5: Salto acrobático e Terremoto do Sapo Gigante que treme a tela e destrói blocos adjacentes
 func _boss_perform_stomp() -> void:
 	if arena_grid == null:
 		return
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.45)
-	AudioManager.play_bump()
-	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	for d in DIRECTIONS:
-		var target_c: Vector2i = current_cell + d
-		if arena_grid.is_in_bounds(target_c) and arena_grid.get_cell_type(target_c) == GameState.CellType.BLOCK_DESTRUCTIBLE:
-			arena_grid.destroy_block_at(target_c, false)
-	var stomp_tween: Tween = create_tween()
-	stomp_tween.tween_property(self, "scale", Vector2(1.28, 0.75), 0.08)
-	stomp_tween.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	is_winding_up = true
+	var jump_tween: Tween = create_tween()
+	jump_tween.tween_property(self, "position:y", position.y - 34.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	jump_tween.tween_property(self, "position:y", position.y, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	jump_tween.tween_callback(func():
+		is_winding_up = false
+		get_tree().call_group("game_orchestrator", "add_screen_shake", 0.55)
+		AudioManager.play_bump()
+		var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
+		for d in DIRECTIONS:
+			var target_c: Vector2i = current_cell + d
+			if arena_grid.is_in_bounds(target_c) and arena_grid.get_cell_type(target_c) == GameState.CellType.BLOCK_DESTRUCTIBLE:
+				arena_grid.destroy_block_at(target_c, false)
+		for diag in [Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+			var target_d: Vector2i = current_cell + diag
+			if arena_grid.is_in_bounds(target_d) and arena_grid.get_cell_type(target_d) == GameState.CellType.BLOCK_DESTRUCTIBLE:
+				arena_grid.destroy_block_at(target_d, false)
+		var stomp_tween: Tween = create_tween()
+		stomp_tween.tween_property(self, "scale", Vector2(1.35, 0.70), 0.08)
+		stomp_tween.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	)
 
 ## Fase 10: Teletransporte para uma célula segura distante do jogador
 func _boss_teleport_away() -> void:

@@ -30,7 +30,9 @@ enum PowerUpType {
 	PIERCE = 5,
 	REMOTE = 6,
 	SKULL = 7,
-	MOUNT_EGG = 8
+	MOUNT_EGG = 8,
+	ICE_BOMB = 9,
+	THUNDER_BOMB = 10
 }
 
 enum MountType {

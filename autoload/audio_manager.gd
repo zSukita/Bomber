@@ -32,6 +32,8 @@ var bgm_adventure: AudioStream
 var bgm_dungeon: AudioStream
 var bgm_tension: AudioStream
 var bgm_victory_theme: AudioStream
+var bgm_boss: AudioStream
+var bgm_arena_tracks: Array[AudioStream] = []
 var sfx_victory: AudioStream
 var sfx_game_over: AudioStream
 var sfx_stage_clear: AudioStream
@@ -61,35 +63,51 @@ func _ready() -> void:
 	_generate_all_sfx()
 	_load_legal_audio()
 
+func _load_ogg(path: String) -> AudioStream:
+	if ResourceLoader.exists(path):
+		var s = load(path)
+		if s is AudioStreamOggVorbis:
+			(s as AudioStreamOggVorbis).loop = true
+		return s
+	return null
+
 func _load_legal_audio() -> void:
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_lobby.ogg"):
-		bgm_lobby = load("res://assets/legal/audio/music/music_lobby.ogg")
-		if bgm_lobby is AudioStreamOggVorbis:
-			(bgm_lobby as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_battle_1.ogg"):
-		bgm_battle = load("res://assets/legal/audio/music/music_battle_1.ogg")
-		if bgm_battle is AudioStreamOggVorbis:
-			(bgm_battle as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_battle_2.ogg"):
-		bgm_battle_2 = load("res://assets/legal/audio/music/music_battle_2.ogg")
-		if bgm_battle_2 is AudioStreamOggVorbis:
-			(bgm_battle_2 as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_adventure.ogg"):
-		bgm_adventure = load("res://assets/legal/audio/music/music_adventure.ogg")
-		if bgm_adventure is AudioStreamOggVorbis:
-			(bgm_adventure as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_dungeon.ogg"):
-		bgm_dungeon = load("res://assets/legal/audio/music/music_dungeon.ogg")
-		if bgm_dungeon is AudioStreamOggVorbis:
-			(bgm_dungeon as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_tension.ogg"):
-		bgm_tension = load("res://assets/legal/audio/music/music_tension.ogg")
-		if bgm_tension is AudioStreamOggVorbis:
-			(bgm_tension as AudioStreamOggVorbis).loop = true
-	if ResourceLoader.exists("res://assets/legal/audio/music/music_victory_theme.ogg"):
-		bgm_victory_theme = load("res://assets/legal/audio/music/music_victory_theme.ogg")
-		if bgm_victory_theme is AudioStreamOggVorbis:
-			(bgm_victory_theme as AudioStreamOggVorbis).loop = true
+	bgm_lobby = _load_ogg("res://assets/legal/audio/music/music_lobby.ogg")
+	bgm_battle = _load_ogg("res://assets/legal/audio/music/music_battle_1.ogg")
+	bgm_battle_2 = _load_ogg("res://assets/legal/audio/music/music_battle_2.ogg")
+	bgm_adventure = _load_ogg("res://assets/legal/audio/music/music_adventure.ogg")
+	bgm_dungeon = _load_ogg("res://assets/legal/audio/music/music_dungeon.ogg")
+	bgm_tension = _load_ogg("res://assets/legal/audio/music/music_tension.ogg")
+	bgm_victory_theme = _load_ogg("res://assets/legal/audio/music/music_victory_theme.ogg")
+	bgm_boss = _load_ogg("res://assets/legal/audio/music/music_final_area.ogg")
+	
+	# Mapeamento sonoro dos 12 estilos de arena:
+	# 0: Arena Clássica -> music_battle_1
+	# 1: Carrossel de Fogo -> music_dark_castle
+	# 2: Costa Tropical -> music_aquatic
+	# 3: Labirinto Oculto -> music_cave
+	# 4: Tundra Congelada -> music_chill
+	# 5: Usina Eletrizante -> music_tension
+	# 6: Ruínas do Deserto -> music_desert
+	# 7: Vulcão Ardente -> music_final_area
+	# 8: Girocrusader -> music_ascension
+	# 9: Pântano Tóxico -> music_curse
+	# 10: Templo Estelar -> music_temple
+	# 11: Coliseu Bombástico -> music_battle_2
+	bgm_arena_tracks.clear()
+	bgm_arena_tracks.append(bgm_battle) # 0
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_dark_castle.ogg")) # 1
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_aquatic.ogg")) # 2
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_cave.ogg")) # 3
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_chill.ogg")) # 4
+	bgm_arena_tracks.append(bgm_tension) # 5
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_desert.ogg")) # 6
+	bgm_arena_tracks.append(bgm_boss) # 7
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_ascension.ogg")) # 8
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_curse.ogg")) # 9
+	bgm_arena_tracks.append(_load_ogg("res://assets/legal/audio/music/music_temple.ogg")) # 10
+	bgm_arena_tracks.append(bgm_battle_2) # 11
+	
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_victory.wav"):
 		sfx_victory = load("res://assets/legal/audio/jingles/jingle_victory.wav")
 	if ResourceLoader.exists("res://assets/legal/audio/jingles/jingle_game_over.wav"):
@@ -162,18 +180,16 @@ func play_menu_music() -> void:
 
 func play_battle_music(map_style: int = 0, is_boss: bool = false) -> void:
 	var stream_to_play: AudioStream = bgm_battle
-	if is_boss and bgm_battle_2:
-		stream_to_play = bgm_battle_2
+	if is_boss:
+		stream_to_play = bgm_boss if bgm_boss else bgm_battle_2
 	else:
-		match posmod(map_style, 4):
-			0:
-				stream_to_play = bgm_battle if bgm_battle else menu_music_stream
-			1:
-				stream_to_play = bgm_dungeon if bgm_dungeon else bgm_battle
-			2:
-				stream_to_play = bgm_adventure if bgm_adventure else bgm_battle
-			3:
-				stream_to_play = bgm_battle_2 if bgm_battle_2 else bgm_battle
+		var style_idx: int = posmod(map_style, 12)
+		if style_idx < bgm_arena_tracks.size() and bgm_arena_tracks[style_idx] != null:
+			stream_to_play = bgm_arena_tracks[style_idx]
+		elif bgm_battle:
+			stream_to_play = bgm_battle
+		else:
+			stream_to_play = menu_music_stream
 	if stream_to_play and (music_player.stream != stream_to_play or not music_player.playing):
 		music_player.stream = stream_to_play
 		music_player.play()

@@ -545,8 +545,8 @@ func _on_player_bomb_drop_requested(player: Player, _world_pos: Vector2) -> void
 	bomb_system.call("drop_bomb", player)
 
 @rpc("authority", "call_remote", "reliable")
-func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int, is_pierce: bool = false, is_remote: bool = false) -> void:
-	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range, is_pierce, is_remote)
+func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int, is_pierce: bool = false, is_remote: bool = false, element_type: int = 0) -> void:
+	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range, is_pierce, is_remote, element_type)
 
 func _roll_powerup_drop_type(cell: Vector2i = Vector2i(-1, -1)) -> int:
 	stat_blocks_broken += 1
@@ -579,7 +579,9 @@ func _refresh_player_hud(peer_id: int) -> void:
 		var has_remote_val: bool = p.has_remote if "has_remote" in p else false
 		var curse_val: int = p.skull_curse if "skull_curse" in p else -1
 		var mount_val: int = p.current_mount if "current_mount" in p else 0
-		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick, has_pierce_val, has_remote_val, curse_val, mount_val)
+		var ice_val: bool = p.has_ice_bomb if "has_ice_bomb" in p else false
+		var thunder_val: bool = p.has_thunder_bomb if "has_thunder_bomb" in p else false
+		hud.update_player_card(peer_id, p.is_alive, p.max_bombs, p.bomb_range, p.speed_multiplier, p.has_heart, p.has_kick, has_pierce_val, has_remote_val, curse_val, mount_val, ice_val, thunder_val)
 
 func _refresh_all_hud_cards() -> void:
 	for id in spawned_players:

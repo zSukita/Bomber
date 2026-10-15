@@ -40,7 +40,18 @@ var has_heart: bool = false
 var has_kick: bool = false
 var has_pierce: bool = false
 var has_remote: bool = false
+var has_ice_bomb: bool = false
+var has_thunder_bomb: bool = false
+var freeze_timer: float = 0.0
 var current_mount: int = GameState.MountType.NONE
+var mount_ability_cooldown: float = 0.0
+var is_dashing: bool = false
+var dash_remaining: float = 0.0
+var dash_direction: Vector2 = Vector2.ZERO
+var is_jumping: bool = false
+var current_emote_index: int = 1
+var emote_cooldown: float = 0.0
+var panic_emote_cooldown: float = 0.0
 var skull_curse: int = -1 # -1: sem maldição, 0: lentidão, 1: diarreia de bombas, 2: hiper velocidade
 var skull_timer: float = 0.0
 var diarrhea_timer: float = 0.0
@@ -91,6 +102,44 @@ func _physics_process(delta: float) -> void:
 	if not is_alive:
 		velocity = Vector2.ZERO
 		return
+	if freeze_timer > 0.0:
+		freeze_timer = maxf(0.0, freeze_timer - delta)
+		if freeze_timer <= 0.0 and visuals_root and is_alive:
+			visuals_root.modulate = Color.WHITE
+	if mount_ability_cooldown > 0.0:
+		mount_ability_cooldown = maxf(0.0, mount_ability_cooldown - delta)
+	if emote_cooldown > 0.0:
+		emote_cooldown = maxf(0.0, emote_cooldown - delta)
+	if panic_emote_cooldown > 0.0:
+		panic_emote_cooldown = maxf(0.0, panic_emote_cooldown - delta)
+	elif is_local_player() and not is_dashing and not is_jumping:
+		var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+		if grid_map:
+			var cur_c: Vector2i = grid_map.world_to_grid(global_position)
+			for d in [Vector2i.ZERO, Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+				var check_c: Vector2i = cur_c + d
+				if grid_map.has_bomb_at(check_c):
+					var b: Bomb = grid_map.get_bomb_at(check_c)
+					if b and is_instance_valid(b) and b.fuse_timer and b.fuse_timer.time_left <= 0.9:
+						panic_emote_cooldown = 3.5
+						show_local_emote(14)
+						break
+	if is_jumping:
+		velocity = Vector2.ZERO
+		return
+	if is_dashing:
+		dash_remaining -= delta
+		velocity = dash_direction * (base_speed * 3.2)
+		move_and_slide()
+		if get_slide_collision_count() > 0:
+			is_dashing = false
+		if dash_remaining <= 0.0:
+			is_dashing = false
+		_check_bomb_kicking()
+		if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+			sync_position.rpc(global_position, facing_direction)
+		_update_facing_visual()
+		return
 	if GameState.local_pause_menu_open and is_local_player():
 		current_direction = Vector2.ZERO
 		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
@@ -133,7 +182,9 @@ func _physics_process(delta: float) -> void:
 		var effective_speed: float = base_speed * speed_multiplier
 		if current_mount != GameState.MountType.NONE:
 			effective_speed *= 1.15
-		if skull_curse == 0:
+		if freeze_timer > 0.0:
+			effective_speed *= 0.25
+		elif skull_curse == 0:
 			effective_speed *= 0.55
 		elif skull_curse == 2:
 			effective_speed *= 1.75
@@ -163,7 +214,9 @@ func _physics_process(delta: float) -> void:
 			
 			# Predição de movimento local imediata para resposta sem latência
 			var effective_speed: float = base_speed * speed_multiplier
-			if skull_curse == 0:
+			if freeze_timer > 0.0:
+				effective_speed *= 0.25
+			elif skull_curse == 0:
 				effective_speed *= 0.55
 			elif skull_curse == 2:
 				effective_speed *= 1.75
@@ -232,6 +285,10 @@ func _capture_local_input() -> void:
 	
 	if Input.is_action_just_pressed("drop_bomb"):
 		request_drop_bomb()
+	if Input.is_action_just_pressed("mount_ability"):
+		request_mount_ability()
+	if Input.is_action_just_pressed("trigger_emote"):
+		trigger_next_emote()
 
 ## Solicita soltura de bomba (com suporte a buffer de comando no Modo Melhorado)
 func request_drop_bomb() -> void:
@@ -371,11 +428,29 @@ func apply_power_up(type: int) -> void:
 			]
 			var next_mount: int = candidates.pick_random()
 			set_mount(next_mount)
+		GameState.PowerUpType.ICE_BOMB:
+			has_ice_bomb = true
+			has_thunder_bomb = false
+		GameState.PowerUpType.THUNDER_BOMB:
+			has_thunder_bomb = true
+			has_ice_bomb = false
 	powerup_changed.emit(self)
 	
 	var flash_tween: Tween = create_tween()
 	flash_tween.tween_property(visuals_root, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.1)
 	flash_tween.tween_property(visuals_root, "modulate", Color(1.0, 1.0, 1.0, 1.0) if skull_curse < 0 else Color(1.3, 0.6, 1.4, 1.0), 0.1)
+
+func freeze_player(duration: float = 2.2) -> void:
+	if not is_alive or invulnerability_seconds > 0.0:
+		return
+	if freeze_timer > 0.0:
+		die()
+		return
+	freeze_timer = duration
+	AudioManager.play_bump()
+	if visuals_root:
+		var freeze_tween: Tween = create_tween()
+		freeze_tween.tween_property(visuals_root, "modulate", Color(0.35, 0.75, 1.6, 1.0), 0.1)
 
 func set_mount(mount_type: int) -> void:
 	current_mount = mount_type
@@ -512,6 +587,8 @@ func respawn(at_position: Vector2, preserve_upgrades: bool = false) -> void:
 		has_kick = false
 		has_pierce = false
 		has_remote = false
+		has_ice_bomb = false
+		has_thunder_bomb = false
 		set_mount(GameState.MountType.NONE)
 	else:
 		if visuals_root and visuals_root.has_method("set_mount"):
@@ -530,3 +607,125 @@ func _update_facing_visual() -> void:
 		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server() and not is_local_player():
 			is_moving = global_position.distance_to(target_sync_position) > 2.0
 		visuals_root.update_state(facing_direction, is_moving, is_alive)
+
+# ----------------- HABILIDADES ATIVAS DAS MONTARIAS (SUPER BOMBERMAN LOUÍES) -----------------
+
+## Solicita uso da habilidade ativa da montaria atual
+func request_mount_ability() -> void:
+	if not is_alive or current_mount == GameState.MountType.NONE or mount_ability_cooldown > 0.0 or is_dashing or is_jumping:
+		return
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		server_mount_ability.rpc_id(1)
+	else:
+		_execute_mount_ability()
+
+@rpc("any_peer", "call_local", "reliable")
+func server_mount_ability() -> void:
+	if not multiplayer.is_server() or not is_alive or current_mount == GameState.MountType.NONE:
+		return
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if sender_id == peer_id and mount_ability_cooldown <= 0.0 and not is_dashing and not is_jumping:
+		_execute_mount_ability()
+		if multiplayer.has_multiplayer_peer():
+			client_trigger_mount_ability.rpc(current_mount, facing_direction)
+
+@rpc("authority", "call_local", "reliable")
+func client_trigger_mount_ability(m_type: int, f_dir: Vector2) -> void:
+	if not multiplayer.is_server():
+		facing_direction = f_dir
+		_perform_mount_fx(m_type, f_dir)
+
+func _execute_mount_ability() -> void:
+	match current_mount:
+		GameState.MountType.GREEN:
+			# Dino Verde: Arrancada / Dash veloz que empurra e chuta bombas
+			mount_ability_cooldown = 1.8
+			is_dashing = true
+			dash_remaining = 0.28
+			dash_direction = facing_direction if facing_direction != Vector2.ZERO else Vector2.DOWN
+			AudioManager.play_kick()
+			_perform_mount_fx(current_mount, dash_direction)
+		GameState.MountType.BLUE:
+			# Dino Azul: Salto ágil sobre 1 obstáculo (bomba, bloco ou vão)
+			var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+			if not grid_map:
+				return
+			var cur_c: Vector2i = grid_map.world_to_grid(global_position)
+			var f_dir_i: Vector2i = Vector2i(int(round(facing_direction.x)), int(round(facing_direction.y)))
+			if f_dir_i == Vector2i.ZERO:
+				f_dir_i = Vector2i.DOWN
+			var target_c: Vector2i = cur_c + f_dir_i * 2
+			if grid_map.is_in_bounds(target_c) and grid_map.is_walkable(target_c) and not grid_map.has_bomb_at(target_c):
+				mount_ability_cooldown = 2.0
+				is_jumping = true
+				AudioManager.play_powerup()
+				var target_pos: Vector2 = grid_map.grid_to_world(target_c)
+				var jump_tween: Tween = create_tween()
+				jump_tween.tween_property(self, "global_position", target_pos, 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				var height_tween: Tween = create_tween()
+				height_tween.tween_property(visuals_root, "position:y", -36.0, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				height_tween.tween_property(visuals_root, "position:y", 0.0, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+				jump_tween.tween_callback(func():
+					is_jumping = false
+					AudioManager.play_bump()
+				)
+				_perform_mount_fx(current_mount, facing_direction)
+			else:
+				AudioManager.play_bump()
+		GameState.MountType.YELLOW:
+			# Dino Amarelo: Coice de bloco mole (destrói imediatamente) ou chute violento de bomba
+			var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+			if not grid_map:
+				return
+			var cur_c: Vector2i = grid_map.world_to_grid(global_position)
+			var f_dir_i: Vector2i = Vector2i(int(round(facing_direction.x)), int(round(facing_direction.y)))
+			if f_dir_i == Vector2i.ZERO:
+				f_dir_i = Vector2i.DOWN
+			var front_c: Vector2i = cur_c + f_dir_i
+			if grid_map.is_in_bounds(front_c):
+				if grid_map.has_bomb_at(front_c):
+					mount_ability_cooldown = 1.2
+					var bomb: Bomb = grid_map.get_bomb_at(front_c)
+					if bomb and is_instance_valid(bomb):
+						bomb.kick(Vector2(f_dir_i))
+						AudioManager.play_kick()
+				elif grid_map.get_cell_type(front_c) == GameState.CellType.BLOCK_DESTRUCTIBLE:
+					mount_ability_cooldown = 1.4
+					grid_map.destroy_block_at(front_c, true)
+					AudioManager.play_block_break()
+					get_tree().call_group("game_orchestrator", "add_screen_shake", 0.35)
+				else:
+					AudioManager.play_bump()
+			_perform_mount_fx(current_mount, facing_direction)
+
+func _perform_mount_fx(_m_type: int, _dir: Vector2) -> void:
+	if not visuals_root:
+		return
+	var fx_tween: Tween = create_tween()
+	fx_tween.tween_property(visuals_root, "scale", Vector2(1.22, 0.82), 0.08)
+	fx_tween.tween_property(visuals_root, "scale", Vector2.ONE, 0.12)
+
+# ----------------- SISTEMA DE EMOTES E REAÇÕES RÁPIDAS -----------------
+
+func trigger_next_emote() -> void:
+	if not is_alive or emote_cooldown > 0.0:
+		return
+	emote_cooldown = 0.8
+	# Ciclo de emotes expressivos:
+	# 1 (Exclamação), 3 (Interrogação), 7 (Coração), 14 (Suor), 20 (Risada), 24 (Ideia)
+	const EMOTE_CYCLE: Array[int] = [1, 3, 7, 14, 20, 24]
+	var next_id: int = EMOTE_CYCLE[posmod(current_emote_index, EMOTE_CYCLE.size())]
+	current_emote_index += 1
+	if multiplayer.has_multiplayer_peer():
+		rpc("sync_show_emote", next_id)
+	else:
+		show_local_emote(next_id)
+
+@rpc("call_local", "any_peer", "reliable")
+func sync_show_emote(emote_id: int) -> void:
+	show_local_emote(emote_id)
+
+func show_local_emote(emote_id: int) -> void:
+	if visuals_root and visuals_root.has_method("show_emote"):
+		visuals_root.show_emote(emote_id)
+		AudioManager.play_powerup()

@@ -34,6 +34,10 @@ const ITEM_PIERCE_TEXTURE: String = "res://assets/legal/item_pierce.png"
 const ITEM_REMOTE_TEXTURE: String = "res://assets/legal/item_remote.png"
 const ITEM_SKULL_TEXTURE: String = "res://assets/legal/item_skull.png"
 const ITEM_EGG_TEXTURE: String = "res://assets/legal/item_egg.png"
+const ITEM_ICE_TEXTURE: String = "res://assets/legal/item_ice.png"
+const ITEM_THUNDER_TEXTURE: String = "res://assets/legal/item_thunder.png"
+const FX_ICE_TEXTURE: String = "res://assets/legal/fx_ice.png"
+const FX_THUNDER_TEXTURE: String = "res://assets/legal/fx_thunder.png"
 const PUFF_TEXTURE: String = "res://assets/legal/puff.png"
 const PIXEL_FONT: String = "res://assets/legal/fonts/pixel_font.ttf"
 
@@ -49,6 +53,11 @@ const ENEMY_TEXTURES: Dictionary = {
 	CampaignEnemy.Archetype.CHARGER: "res://assets/legal/enemies/enemy_2.png",
 	CampaignEnemy.Archetype.BOSS: "res://assets/legal/enemies/enemy_3.png"
 }
+
+const BOSS_FROG_TEXTURE: String = "res://assets/legal/enemies/boss_frog.png"
+const BOSS_FROG_JUMP_TEXTURE: String = "res://assets/legal/enemies/boss_frog_jump.png"
+const BOSS_SAMURAI_TEXTURE: String = "res://assets/legal/enemies/boss_samurai.png"
+const BOSS_CYCLOP_TEXTURE: String = "res://assets/legal/enemies/boss_cyclop.png"
 
 const WALL_REGION := Rect2(0, 0, 16, 16)
 const BLOCK_REGION := Rect2(16, 0, 16, 16)
@@ -155,6 +164,12 @@ static func configure_powerup_sprite(sprite: Sprite2D, type: GameState.PowerUpTy
 		GameState.PowerUpType.MOUNT_EGG:
 			sprite.texture = load(ITEM_EGG_TEXTURE) as Texture2D
 			sprite.region_enabled = false
+		GameState.PowerUpType.ICE_BOMB:
+			sprite.texture = load(ITEM_ICE_TEXTURE) as Texture2D
+			sprite.region_enabled = false
+		GameState.PowerUpType.THUNDER_BOMB:
+			sprite.texture = load(ITEM_THUNDER_TEXTURE) as Texture2D
+			sprite.region_enabled = false
 		_:
 			sprite.texture = load(ITEMS_TEXTURE) as Texture2D
 			sprite.region_enabled = true
@@ -189,22 +204,50 @@ static func configure_powerup_puff(sprite: Sprite2D, frame: int) -> void:
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.material = null
 
-static func configure_enemy_sprite(sprite: Sprite2D, archetype: int, frame: int = 0, flip_horizontal: bool = false) -> void:
-	var tex_path: String = ENEMY_TEXTURES.get(archetype, ENEMY_TEXTURES[CampaignEnemy.Archetype.WANDERER])
-	sprite.texture = load(tex_path) as Texture2D
+static func configure_enemy_sprite(sprite: Sprite2D, archetype: int, frame: int = 0, flip_horizontal: bool = false, stage_index: int = 0, is_action: bool = false, direction_vec: Vector2 = Vector2.DOWN) -> void:
 	sprite.region_enabled = true
-	var frame_idx := clampi(frame, 0, 3)
-	if archetype == CampaignEnemy.Archetype.BOSS:
-		sprite.region_rect = Rect2(frame_idx * 50, 0, 50, 50)
-		sprite.scale = Vector2.ONE * 2.2
-		sprite.position = Vector2(0, -36)
-	else:
-		sprite.region_rect = Rect2(frame_idx * 16, 0, 16, 16)
-		sprite.scale = Vector2.ONE * 3.2
-		sprite.position = Vector2(0, -18)
 	sprite.flip_h = flip_horizontal
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.material = null
+	
+	if archetype == CampaignEnemy.Archetype.BOSS:
+		if stage_index == 4:
+			# Chefe 1: Sapo Gigante (Giant Frog)
+			var tex_path := BOSS_FROG_JUMP_TEXTURE if is_action else BOSS_FROG_TEXTURE
+			sprite.texture = load(tex_path) as Texture2D
+			var f_count := 6 if is_action else 5
+			var frame_idx := posmod(frame, f_count)
+			sprite.region_rect = Rect2(frame_idx * 40, 0, 40, 40)
+			sprite.scale = Vector2.ONE * 2.5
+			sprite.position = Vector2(0, -26)
+		elif stage_index == 9:
+			# Chefe 2: Samurai Vermelho (Red Samurai)
+			sprite.texture = load(BOSS_SAMURAI_TEXTURE) as Texture2D
+			var row_offset := 0
+			if direction_vec.y < -0.3:
+				row_offset = 3 # Cima
+			elif direction_vec.x < -0.3:
+				row_offset = 6 # Esquerda
+			elif direction_vec.x > 0.3:
+				row_offset = 9 # Direita
+			var f_idx := posmod(frame, 3)
+			sprite.region_rect = Rect2((row_offset + f_idx) * 48, 0, 48, 48)
+			sprite.scale = Vector2.ONE * 2.3
+			sprite.position = Vector2(0, -34)
+		else:
+			# Chefe 3: Ciclope Demônio (Demon Cyclop)
+			sprite.texture = load(BOSS_CYCLOP_TEXTURE) as Texture2D
+			var frame_idx := posmod(frame, 6)
+			sprite.region_rect = Rect2(frame_idx * 50, 0, 50, 50)
+			sprite.scale = Vector2.ONE * 2.4
+			sprite.position = Vector2(0, -36)
+	else:
+		var tex_path: String = ENEMY_TEXTURES.get(archetype, ENEMY_TEXTURES[CampaignEnemy.Archetype.WANDERER])
+		sprite.texture = load(tex_path) as Texture2D
+		var frame_idx := clampi(frame, 0, 3)
+		sprite.region_rect = Rect2(frame_idx * 16, 0, 16, 16)
+		sprite.scale = Vector2.ONE * 3.2
+		sprite.position = Vector2(0, -18)
 
 static func configure_enemy_death(sprite: Sprite2D, frame: int) -> void:
 	sprite.texture = load(PUFF_TEXTURE) as Texture2D

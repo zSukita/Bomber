@@ -16,6 +16,7 @@ var is_detonated: bool = false
 var is_sliding: bool = false
 var is_pierce: bool = false
 var is_remote: bool = false
+var element_type: int = 0 # 0: NORMAL, 1: ICE, 2: THUNDER
 var slide_direction: Vector2 = Vector2.ZERO
 var slide_speed: float = 380.0
 var grid_map: ArenaGrid
@@ -37,6 +38,10 @@ func _ready() -> void:
 		visual_root.modulate = Color(1.25, 0.5, 0.5, 1.0)
 	if is_pierce:
 		visual_root.modulate = Color(1.3, 1.2, 0.4, 1.0)
+	if element_type == 1:
+		visual_root.modulate = Color(0.4, 0.9, 1.6, 1.0)
+	elif element_type == 2:
+		visual_root.modulate = Color(1.4, 1.4, 0.3, 1.0)
 	
 	if exit_detector:
 		exit_detector.body_exited.connect(_on_body_exited_exit_detector)
