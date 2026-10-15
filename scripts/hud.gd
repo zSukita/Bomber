@@ -4,17 +4,23 @@ extends Control
 ## HUD Principal da Partida (Interface de Jogo).
 ## Exibe:
 ## - Cronômetro regressivo da rodada (sincronizado pelo servidor)
-## - Número da rodada atual e meta da melhor de 3
-## - Cartões de status dos jogadores (Cor, Nome, Vivo/Morto, Bombas, Fogo e Velocidade)
+## - Número da rodada atual e meta da melhor de 3 / Fase da campanha
+## - Cartões de status dos jogadores (Cor, Nome, Vivo/Morto, Vidas, Bombas, Fogo e Velocidade)
+## - Indicador de objetivos da campanha (Inimigos restantes e portais)
+## - Barra de dicas de controle elegante no rodapé
 
-@onready var timer_label: Label = $TopBar/BarLayout/CenterBox/TimerLabel
-@onready var round_label: Label = $TopBar/BarLayout/CenterBox/RoundLabel
-@onready var map_label: Label = $TopBar/BarLayout/CenterBox/MapLabel
-@onready var campaign_label: Label = $TopBar/BarLayout/CenterBox/CampaignLabel
-@onready var campaign_help: Label = $CampaignHelp
-@onready var players_card_container: HBoxContainer = $TopBar/BarLayout/LeftBox/PlayerCards
-@onready var pause_panel: CenterContainer = $PauseOverlay
-@onready var settings_modal: SettingsModal = $SettingsModal
+@onready var timer_label: Label = %TimerLabel if has_node("%TimerLabel") else get_node_or_null("TopBar/BarLayout/CenterBox/TimerLabel")
+@onready var round_label: Label = %RoundLabel if has_node("%RoundLabel") else get_node_or_null("TopBar/BarLayout/CenterBox/RoundLabel")
+@onready var map_label: Label = %MapLabel if has_node("%MapLabel") else get_node_or_null("TopBar/BarLayout/CenterBox/MapLabel")
+@onready var campaign_label: Label = %CampaignLabel if has_node("%CampaignLabel") else get_node_or_null("TopBar/BarLayout/CenterBox/CampaignLabel")
+@onready var campaign_help: Label = %CampaignHelp if has_node("%CampaignHelp") else get_node_or_null("CampaignHelp")
+@onready var players_card_container: HBoxContainer = %PlayerCards if has_node("%PlayerCards") else get_node_or_null("TopBar/BarLayout/LeftBox/PlayerCards")
+@onready var pause_panel: CenterContainer = %PauseOverlay if has_node("%PauseOverlay") else get_node_or_null("PauseOverlay")
+@onready var settings_modal: SettingsModal = %SettingsModal if has_node("%SettingsModal") else get_node_or_null("SettingsModal")
+@onready var enemy_badge: PanelContainer = %EnemyBadge if has_node("%EnemyBadge") else null
+@onready var enemy_label: Label = %EnemyLabel if has_node("%EnemyLabel") else null
+@onready var pause_btn: Button = %PauseButton if has_node("%PauseButton") else null
+@onready var right_box: HBoxContainer = %RightBox if has_node("%RightBox") else null
 
 signal leave_match_requested
 
@@ -22,6 +28,7 @@ var player_card_nodes: Dictionary = {} # peer_id -> PanelContainer
 var mode_toggle_btn: Button
 var toast_label: Label
 var toast_tween: Tween
+var current_enemy_count: int = -1
 
 func update_pause_status(is_online: bool) -> void:
 	var title: Label = $PauseOverlay/Panel/Margin/VBox/PauseTitle
@@ -54,6 +61,12 @@ func _ready() -> void:
 		leave_match_requested.emit()
 	)
 
+	if pause_btn:
+		pause_btn.pressed.connect(func():
+			AudioManager.play_click()
+			toggle_pause_menu()
+		)
+
 	_setup_mode_toggle_ui()
 	GameState.enhanced_mode_toggled.connect(func(is_enhanced: bool) -> void:
 		_update_mode_button_visual(is_enhanced)
@@ -62,13 +75,20 @@ func _ready() -> void:
 func _setup_mode_toggle_ui() -> void:
 	mode_toggle_btn = Button.new()
 	mode_toggle_btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	mode_toggle_btn.custom_minimum_size = Vector2(155, 32)
+	mode_toggle_btn.custom_minimum_size = Vector2(130, 28)
 	mode_toggle_btn.pressed.connect(func():
 		AudioManager.play_click()
 		var is_now_enhanced: bool = GameState.toggle_enhanced_mode()
 		notify_mode_switch(is_now_enhanced)
 	)
-	$TopBar/BarLayout.add_child(mode_toggle_btn)
+	if right_box:
+		right_box.add_child(mode_toggle_btn)
+		if pause_btn and pause_btn.get_parent() == right_box:
+			right_box.move_child(mode_toggle_btn, max(0, right_box.get_child_count() - 2))
+	elif has_node("TopBar/TopPanel/Margin/BarLayout"):
+		$TopBar/TopPanel/Margin/BarLayout.add_child(mode_toggle_btn)
+	elif has_node("TopBar/BarLayout"):
+		$TopBar/BarLayout.add_child(mode_toggle_btn)
 	_update_mode_button_visual(GameState.is_enhanced())
 
 	toast_label = Label.new()
@@ -113,6 +133,14 @@ func notify_mode_switch(is_enhanced: bool) -> void:
 	toast_tween.tween_interval(2.2)
 	toast_tween.tween_property(toast_label, "modulate:a", 0.0, 0.35)
 
+func trigger_screen_shake(amount: float = 8.0) -> void:
+	if not GameState.is_enhanced() or GameState.screen_shake_intensity <= 0.0:
+		return
+	var tw: Tween = create_tween()
+	var offset_x: float = (randf() - 0.5) * amount * GameState.screen_shake_intensity
+	var offset_y: float = (randf() - 0.5) * amount * GameState.screen_shake_intensity
+	tw.tween_property(self, "position", Vector2(offset_x, offset_y), 0.04)
+	tw.tween_property(self, "position", Vector2.ZERO, 0.08)
 
 ## Inicializa os cartões dos jogadores conectados
 func setup_players(players_data: Dictionary) -> void:
@@ -133,13 +161,26 @@ func setup_players(players_data: Dictionary) -> void:
 		var p_name: String = p_info.get("name", "Jogador")
 		
 		var card: PanelContainer = PanelContainer.new()
-		card.custom_minimum_size = Vector2(140, 48)
+		card.custom_minimum_size = Vector2(148, 44)
+		
+		var card_style: StyleBoxFlat = StyleBoxFlat.new()
+		card_style.bg_color = Color(0.08, 0.11, 0.17, 0.85)
+		card_style.border_color = p_color.lerp(Color.WHITE, 0.35)
+		card_style.border_width_left = 3
+		card_style.border_width_top = 1
+		card_style.border_width_right = 1
+		card_style.border_width_bottom = 1
+		card_style.corner_radius_top_left = 6
+		card_style.corner_radius_top_right = 6
+		card_style.corner_radius_bottom_left = 6
+		card_style.corner_radius_bottom_right = 6
+		card.add_theme_stylebox_override("panel", card_style)
 		
 		var margin: MarginContainer = MarginContainer.new()
 		margin.add_theme_constant_override("margin_left", 6)
 		margin.add_theme_constant_override("margin_right", 6)
-		margin.add_theme_constant_override("margin_top", 4)
-		margin.add_theme_constant_override("margin_bottom", 4)
+		margin.add_theme_constant_override("margin_top", 3)
+		margin.add_theme_constant_override("margin_bottom", 3)
 		card.add_child(margin)
 		
 		var vbox: VBoxContainer = VBoxContainer.new()
@@ -150,7 +191,7 @@ func setup_players(players_data: Dictionary) -> void:
 		var header_hbox: HBoxContainer = HBoxContainer.new()
 		
 		var swatch: ColorRect = ColorRect.new()
-		swatch.custom_minimum_size = Vector2(12, 12)
+		swatch.custom_minimum_size = Vector2(10, 10)
 		swatch.color = p_color
 		header_hbox.add_child(swatch)
 		
@@ -158,14 +199,14 @@ func setup_players(players_data: Dictionary) -> void:
 		name_lbl.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		name_lbl.text = p_name
 		name_lbl.name = "NameLbl"
-		name_lbl.add_theme_font_size_override("font_size", 12)
+		name_lbl.add_theme_font_size_override("font_size", 11)
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		header_hbox.add_child(name_lbl)
 		
 		var status_lbl: Label = Label.new()
 		status_lbl.text = "❤️"
 		status_lbl.name = "StatusLbl"
-		status_lbl.add_theme_font_size_override("font_size", 12)
+		status_lbl.add_theme_font_size_override("font_size", 11)
 		header_hbox.add_child(status_lbl)
 		
 		vbox.add_child(header_hbox)
@@ -174,8 +215,8 @@ func setup_players(players_data: Dictionary) -> void:
 		var stats_lbl: Label = Label.new()
 		stats_lbl.name = "StatsLbl"
 		stats_lbl.text = "💣1  🔥2  ⚡1.0"
-		stats_lbl.add_theme_font_size_override("font_size", 11)
-		stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
+		stats_lbl.add_theme_font_size_override("font_size", 10)
+		stats_lbl.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 		vbox.add_child(stats_lbl)
 		
 		players_card_container.add_child(card)
@@ -231,9 +272,14 @@ func update_timer_display(seconds_left: int) -> void:
 	timer_label.text = "%02d:%02d" % [mins, secs]
 	
 	if seconds_left <= 30:
-		timer_label.modulate = Color(1.0, 0.3, 0.3)
+		timer_label.modulate = Color(1.0, 0.28, 0.28)
+		if GameState.is_enhanced() and seconds_left > 0 and seconds_left % 2 == 0:
+			var tw: Tween = create_tween()
+			tw.tween_property(timer_label, "scale", Vector2(1.1, 1.1), 0.08)
+			tw.tween_property(timer_label, "scale", Vector2.ONE, 0.12)
 	else:
 		timer_label.modulate = Color.WHITE
+		timer_label.scale = Vector2.ONE
 
 ## Atualiza o texto da rodada
 func update_round_info(round_num: int, wins_required: int) -> void:
@@ -250,19 +296,48 @@ func update_map_name(map_name: String) -> void:
 
 func update_campaign_info(stage_number: int, stage_count: int, lives: int, should_show: bool = true) -> void:
 	if campaign_label:
-		campaign_label.visible = should_show
-		campaign_label.text = tr("HUD_CAMPAIGN_STAGE") % [stage_number, stage_count, lives]
+		campaign_label.visible = false
+	if round_label:
+		if should_show:
+			round_label.text = tr("HUD_CAMPAIGN_STAGE") % [stage_number, stage_count, lives]
+			round_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.38))
+		else:
+			round_label.remove_theme_color_override("font_color")
+	if enemy_badge:
+		enemy_badge.visible = should_show
 	if campaign_help:
 		campaign_help.visible = should_show
 		campaign_help.text = tr("HUD_CAMPAIGN_HELP")
 
 func update_campaign_objective(text: String) -> void:
-	if campaign_help and campaign_help.visible:
+	var regex: RegEx = RegEx.new()
+	regex.compile(r"(\d+)")
+	var match_result: RegExMatch = regex.search(text)
+	var count: int = int(match_result.get_string(1)) if match_result else -1
+	current_enemy_count = count
+
+	if enemy_badge and enemy_label:
+		enemy_badge.visible = true
+		if count > 0:
+			enemy_label.text = tr("HUD_ENEMIES_COUNT") % count
+			enemy_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
+			if campaign_help and campaign_help.visible:
+				campaign_help.text = tr("HUD_CAMPAIGN_HELP")
+		elif count == 0:
+			enemy_label.text = tr("HUD_PORTAL_OPEN")
+			enemy_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
+			if campaign_help and campaign_help.visible:
+				campaign_help.text = tr("GAME_PORTAL_HINT")
+		else:
+			enemy_label.text = ""
+	elif campaign_help and campaign_help.visible:
 		campaign_help.text = text
 
 func set_campaign_help_visible(should_show: bool) -> void:
 	if campaign_help:
 		campaign_help.visible = should_show
+	if enemy_badge:
+		enemy_badge.visible = should_show and GameState.game_mode == GameState.GameMode.CAMPAIGN
 
 ## Abre/Fecha o menu de pausa
 func toggle_pause_menu() -> void:

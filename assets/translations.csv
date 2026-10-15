@@ -266,3 +266,6 @@ NEWS_MULTIPLAYER_TITLE,Arena para quatro,Four-player arena,Arena para cuatro
 NEWS_MULTIPLAYER_DESC,"Partidas pela rede com até quatro jogadores, usando IP e porta.",Online matches for up to four players using an IP address and port.,Partidas en línea para hasta cuatro jugadores mediante IP y puerto.
 NEWS_SERVER_TITLE,Servidor dedicado Linux,Linux dedicated server,Servidor dedicado Linux
 NEWS_SERVER_DESC,Exporte um servidor dedicado para hospedar partidas de arena.,Export a dedicated server to host arena matches.,Exporta un servidor dedicado para alojar partidas de arena.
+HUD_ENEMIES_COUNT,👾 INIMIGOS: %d,👾 ENEMIES: %d,👾 ENEMIGOS: %d
+HUD_PORTAL_OPEN,✨ PORTAL ABERTO!,✨ PORTAL OPEN!,✨ ¡PORTAL ABIERTO!
+HUD_LIVES,VIDAS: %d,LIVES: %d,VIDAS: %d

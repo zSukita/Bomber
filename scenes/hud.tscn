@@ -1,7 +1,58 @@
-[gd_scene load_steps=3 format=3 uid="uid://dhud0001"]
+[gd_scene format=3 uid="uid://dhud0001"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dsettingsmodal01" path="res://scenes/settings_modal.tscn" id="2_settings_modal"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
+bg_color = Color(0.06, 0.08, 0.13, 0.88)
+border_width_left = 1
+border_width_top = 0
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.24, 0.36, 0.52, 0.7)
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_timer"]
+bg_color = Color(0.03, 0.04, 0.08, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.44, 0.65, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy_badge"]
+bg_color = Color(0.18, 0.06, 0.08, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.85, 0.3, 0.25, 0.6)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
+bg_color = Color(0.06, 0.08, 0.13, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.32, 0.46, 0.6)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 3
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -17,53 +68,109 @@ script = ExtResource("1_script")
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 60.0
+offset_bottom = 58.0
 grow_horizontal = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 12
 
-[node name="BarLayout" type="HBoxContainer" parent="TopBar"]
+[node name="TopPanel" type="PanelContainer" parent="TopBar"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_top")
 
-[node name="LeftBox" type="HBoxContainer" parent="TopBar/BarLayout"]
+[node name="Margin" type="MarginContainer" parent="TopBar/TopPanel"]
 layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 4
 
-[node name="PlayerCards" type="HBoxContainer" parent="TopBar/BarLayout/LeftBox"]
+[node name="BarLayout" type="HBoxContainer" parent="TopBar/TopPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LeftBox" type="HBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout"]
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="PlayerCards" type="HBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout/LeftBox"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CenterBox" type="VBoxContainer" parent="TopBar/BarLayout"]
-custom_minimum_size = Vector2(160, 0)
+[node name="CenterBox" type="VBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
+theme_override_constants/separation = 1
 alignment = 1
 
-[node name="TimerLabel" type="Label" parent="TopBar/BarLayout/CenterBox"]
+[node name="TimerBadge" type="PanelContainer" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox"]
 layout_mode = 2
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_timer")
+
+[node name="TimerMargin" type="MarginContainer" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/TimerBadge"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 2
+
+[node name="TimerHBox" type="HBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/TimerBadge/TimerMargin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="TimerIcon" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/TimerBadge/TimerMargin/TimerHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "⏱️"
+
+[node name="TimerLabel" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/TimerBadge/TimerMargin/TimerHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "02:30"
 horizontal_alignment = 1
 
-[node name="RoundLabel" type="Label" parent="TopBar/BarLayout/CenterBox"]
+[node name="SubInfoContainer" type="HBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="RoundLabel" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/SubInfoContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
-theme_override_font_sizes/font_size = 11
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "RODADA 1 (Melhor de 3)"
 horizontal_alignment = 1
 
-[node name="MapLabel" type="Label" parent="TopBar/BarLayout/CenterBox"]
+[node name="DotSep" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/SubInfoContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 0.8, 1)
+theme_override_font_sizes/font_size = 9
+text = "·"
+
+[node name="MapLabel" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox/SubInfoContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.85, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
 text = "PRADO BRILHANTE"
 horizontal_alignment = 1
 
-[node name="CampaignLabel" type="Label" parent="TopBar/BarLayout/CenterBox"]
+[node name="CampaignLabel" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/CenterBox"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.78, 0.35, 1)
@@ -71,25 +178,83 @@ theme_override_font_sizes/font_size = 10
 text = "FASE 1/10  ·  ♥ 5"
 horizontal_alignment = 1
 
-[node name="CampaignHelp" type="Label" parent="."]
+[node name="RightBox" type="HBoxContainer" parent="TopBar/TopPanel/Margin/BarLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="EnemyBadge" type="PanelContainer" parent="TopBar/TopPanel/Margin/BarLayout/RightBox"]
+unique_name_in_owner = true
 visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_enemy_badge")
+
+[node name="EnemyMargin" type="MarginContainer" parent="TopBar/TopPanel/Margin/BarLayout/RightBox/EnemyBadge"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 2
+
+[node name="EnemyLabel" type="Label" parent="TopBar/TopPanel/Margin/BarLayout/RightBox/EnemyBadge/EnemyMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.35, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 11
+text = ""
+horizontal_alignment = 1
+
+[node name="PauseButton" type="Button" parent="TopBar/TopPanel/Margin/BarLayout/RightBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 30)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "⏸️"
+
+[node name="BottomBar" type="MarginContainer" parent="."]
+layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -26.0
-offset_bottom = -6.0
+offset_top = -34.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.91, 0.95, 1, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+mouse_filter = 2
+theme_override_constants/margin_left = 110
+theme_override_constants/margin_right = 110
+
+[node name="BottomPanel" type="PanelContainer" parent="BottomBar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bottom")
+
+[node name="Margin" type="MarginContainer" parent="BottomBar/BottomPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 2
+
+[node name="CampaignHelp" type="Label" parent="BottomBar/BottomPanel/Margin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "DERROTE TODOS OS INIMIGOS  ·  WASD/SETAS MOVER  ·  ESPAÇO BOMBA"
 horizontal_alignment = 1
 
 [node name="PauseOverlay" type="CenterContainer" parent="."]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -150,4 +315,5 @@ layout_mode = 2
 text = "🏠 Voltar para o Lobby"
 
 [node name="SettingsModal" parent="." instance=ExtResource("2_settings_modal")]
+unique_name_in_owner = true
 visible = false

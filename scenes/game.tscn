@@ -25,10 +25,6 @@ position = Vector2(480, 416)
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=379158913]
 
 [node name="HUD" parent="CanvasLayer" unique_id=1000563890 instance=ExtResource("3_hud")]
-offset_left = -198.0
-offset_top = -83.0
-offset_right = -198.0
-offset_bottom = -83.0
 
 [node name="SpectatorBanner" type="Label" parent="CanvasLayer" unique_id=900854305]
 visible = false
