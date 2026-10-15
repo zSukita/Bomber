@@ -204,7 +204,8 @@ func _on_reset_controls_pressed() -> void:
 
 func _on_master_changed(value: float) -> void:
 	var bus_idx: int = AudioServer.get_bus_index("Master")
-	AudioServer.set_bus_volume_linear(bus_idx, value / 100.0)
+	var linear_vol: float = value / 100.0
+	AudioServer.set_bus_volume_db(bus_idx, linear_to_db(linear_vol) if linear_vol > 0.0 else -80.0)
 	GameState.master_volume_percent = value
 	GameState.save_user_preferences()
 
@@ -272,7 +273,7 @@ func _sync_controls_from_active_settings() -> void:
 			_: language_option.selected = 0
 	if bot_difficulty_option:
 		bot_difficulty_option.selected = int(GameState.bot_difficulty)
-	master_slider.set_value_no_signal(AudioServer.get_bus_volume_linear(AudioServer.get_bus_index("Master")) * 100.0)
+	master_slider.set_value_no_signal(GameState.master_volume_percent)
 	music_slider.set_value_no_signal(AudioManager.music_volume_scale * 100.0)
 	sfx_slider.set_value_no_signal(AudioManager.sfx_volume_scale * 100.0)
 	if DisplayServer.get_name() != "headless":

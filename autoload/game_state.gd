@@ -219,7 +219,9 @@ func _load_user_preferences() -> void:
 		if not enhanced_mode and is_inside_tree():
 			get_tree().call_group("enhanced_visual_effects", "queue_free")
 		enhanced_mode_toggled.emit(enhanced_mode)
-	AudioServer.set_bus_volume_linear(AudioServer.get_bus_index("Master"), master_volume_percent / 100.0)
+	var master_bus_idx: int = AudioServer.get_bus_index("Master")
+	var master_linear: float = master_volume_percent / 100.0
+	AudioServer.set_bus_volume_db(master_bus_idx, linear_to_db(master_linear) if master_linear > 0.0 else -80.0)
 	AudioManager.set_music_volume(music_volume_percent / 100.0)
 	AudioManager.set_sfx_volume(sfx_volume_percent / 100.0)
 	if DisplayServer.get_name() != "headless":

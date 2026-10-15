@@ -30,7 +30,7 @@ const ROUND_TIME_LIMIT: int = 150 # 2 minutos e 30 segundos por rodada
 @onready var next_round_label: Label = $CanvasLayer/RoundOverlay/Panel/Margin/VBox/NextRoundLabel
 
 var match_round: MatchRoundController = MatchRoundController.new()
-var spawned_players: Dictionary[int, Player] = {}
+var spawned_players: Dictionary = {} # int -> Player
 var alive_players: Array[int]:
 	get:
 		return match_round.alive_players

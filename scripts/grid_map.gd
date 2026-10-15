@@ -34,12 +34,12 @@ const SPAWN_TILES: Array[Vector2i] = [
 ]
 
 # Estruturas em memória para busca rápida O(1)
-var grid_state: Dictionary[Vector2i, GameState.CellType] = {}
-var destructible_blocks: Dictionary[Vector2i, BlockDestructible] = {}
-var active_bombs: Dictionary[Vector2i, Bomb] = {}
-var active_powerups: Dictionary[Vector2i, PowerUp] = {}
+var grid_state: Dictionary = {} # Vector2i -> GameState.CellType
+var destructible_blocks: Dictionary = {} # Vector2i -> BlockDestructible
+var active_bombs: Dictionary = {} # Vector2i -> Bomb
+var active_powerups: Dictionary = {} # Vector2i -> PowerUp
 ## Armazena os power-ups pré-alocados dentro dos blocos (modelo clássico de Super Bomberman 3)
-var hidden_powerups: Dictionary[Vector2i, int] = {}
+var hidden_powerups: Dictionary = {} # Vector2i -> int
 var map_style: int = 0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
