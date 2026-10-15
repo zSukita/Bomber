@@ -32,6 +32,8 @@ func _run() -> void:
 	await _test_heart_protection()
 	await _test_powerup_pickup()
 	await _test_campaign_enemy_spawning()
+	_test_arena_hazards()
+	await _test_boss_patterns()
 	_test_sudden_death()
 	game.queue_free()
 	# Encerra e solta os streams criados pelos cenários, para o teste não
@@ -392,6 +394,81 @@ func _test_sudden_death() -> void:
 	_check(sudden_death.spiral_index == 1, "próxima parede respeita o intervalo")
 	sudden_death.advance(44, 0.5)
 	_check(sudden_death.spiral_index == 2, "paredes seguintes avançam após o intervalo")
+
+func _test_arena_hazards() -> void:
+	# Teste de esteiras no Estilo 5 (Usina Eletrizante)
+	game.grid_map.generate_map(42, 5)
+	_check(game.grid_map.hazards_node != null, "arena inicializa o nó gerenciador de perigos")
+	var has_conveyors: bool = game.grid_map.hazards_node.conveyors.size() > 0
+	_check(has_conveyors, "estilo Usina Eletrizante gera esteiras rolantes")
+	if has_conveyors:
+		var first_cell: Vector2i = game.grid_map.hazards_node.conveyors.keys()[0]
+		var drift: Vector2 = game.grid_map.get_conveyor_drift(game.grid_map.grid_to_world(first_cell))
+		_check(drift != Vector2.ZERO, "esteira rolante aplica força de arraste contínua")
+		_check(game.grid_map.is_cell_conveyor(first_cell), "célula de esteira é detectada corretamente")
+
+	# Teste de vents no Estilo 7 (Vulcão Ardente)
+	game.grid_map.generate_map(42, 7)
+	var has_vents: bool = game.grid_map.hazards_node.magma_vents.size() > 0
+	_check(has_vents, "estilo Vulcão Ardente gera pontos de fissuras de magma")
+
+	# Desabamento altera a grade para que o aviso e o resultado sejam reproduzíveis.
+	game.grid_map.generate_map(42, 6)
+	var rubble_cell := Vector2i(-1, -1)
+	for x in range(3, ArenaGrid.WIDTH - 3):
+		for y in range(3, ArenaGrid.HEIGHT - 3):
+			var candidate := Vector2i(x, y)
+			if candidate not in ArenaMapGenerator.RESERVED_TILES and not ArenaMapStyles.is_pillar(candidate, 6) and game.grid_map.get_cell_type(candidate) == GameState.CellType.EMPTY:
+				rubble_cell = candidate
+				break
+		if rubble_cell != Vector2i(-1, -1):
+			break
+	if rubble_cell != Vector2i(-1, -1):
+		game.grid_map.hazards_node._trigger_rubble_collapse(rubble_cell)
+		_check(game.grid_map.get_cell_type(rubble_cell) == GameState.CellType.BLOCK_DESTRUCTIBLE, "desabamento cria escombros na célula anunciada")
+	else:
+		_check(false, "ruínas oferecem célula livre para o teste de desabamento")
+
+func _test_boss_patterns() -> void:
+	_reset_arena()
+	var boss_scene: PackedScene = preload("res://scenes/campaign_enemy.tscn")
+	var golem: CampaignEnemy = boss_scene.instantiate() as CampaignEnemy
+	game.enemies_container.add_child(golem)
+	golem.setup(player, 4, game.grid_map, CampaignEnemy.Archetype.BOSS)
+	_check(golem.archetype == CampaignEnemy.Archetype.BOSS and golem.max_health == 4, "chefe Golem possui 4 pontos de vida iniciais")
+
+	# Teste de escalonamento para Fase 2 com <= 50% vida
+	golem.health = 2
+	golem._on_boss_damaged()
+	_check(golem.boss_phase_two, "chefe Golem entra previsivelmente na Fase 2 com 50% de HP")
+
+	# Teste de janela de vulnerabilidade pós-ataque
+	golem._transition_to_vulnerable()
+	_check(golem.is_boss_vulnerable and golem.boss_state == CampaignEnemy.BossState.VULNERABLE, "chefe entra em estado de vulnerabilidade pós-ataque para contra-ataques")
+	golem.queue_free()
+	await get_tree().process_frame
+
+	# Mina do Cronos pertence ao chefe, mas ainda deve usar o sistema de explosão
+	# sem ser tratada como se seu dono fosse um jogador.
+	var cronos: CampaignEnemy = boss_scene.instantiate() as CampaignEnemy
+	game.enemies_container.add_child(cronos)
+	cronos.setup(player, 11, game.grid_map, CampaignEnemy.Archetype.BOSS)
+	cronos.global_position = game.grid_map.grid_to_world(Vector2i(7, 6))
+	cronos._cronos_start_time_mine()
+	var mine_cell := Vector2i(-1, -1)
+	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var candidate: Vector2i = game.grid_map.world_to_grid(cronos.global_position) + direction
+		if game.grid_map.has_bomb_at(candidate):
+			mine_cell = candidate
+			break
+	var temporal_mine: Bomb = game.grid_map.get_bomb_at(mine_cell) if mine_cell != Vector2i(-1, -1) else null
+	_check(is_instance_valid(temporal_mine), "Cronos cria a mina temporal na arena")
+	if is_instance_valid(temporal_mine):
+		temporal_mine.detonate()
+		await get_tree().process_frame
+		_check(not game.grid_map.has_bomb_at(mine_cell), "mina de chefe detona pelo sistema compartilhado sem erro de proprietário")
+	cronos.queue_free()
+	await get_tree().process_frame
 
 func _noop_enemy_defeated(_enemy: CampaignEnemy) -> void:
 	pass

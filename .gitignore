@@ -16,3 +16,8 @@ desktop.ini
 # IDE/editor files
 .vscode/
 .idea/
+
+# Python cache
+__pycache__/
+*.pyc
+

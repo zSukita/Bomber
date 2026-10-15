@@ -64,8 +64,8 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 	var elem_type: int = bomb.element_type
 	if elem_type == 2: # THUNDER BOMB: relâmpago percorre até o fim do mapa
 		flame_range = 14
-	var owner_player: Player = bomb.owner_player
-	if is_instance_valid(owner_player):
+	var owner_player: CharacterBody2D = bomb.owner_player
+	if owner_player is Player and is_instance_valid(owner_player):
 		owner_player.on_bomb_exploded()
 		game._refresh_player_hud(owner_player.peer_id)
 	game.grid_map.unregister_bomb(center_cell)
@@ -126,7 +126,7 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 			destroyed_blocks,
 			dropped_powerups,
 			burned_powerups,
-			owner_player.peer_id if is_instance_valid(owner_player) else 0
+			owner_player.peer_id if owner_player is Player and is_instance_valid(owner_player) else 0
 		)
 	game._refresh_all_hud_cards()
 

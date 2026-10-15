@@ -11,7 +11,13 @@ Jogo multiplayer de arena feito em Godot 4.7. O projeto inclui lobby, partidas p
 
 ### Campanha
 
-No menu, escolha **Iniciar Campanha**. Derrote os inimigos antes do cronômetro de 3 minutos acabar. Você começa com cinco vidas; o coração absorve um golpe. A campanha mistura rondadores, caçadores, inimigos que anunciam uma investida e chefes que também usam investidas nas fases 5, 10 e 12. Os inimigos tentam sair das linhas de explosão. Cada campanha gera uma variação nova dos mapas; revisitar uma fase mantém o layout daquela campanha. Os monstros surgem espalhados por caminhos conectados da arena, longe da posição inicial, e a quantidade cresce de quatro até nove ao longo das fases. Você recebe alguns segundos de proteção no início da fase para se afastar e colocar a primeira bomba. Um coração aparece garantidamente após quebrar oito blocos em cada fase, se nenhum coração já tiver surgido nela durante a campanha. Ao limpar uma fase, escolha o portal dourado para seguir para um mundo novo ou o azul para retornar a um mundo já visitado. Suas escolhas determinam o final. Use WASD ou as setas, ou o analógico esquerdo, para mover; use Espaço ou A para soltar bombas. No controle, START abre o menu de pausa.
+No menu, escolha **Iniciar Campanha**. Derrote os inimigos antes do cronômetro de 3 minutos acabar. Você começa com cinco vidas; o coração absorve um golpe. A campanha mistura rondadores, caçadores, inimigos rápidos com mira de investida e **três chefes únicos com padrões próprios telegrafados** nas fases 5, 10 e 12:
+- **Golem das Ruínas (Fase 5):** Pisotão sísmico telegrafado com cruz de impacto e soco de fissura em linha; fica atordoado e vulnerável após desferir os golpes.
+- **Espectro Dimensional (Fase 10):** Fendas dimensionais com runas roxas pulsantes e teleporte com pulso astral; exaure sua energia após canalizar, permitindo contra-ataques seguros.
+- **Cronos, o Lorde Temporal (Fase 12):** Minas temporais com contagem regressiva visível e raio crono cardinal com mira dourada contínua; sofre superaquecimento temporal pós-disparo.
+Todos os chefes contam com avisos sonoros e visuais claros no solo, janelas justas de esquiva, fases de fúria previsíveis ao atingir 50% de vida ou menos e períodos de vulnerabilidade nos quais o dano por contato é desativado para que o jogador possa plantar bombas com segurança.
+
+Cada campanha gera uma variação nova dos mapas; revisitar uma fase mantém o layout daquela campanha. Os monstros surgem espalhados por caminhos conectados da arena, longe da posição inicial, e a quantidade cresce de quatro até nove ao longo das fases. Você recebe alguns segundos de proteção no início da fase para se afastar e colocar a primeira bomba. Um coração aparece garantidamente após quebrar oito blocos em cada fase, se nenhum coração já tiver surgido nela durante a campanha. Ao limpar uma fase, escolha o portal dourado para seguir para um mundo novo ou o azul para retornar a um mundo já visitado. Suas escolhas determinam o final. Use WASD ou as setas, ou o analógico esquerdo, para mover; use Espaço ou A para soltar bombas. No controle, START abre o menu de pausa.
 
 ## Servidor dedicado Linux
 
@@ -44,11 +50,15 @@ O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e 
 
 ## Novas Mecânicas e Melhorias
 
-- **Power-ups & Hazards:**
+- **Variedade de Arenas & Elementos Dinâmicos:**
+  - ⚙️ **Esteiras Rolantes (Usina Eletrizante):** Empurram jogadores, bots e transportam bombas ativas pela esteira até colidirem com obstáculos.
+  - 🏛️ **Desabamentos de Ruínas (Ruínas do Deserto):** Tremores e fissuras no solo avisam 2 segundos antes de escombros desabarem, esmagando o que estiver embaixo e alterando a geometria da arena.
+  - 🌋 **Fissuras de Magma (Vulcão Ardente):** Zonas de perigo com anéis incandescentes pulsantes que entram em erupção temporária com fogo e detonam bombas.
+  - 🧊 **Inércia do Gelo (Tundra Congelada):** Deslizamento suave ao trocar de direção, permitindo manobras táticas e escorregões.
+- **Power-ups & Combate:**
   - 🏹 **Bomba Perfurante (Pierce):** O fogo atravessa blocos maciços sem ser bloqueado no primeiro obstáculo.
   - 📡 **Detonador Remoto:** Permite plantar bombas com fusível estático e detoná-las quando desejar com outro toque no botão de bomba.
   - ☠️ **Maldição do Crânio:** Maldição temporária (lentidão extrema, diarreia contínua de bombas ou hiper-velocidade descontrolada) que se transmite ao tocar em outros jogadores.
-  - 🧊 **Inércia do Gelo:** No mapa de Neve/Gelo, os jogadores deslizam suavemente por inércia ao mudar de direção.
 - **Inteligência Artificial (BattleBot):**
   - Três níveis de dificuldade configuráveis: **Fácil**, **Médio** e **Difícil (Mestre)**.
   - Bots no modo difícil avaliam risco em tempo real, chutam bombas perigosas para longe e posicionam armadilhas mais agressivas.

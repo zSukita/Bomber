@@ -295,6 +295,11 @@ func _move_aligned(speed: float) -> void:
 		velocity.y = sign(direction.y) * speed
 		var diff_x: float = cell_center.x - global_position.x
 		velocity.x = clampf(diff_x * 12.0, -speed * 0.45, speed * 0.45) if absf(diff_x) > 0.5 else 0.0
+	var conveyor_vel: Vector2 = arena_grid.get_conveyor_drift(global_position) if arena_grid else Vector2.ZERO
+	if arena_grid and ArenaMapStyles.is_ice_map(arena_grid.map_style):
+		velocity = velocity.lerp(velocity + conveyor_vel, clampf(get_physics_process_delta_time() * 4.5, 0.0, 1.0))
+	else:
+		velocity += conveyor_vel
 	if direction.x != 0.0:
 		facing_direction = Vector2(sign(direction.x), 0.0)
 	else:

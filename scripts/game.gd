@@ -578,6 +578,16 @@ func sync_explosion(center: Vector2i, flame_cells: Array, destroyed_blocks: Arra
 @rpc("authority", "call_remote", "reliable")
 func sync_powerup_collected(cell: Vector2i, collector_id: int, p_type: int) -> void:
 	bomb_system.call("apply_powerup_collected", cell, collector_id, p_type)
+
+func broadcast_hazard_event(hazard_type: int, cell: Vector2i) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_hazard_event.rpc(hazard_type, cell)
+
+@rpc("authority", "call_remote", "reliable")
+func sync_hazard_event(hazard_type: int, cell: Vector2i) -> void:
+	if grid_map and grid_map.hazards_node:
+		grid_map.hazards_node.apply_remote_event(hazard_type, cell)
+
 func _refresh_player_hud(peer_id: int) -> void:
 	var p = spawned_players.get(peer_id, null)
 	if p:

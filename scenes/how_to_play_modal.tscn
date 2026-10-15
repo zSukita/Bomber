@@ -245,7 +245,7 @@ text = "🔴 CHEFÃO (BOSS - Fases 5, 10 e 12)"
 [node name="BossDesc" type="Label" parent="CenterContainer/Panel/Margin/VBox/ContentScroll/EnemiesView"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = "Maior, mais resistente e ameaçador. Possui 4 pontos de vida (com barra de HP visível) e investidas ainda mais velozes (2.15x). Requer posicionamento tático e armadilhas com múltiplas bombas."
+text = "Cada chefe tem ataques próprios telegrafados no chão (pisotão, fendas ou raio temporal). Desvie do perigo e use a janela de vulnerabilidade pós-ataque para contra-atacar com bombas!"
 autowrap_mode = 2
 
 [node name="PortalsView" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ContentScroll"]
@@ -276,6 +276,18 @@ text = "🌀 PORTAL AZUL (MUNDO VISITADO)"
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "Permite revisitar arenas passadas mantendo seus power-ups acumulados. Escolher mais portais azuis que dourados culmina no Final Sombrio."
+autowrap_mode = 2
+
+[node name="HazardsTitle" type="Label" parent="CenterContainer/Panel/Margin/VBox/ContentScroll/PortalsView"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "⚙️ ELEMENTOS E PERIGOS DE ARENA"
+
+[node name="HazardsDesc" type="Label" parent="CenterContainer/Panel/Margin/VBox/ContentScroll/PortalsView"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "As esteiras na Usina empurram jogadores e bombas. O gelo na Tundra faz deslizar. Ruínas e Vulcão exibem avisos claros antes de desabamentos ou erupções."
 autowrap_mode = 2
 
 [node name="CloseButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]

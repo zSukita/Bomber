@@ -45,6 +45,7 @@ var map_style: int = 0
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var map_generator: ArenaMapGenerator = ArenaMapGenerator.new()
 var ambience_node: ArenaAmbience
+var hazards_node: ArenaHazards
 
 @onready var floor_node: Node2D = $Floor
 @onready var walls_container: Node2D = $WallsContainer
@@ -60,6 +61,9 @@ func _ready() -> void:
 	ambience_node = ArenaAmbience.new()
 	ambience_node.name = "Ambience"
 	add_child(ambience_node)
+	hazards_node = ArenaHazards.new()
+	hazards_node.name = "Hazards"
+	add_child(hazards_node)
 
 ## Limpa todos os elementos existentes na arena.
 func clear_map() -> void:
@@ -68,6 +72,8 @@ func clear_map() -> void:
 	active_bombs.clear()
 	active_powerups.clear()
 	hidden_powerups.clear()
+	if hazards_node:
+		hazards_node.clear_hazards()
 	
 	for child in walls_container.get_children():
 		child.queue_free()
@@ -89,6 +95,8 @@ func generate_map(map_seed: int = -1, map_style_override: int = -1) -> void:
 	floor_node.call("set_theme", map_style)
 	if ambience_node:
 		ambience_node.set_theme(map_style)
+	if hazards_node:
+		hazards_node.setup(self, map_style, map_seed)
 	for cell in layout.wall_cells:
 		_spawn_wall(cell)
 	for cell in layout.block_cells:
@@ -322,3 +330,14 @@ func is_walkable(cell: Vector2i) -> bool:
 func get_spawn_world_pos(player_index: int) -> Vector2:
 	var index_clamped: int = clampi(player_index, 0, SPAWN_TILES.size() - 1)
 	return grid_to_world(SPAWN_TILES[index_clamped])
+
+func get_conveyor_drift(world_pos: Vector2) -> Vector2:
+	if hazards_node:
+		return hazards_node.get_conveyor_drift(world_pos)
+	return Vector2.ZERO
+
+func is_cell_conveyor(cell: Vector2i) -> bool:
+	if hazards_node:
+		return hazards_node.conveyors.has(cell)
+	return false
+

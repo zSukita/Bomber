@@ -193,10 +193,11 @@ func _physics_process(delta: float) -> void:
 		
 		var move_dir: Vector2 = _apply_corner_slide(current_direction)
 		var grid: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+		var conveyor_vel: Vector2 = grid.get_conveyor_drift(global_position) if grid else Vector2.ZERO
 		if grid and ArenaMapStyles.is_ice_map(grid.map_style):
-			velocity = velocity.lerp(move_dir * effective_speed, clampf(delta * 4.5, 0.0, 1.0))
+			velocity = velocity.lerp(move_dir * effective_speed + conveyor_vel, clampf(delta * 4.5, 0.0, 1.0))
 		else:
-			velocity = move_dir * effective_speed
+			velocity = move_dir * effective_speed + conveyor_vel
 		move_and_slide()
 		
 		if has_kick:
@@ -223,7 +224,12 @@ func _physics_process(delta: float) -> void:
 			elif skull_curse == 2:
 				effective_speed *= 1.75
 			
-			velocity = current_direction * effective_speed
+			var client_grid: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
+			var client_conveyor: Vector2 = client_grid.get_conveyor_drift(global_position) if client_grid else Vector2.ZERO
+			if client_grid and ArenaMapStyles.is_ice_map(client_grid.map_style):
+				velocity = velocity.lerp(current_direction * effective_speed + client_conveyor, clampf(delta * 4.5, 0.0, 1.0))
+			else:
+				velocity = current_direction * effective_speed + client_conveyor
 			move_and_slide()
 			
 			# Reconciliação suave com a posição confirmada pelo servidor
