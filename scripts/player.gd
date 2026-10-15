@@ -64,6 +64,7 @@ var bomb_buffer_timer: float = 0.0
 @onready var name_label: Label = $Visuals/NameLabel
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	target_sync_position = global_position
 	set_player_color(player_index)
 	update_name_display(player_name)
@@ -87,6 +88,7 @@ func set_player_character(index: int) -> void:
 func update_name_display(new_name: String) -> void:
 	player_name = new_name
 	if name_label:
+		name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		name_label.text = new_name
 
 func _physics_process(delta: float) -> void:
@@ -351,14 +353,21 @@ func server_drop_bomb() -> void:
 func server_kick_bomb(bomb_cell: Vector2i, kick_dir: Vector2) -> void:
 	if not multiplayer.is_server():
 		return
-	if not is_alive or not has_kick:
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if sender_id != peer_id or not is_alive or not has_kick or not kick_dir.is_finite():
 		return
 	var grid_map: ArenaGrid = get_tree().get_first_node_in_group("grid_map") as ArenaGrid
-	if grid_map and grid_map.has_bomb_at(bomb_cell):
-		var b: Bomb = grid_map.get_bomb_at(bomb_cell)
-		if is_instance_valid(b) and not b.is_sliding:
-			b.kick(kick_dir)
-			sync_kick_bomb.rpc(bomb_cell, kick_dir)
+	if grid_map and grid_map.is_in_bounds(bomb_cell):
+		var player_cell: Vector2i = grid_map.world_to_grid(global_position)
+		if absi(player_cell.x - bomb_cell.x) + absi(player_cell.y - bomb_cell.y) > 1:
+			return
+		if absf(kick_dir.length() - 1.0) > 0.01 or (absf(kick_dir.x) > 0.01 and absf(kick_dir.y) > 0.01):
+			return
+		if grid_map.has_bomb_at(bomb_cell):
+			var b: Bomb = grid_map.get_bomb_at(bomb_cell)
+			if is_instance_valid(b) and not b.is_sliding:
+				b.kick(kick_dir)
+				sync_kick_bomb.rpc(bomb_cell, kick_dir)
 
 ## Servidor replica o chute de bomba para todos os clientes
 @rpc("authority", "call_local", "reliable")
@@ -504,7 +513,9 @@ func request_detonate_remote() -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func server_detonate_remote() -> void:
-	if not multiplayer.is_server() or not is_alive or not has_remote:
+	if not multiplayer.is_server():
+		return
+	if multiplayer.get_remote_sender_id() != peer_id or not is_alive or not has_remote:
 		return
 	var game_node: Node = get_tree().get_first_node_in_group("game_orchestrator")
 	if game_node and game_node.bomb_system:

@@ -28,8 +28,6 @@ var menu_music_stream: AudioStreamWAV
 var bgm_lobby: AudioStream
 var bgm_battle: AudioStream
 var bgm_battle_2: AudioStream
-var bgm_adventure: AudioStream
-var bgm_dungeon: AudioStream
 var bgm_tension: AudioStream
 var bgm_victory_theme: AudioStream
 var bgm_boss: AudioStream
@@ -75,8 +73,6 @@ func _load_legal_audio() -> void:
 	bgm_lobby = _load_ogg("res://assets/legal/audio/music/music_lobby.ogg")
 	bgm_battle = _load_ogg("res://assets/legal/audio/music/music_battle_1.ogg")
 	bgm_battle_2 = _load_ogg("res://assets/legal/audio/music/music_battle_2.ogg")
-	bgm_adventure = _load_ogg("res://assets/legal/audio/music/music_adventure.ogg")
-	bgm_dungeon = _load_ogg("res://assets/legal/audio/music/music_dungeon.ogg")
 	bgm_tension = _load_ogg("res://assets/legal/audio/music/music_tension.ogg")
 	bgm_victory_theme = _load_ogg("res://assets/legal/audio/music/music_victory_theme.ogg")
 	bgm_boss = _load_ogg("res://assets/legal/audio/music/music_final_area.ogg")

@@ -10,6 +10,7 @@ extends Node2D
 
 const TIME_PORTAL_SCENE: PackedScene = preload("res://scenes/time_portal.tscn")
 const BOT_SCENE: PackedScene = preload("res://scenes/battle_bot.tscn")
+const MATCH_SUMMARY_BUILDER_SCRIPT: Script = preload("res://scripts/match_summary_builder.gd")
 const WINS_REQUIRED: int = 2 # Melhor de 3 rodadas (primeiro a 2 vitórias)
 const ROUND_TIME_LIMIT: int = 150 # 2 minutos e 30 segundos por rodada
 
@@ -30,6 +31,7 @@ const ROUND_TIME_LIMIT: int = 150 # 2 minutos e 30 segundos por rodada
 @onready var next_round_label: Label = $CanvasLayer/RoundOverlay/Panel/Margin/VBox/NextRoundLabel
 
 var match_round: MatchRoundController = MatchRoundController.new()
+var match_summary_builder: RefCounted = MATCH_SUMMARY_BUILDER_SCRIPT.new()
 var spawned_players: Dictionary = {} # int -> Player
 var alive_players: Array[int]:
 	get:
@@ -72,6 +74,7 @@ var shake_time: float = 0.0
 var shake_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	add_to_group("game_orchestrator")
 	shake_rng.randomize()
 	bomb_system.call("configure", self)
@@ -206,8 +209,7 @@ func _spawn_campaign_enemies(player: Player) -> void:
 
 func _update_campaign_objective() -> void:
 	hud.update_campaign_objective(
-		"INIMIGOS: %d  ·  MOVER WASD/SETAS/ANALÓGICO  ·  BOMBA ESPAÇO/A  ·  PAUSA ESC/START"
-		% campaign_enemies.size()
+		tr("GAME_CAMPAIGN_OBJECTIVE") % campaign_enemies.size()
 	)
 
 func _start_campaign_stage(stage_index: int, preserve_upgrades: bool) -> void:
@@ -321,7 +323,7 @@ func _open_campaign_portals() -> void:
 			campaign_portals.append(portal)
 			break
 	
-	spectator_banner.text = "ENTRE NO PORTAL DOURADO: MUNDO NOVO     ·     AZUL: MUNDO VISITADO"
+	spectator_banner.text = tr("GAME_PORTAL_HINT")
 	spectator_banner.modulate = Color(1.0, 0.83, 0.4)
 	spectator_banner.visible = true
 	hud.set_campaign_help_visible(false)
@@ -358,7 +360,7 @@ func _campaign_lose_life(reason: String) -> void:
 		GameState.clear_campaign_progress()
 	hud.update_campaign_info(GameState.campaign_stage_index + 1, GameState.MAP_NAMES.size(), GameState.campaign_lives)
 	round_overlay.visible = true
-	round_title.text = "VOCÊ PERDEU UMA VIDA"
+	round_title.text = tr("GAME_LIFE_LOST")
 	round_title.modulate = Color(1.0, 0.48, 0.42)
 	winner_label.text = reason
 	winner_label.modulate = Color(1.0, 0.8, 0.72)
@@ -366,10 +368,10 @@ func _campaign_lose_life(reason: String) -> void:
 		child.queue_free()
 	if GameState.campaign_lives <= 0:
 		_populate_match_stats(score_list_vbox)
-		next_round_label.text = "FIM DE JOGO  ·  Voltando ao menu..."
+		next_round_label.text = tr("GAME_OVER_RETURN")
 		get_tree().create_timer(6.0).timeout.connect(_return_to_main_menu)
 	else:
-		next_round_label.text = "Vidas restantes: %d  ·  Recomeçando a fase..." % GameState.campaign_lives
+		next_round_label.text = tr("GAME_REMAINING_LIVES") % GameState.campaign_lives
 		get_tree().create_timer(1.8).timeout.connect(_restart_campaign_stage)
 
 func _restart_campaign_stage() -> void:
@@ -383,18 +385,18 @@ func _show_campaign_ending() -> void:
 	GameState.clear_campaign_progress()
 	var good_ending: bool = GameState.campaign_golden_choices >= GameState.campaign_blue_choices
 	round_overlay.visible = true
-	round_title.text = "FINAL BOM" if good_ending else "FINAL SOMBRIO"
+	round_title.text = tr("GAME_GOOD_ENDING") if good_ending else tr("GAME_DARK_ENDING")
 	round_title.modulate = Color(1.0, 0.83, 0.35) if good_ending else Color(0.65, 0.57, 1.0)
-	winner_label.text = "O Bomberman libertou os mundos do tempo!" if good_ending else "O portal do tempo caiu nas sombras..."
+	winner_label.text = tr("GAME_GOOD_ENDING_DESC") if good_ending else tr("GAME_DARK_ENDING_DESC")
 	winner_label.modulate = Color.WHITE
 	for child in score_list_vbox.get_children():
 		child.queue_free()
 	var route_label: Label = Label.new()
-	route_label.text = "Mundos visitados: %d/%d" % [GameState.campaign_visited_stages.size(), GameState.MAP_NAMES.size()]
+	route_label.text = tr("GAME_VISITED_WORLDS") % [GameState.campaign_visited_stages.size(), GameState.MAP_NAMES.size()]
 	route_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_list_vbox.add_child(route_label)
 	_populate_match_stats(score_list_vbox)
-	next_round_label.text = "A aventura terminou  ·  Voltando ao menu..."
+	next_round_label.text = tr("GAME_NEXT_CAMPAIGN")
 	get_tree().create_timer(8.0).timeout.connect(_return_to_main_menu)
 
 func _return_to_main_menu() -> void:
@@ -516,13 +518,13 @@ func _physics_process(delta: float) -> void:
 					if triggered and not sudden_death_banner_shown:
 						sudden_death_banner_shown = true
 						AudioManager.play_sudden_death_alert()
-						spectator_banner.text = "⚠  MORTE SÚBITA  —  AS PAREDES ESTÃO CAINDO!  ⚠"
+						spectator_banner.text = tr("GAME_SUDDEN_DEATH")
 						spectator_banner.modulate = Color(1.0, 0.35, 0.25)
 						spectator_banner.visible = true
 						get_tree().create_timer(3.5).timeout.connect(func(): if spectator_banner: spectator_banner.visible = spawned_players.values().all(func(p): return not p.is_alive))
 			if match_round.clock.is_expired():
 				if GameState.game_mode == GameState.GameMode.CAMPAIGN:
-					_campaign_lose_life("O TEMPO DA FASE ACABOU!")
+					_campaign_lose_life(tr("GAME_CAMPAIGN_TIMEOUT"))
 				else:
 					_end_round_by_timeout()
 				return
@@ -601,7 +603,7 @@ func _on_player_died(player: Player) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if GameState.game_mode == GameState.GameMode.CAMPAIGN:
-		_campaign_lose_life("UM INIMIGO OU EXPLOSÃO ATINGIU VOCÊ!")
+		_campaign_lose_life(tr("GAME_CAMPAIGN_HIT"))
 		return
 	
 	var p_id: int = player.peer_id
@@ -636,16 +638,16 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 	NetworkManager.scores = updated_scores
 	round_overlay.visible = true
 	spectator_banner.visible = false
-	round_title.text = "🏁 FIM DA RODADA %d" % current_round
+	round_title.text = tr("GAME_ROUND_TITLE") % current_round
 	
 	if winner_id == 0:
 		AudioManager.stop_music()
-		winner_label.text = "EMPATE! Ninguém sobreviveu!"
+		winner_label.text = tr("DRAW")
 		winner_label.modulate = Color(1.0, 0.4, 0.4)
 	else:
 		AudioManager.play_victory_jingle()
 		var w_name: String = spawned_players[winner_id].player_name if spawned_players.has(winner_id) else "Jogador %d" % winner_id
-		winner_label.text = "🏆 Vencedor da Rodada: %s!" % w_name
+		winner_label.text = tr("GAME_ROUND_WINNER") % w_name
 		winner_label.modulate = Color(1.0, 0.85, 0.3)
 	
 	for child in score_list_vbox.get_children():
@@ -658,7 +660,7 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 		var p_name: String = NetworkManager.players[p_id].get("name", "Jogador")
 		var wins: int = NetworkManager.scores.get(p_id, 0)
 		var lbl: Label = Label.new()
-		lbl.text = "%s: %d vitórias (Meta: %d)" % [p_name, wins, WINS_REQUIRED]
+		lbl.text = tr("GAME_SCORE_LINE") % [p_name, wins, WINS_REQUIRED]
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		score_list_vbox.add_child(lbl)
 		
@@ -669,13 +671,13 @@ func sync_round_end(winner_id: int, updated_scores: Dictionary) -> void:
 	if has_match_winner:
 		_populate_match_stats(score_list_vbox)
 		AudioManager.play_victory_theme()
-		round_title.text = "🎉 FIM DE PARTIDA! 🎉"
-		winner_label.text = "CAMPEÃO DO BOMBÁSTICO: %s!" % match_winner_name
-		next_round_label.text = "Voltando ao lobby em 5 segundos..."
+		round_title.text = tr("MATCH_OVER")
+		winner_label.text = tr("GAME_CHAMPION") % match_winner_name
+		next_round_label.text = tr("GAME_RETURN_5")
 		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 			get_tree().create_timer(5.0).timeout.connect(_on_leave_requested)
 	else:
-		next_round_label.text = "Próxima rodada em 3,5 segundos..."
+		next_round_label.text = tr("GAME_NEXT_ROUND")
 		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 			get_tree().create_timer(3.5).timeout.connect(_advance_to_next_round_server)
 
@@ -795,101 +797,14 @@ func _configure_controller_inputs() -> void:
 	GameState.apply_keybindings_to_input_map()
 
 func _populate_match_stats(container: VBoxContainer) -> void:
-	var total_seconds: int = int(stat_match_seconds)
-	var minutes: int = int(float(total_seconds) / 60.0)
-	var seconds: int = total_seconds % 60
-	var time_str: String = "%02d:%02d" % [minutes, seconds]
-	
-	var sep := HSeparator.new()
-	container.add_child(sep)
-	
-	var header := Label.new()
-	header.text = "📊 ESTATÍSTICAS DA PARTIDA"
-	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 14)
-	header.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
-	container.add_child(header)
-	
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 28)
-	grid.add_theme_constant_override("v_separation", 4)
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	
-	var stats: Array[Array] = [
-		["⏱️ Tempo de Batalha:", time_str],
-		["💣 Bombas Lançadas:", str(stat_bombs_dropped)],
-		["🧱 Blocos Destruídos:", str(stat_blocks_broken)],
-		["⚡ Itens Coletados:", str(stat_powerups_collected)]
-	]
-	if GameState.game_mode == GameState.GameMode.CAMPAIGN:
-		stats.append(["👾 Inimigos Derrotados:", str(stat_enemies_defeated)])
-		stats.append(["🌟 Portais (Ouro/Azul):", "%d / %d" % [GameState.campaign_golden_choices, GameState.campaign_blue_choices]])
-	
-	for pair in stats:
-		var k := Label.new()
-		k.text = pair[0]
-		k.add_theme_font_size_override("font_size", 12)
-		k.add_theme_color_override("font_color", Color(0.75, 0.82, 0.95))
-		var v := Label.new()
-		v.text = pair[1]
-		v.add_theme_font_size_override("font_size", 12)
-		v.add_theme_color_override("font_color", Color(1.0, 0.95, 0.6))
-		grid.add_child(k)
-		grid.add_child(v)
-	
-	container.add_child(grid)
-	
-	# Medalhas e Títulos comemorativos
-	var badges: Array[Dictionary] = []
-	if stat_blocks_broken >= 15:
-		badges.append({"title": "🏆 Demolidor de Paredes", "color": Color(1.0, 0.75, 0.3)})
-	if stat_bombs_dropped >= 20:
-		badges.append({"title": "💣 Mestre da Pólvora", "color": Color(1.0, 0.45, 0.35)})
-	if stat_powerups_collected >= 6:
-		badges.append({"title": "⭐ Colecionador Nato", "color": Color(0.4, 0.95, 0.6)})
-	if stat_match_seconds < 75.0 and stat_bombs_dropped >= 5:
-		badges.append({"title": "⚡ Velocista Tático", "color": Color(0.35, 0.85, 1.0)})
-	elif stat_match_seconds >= 120.0:
-		badges.append({"title": "🛡️ Sobrevivente Épico", "color": Color(0.85, 0.6, 1.0)})
-	if GameState.game_mode == GameState.GameMode.CAMPAIGN and stat_enemies_defeated >= 5:
-		badges.append({"title": "👾 Exterminador", "color": Color(1.0, 0.5, 0.8)})
-
-	if not badges.is_empty():
-		var badge_sep := HSeparator.new()
-		container.add_child(badge_sep)
-		
-		var badge_header := Label.new()
-		badge_header.text = "🎖️ TÍTULOS E CONQUISTAS"
-		badge_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		badge_header.add_theme_font_size_override("font_size", 13)
-		badge_header.add_theme_color_override("font_color", Color(0.5, 1.0, 0.7))
-		container.add_child(badge_header)
-		
-		var badge_box := HFlowContainer.new()
-		badge_box.alignment = FlowContainer.ALIGNMENT_CENTER
-		badge_box.add_theme_constant_override("h_separation", 10)
-		badge_box.add_theme_constant_override("v_separation", 6)
-		badge_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		for b in badges:
-			var panel := PanelContainer.new()
-			var style := StyleBoxFlat.new()
-			style.bg_color = Color(0.12, 0.16, 0.24, 0.85)
-			style.border_color = b.color
-			style.set_border_width_all(1)
-			style.set_corner_radius_all(6)
-			style.content_margin_left = 8
-			style.content_margin_right = 8
-			style.content_margin_top = 4
-			style.content_margin_bottom = 4
-			panel.add_theme_stylebox_override("panel", style)
-			
-			var badge_lbl := Label.new()
-			badge_lbl.text = b.title
-			badge_lbl.add_theme_font_size_override("font_size", 11)
-			badge_lbl.add_theme_color_override("font_color", b.color)
-			panel.add_child(badge_lbl)
-			badge_box.add_child(panel)
-		
-		container.add_child(badge_box)
+	match_summary_builder.populate(
+		container,
+		stat_match_seconds,
+		stat_bombs_dropped,
+		stat_blocks_broken,
+		stat_powerups_collected,
+		stat_enemies_defeated,
+		GameState.game_mode == GameState.GameMode.CAMPAIGN,
+		GameState.campaign_golden_choices,
+		GameState.campaign_blue_choices
+	)

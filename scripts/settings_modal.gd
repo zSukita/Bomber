@@ -40,6 +40,7 @@ var listening_action: String = ""
 var active_tab_index: int = 0
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	visible = false
 	modulate.a = 0.0
 	
@@ -70,9 +71,9 @@ func _ready() -> void:
 	# Dificuldade do Bot
 	if bot_difficulty_option:
 		bot_difficulty_option.clear()
-		bot_difficulty_option.add_item("Fácil", GameState.BotDifficulty.EASY)
-		bot_difficulty_option.add_item("Médio", GameState.BotDifficulty.MEDIUM)
-		bot_difficulty_option.add_item("Difícil (Mestre)", GameState.BotDifficulty.HARD)
+		bot_difficulty_option.add_item(tr("DIFF_EASY"), GameState.BotDifficulty.EASY)
+		bot_difficulty_option.add_item(tr("DIFF_MEDIUM"), GameState.BotDifficulty.MEDIUM)
+		bot_difficulty_option.add_item(tr("DIFF_HARD"), GameState.BotDifficulty.HARD)
 		bot_difficulty_option.selected = int(GameState.bot_difficulty)
 		bot_difficulty_option.item_selected.connect(_on_bot_difficulty_selected)
 	
@@ -103,6 +104,7 @@ func _ready() -> void:
 	GameState.enhanced_mode_toggled.connect(_sync_enhanced_check)
 	GameState.user_preferences_loaded.connect(_sync_controls_from_active_settings)
 	GameState.keybindings_updated.connect(_update_keybind_buttons)
+	GameState.locale_changed.connect(_on_locale_changed)
 	
 	_switch_tab(0)
 	_sync_controls_from_active_settings()
@@ -283,4 +285,13 @@ func _sync_controls_from_active_settings() -> void:
 	enhanced_check.set_pressed_no_signal(GameState.is_enhanced())
 	shake_slider.set_value_no_signal(GameState.screen_shake_intensity * 100.0)
 	effects_slider.set_value_no_signal(GameState.visual_effects_intensity * 100.0)
+
+func _on_locale_changed(_new_locale: String) -> void:
+	if not is_node_ready():
+		return
+	if bot_difficulty_option and bot_difficulty_option.item_count >= 3:
+		bot_difficulty_option.set_item_text(0, tr("DIFF_EASY"))
+		bot_difficulty_option.set_item_text(1, tr("DIFF_MEDIUM"))
+		bot_difficulty_option.set_item_text(2, tr("DIFF_HARD"))
+	_sync_controls_from_active_settings()
 	reduced_flashes_check.set_pressed_no_signal(GameState.reduced_flashes_enabled)

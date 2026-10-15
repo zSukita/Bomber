@@ -53,18 +53,18 @@ var selected_suit_idx: int = 0
 
 const NEWS_PAGES: Array[Dictionary] = [
 	{
-		"title": "Campanha com rotas",
-		"desc": "Explore doze mundos e escolha portais para definir seu final.",
+		"title": "MENU_CAMPAIGN_ROUTES",
+		"desc": "MENU_CAMPAIGN_SUMMARY",
 		"dots": "●  ○  ○"
 	},
 	{
-		"title": "Arena para quatro",
-		"desc": "Partidas pela rede com até quatro jogadores, usando IP e porta.",
+		"title": "NEWS_MULTIPLAYER_TITLE",
+		"desc": "NEWS_MULTIPLAYER_DESC",
 		"dots": "○  ●  ○"
 	},
 	{
-		"title": "Servidor dedicado Linux",
-		"desc": "Exporte um servidor dedicado para hospedar partidas de arena.",
+		"title": "NEWS_SERVER_TITLE",
+		"desc": "NEWS_SERVER_DESC",
 		"dots": "○  ○  ●"
 	}
 ]
@@ -73,6 +73,7 @@ var _intro_finished: bool = false
 var _base_char_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	# Inicializa material do avatar do jogador com shader de tingimento
 	var shader := load("res://shaders/suit_tint.gdshader") as Shader
 	if shader:
@@ -276,8 +277,8 @@ func _cycle_news() -> void:
 	tween.tween_property(news_title, "modulate:a", 0.0, 0.15)
 	await tween.finished
 	
-	news_title.text = page["title"]
-	news_desc.text = page["desc"]
+	news_title.text = tr(page["title"])
+	news_desc.text = tr(page["desc"])
 	dots_label.text = page["dots"]
 	
 	var tween_in: Tween = create_tween()
@@ -390,6 +391,11 @@ func _run_menu_self_test() -> void:
 	assert(multiplayer_btn != null, "MultiplayerButton não encontrado")
 	assert(player_panel != null, "PlayerPanel não encontrado")
 	assert(color_buttons.size() == 4, "Esperado 4 botões de traje")
+	var original_locale: String = GameState.current_locale
+	GameState.set_game_locale("en")
+	assert(tr("BTN_NEW_CAMPAIGN") == "NEW CAMPAIGN", "Tradução inglesa não carregada")
+	assert(tr("NOVA CAMPANHA") == "NEW CAMPAIGN", "Tradução automática de texto de interface não carregada")
+	GameState.set_game_locale(original_locale)
 	
 	print("[Menu Test] Testando troca de cor do traje para 1 (Vermelho)...")
 	_select_suit_color(1)

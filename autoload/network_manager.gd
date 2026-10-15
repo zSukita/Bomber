@@ -157,7 +157,7 @@ func create_server(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 	var max_remote_clients: int = MAX_PLAYERS if dedicated else MAX_PLAYERS - 1
 	var error: Error = peer.create_server(port, max_remote_clients)
 	if error != OK:
-		status_message.emit("Falha ao criar servidor na porta %d!" % port, true)
+		status_message.emit(tr("NET_CREATE_FAIL") % port, true)
 		return error
 	
 	multiplayer.multiplayer_peer = peer
@@ -173,7 +173,7 @@ func create_server(port: int = DEFAULT_PORT, dedicated: bool = false) -> Error:
 			"score": 0
 		}
 		players[1] = host_info
-		status_message.emit("Servidor criado com sucesso na porta %d!" % port, false)
+		status_message.emit(tr("NET_CREATE_OK") % port, false)
 	else:
 		print("[Rede] Servidor dedicado criado na porta %d." % port)
 	
@@ -190,11 +190,11 @@ func join_server(ip: String, port: int = DEFAULT_PORT) -> Error:
 	peer = ENetMultiplayerPeer.new()
 	var error: Error = peer.create_client(target_ip, port)
 	if error != OK:
-		status_message.emit("Falha ao inicializar conexão com %s:%d" % [target_ip, port], true)
+		status_message.emit(tr("NET_CLIENT_INIT_FAIL") % [target_ip, port], true)
 		return error
 	
 	multiplayer.multiplayer_peer = peer
-	status_message.emit("Conectando a %s:%d..." % [target_ip, port], false)
+	status_message.emit(tr("NET_CONNECTING") % [target_ip, port], false)
 	return OK
 
 func disconnect_from_server(show_status_message: bool = true) -> void:
@@ -213,7 +213,7 @@ func disconnect_from_server(show_status_message: bool = true) -> void:
 	is_game_active = false
 	selected_map_style = -1
 	if show_status_message:
-		status_message.emit("Desconectado da sala.", false)
+		status_message.emit(tr("NET_DISCONNECTED"), false)
 	lobby_updated.emit()
 
 func _exit_tree() -> void:
@@ -250,7 +250,7 @@ func _on_upnp_success(ext_ip: String, port: int) -> void:
 	upnp_external_ip = ext_ip
 	upnp_mapped_port = port
 	print("[Rede] UPnP mapeado com sucesso! IP Externo: %s:%d" % [ext_ip, port])
-	status_message.emit("UPnP ativo! Para amigos na internet conectarem: %s:%d" % [ext_ip, port], false)
+	status_message.emit(tr("NET_UPNP_OK") % [ext_ip, port], false)
 
 func _on_upnp_failed(reason: String) -> void:
 	print("[Rede] UPnP não disponível: %s (conexão LAN/VPN local continua normal)" % reason)
@@ -285,7 +285,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	var my_id: int = multiplayer.get_unique_id()
-	status_message.emit("Conectado ao servidor! ID: %d" % my_id, false)
+	status_message.emit(tr("NET_CONNECTED") % my_id, false)
 	
 	var info: Dictionary = {
 		"name": local_player_name,
@@ -298,11 +298,11 @@ func _on_connected_to_server() -> void:
 
 func _on_connection_failed() -> void:
 	disconnect_from_server(false)
-	status_message.emit("Não foi possível conectar. Confira o IP, a porta e se o host está online.", true)
+	status_message.emit(tr("NET_CONNECT_FAIL"), true)
 
 func _on_server_disconnected() -> void:
 	disconnect_from_server(false)
-	pending_status_message = "Conexão perdida. Entre em outra sala pelo lobby; a partida não pode ser retomada automaticamente."
+	pending_status_message = tr("NET_CONNECTION_LOST")
 	pending_status_is_error = true
 	TransitionManager.change_scene("res://scenes/lobby.tscn")
 
@@ -314,11 +314,14 @@ func register_player(info: Dictionary) -> void:
 		return
 	
 	var sender_id: int = multiplayer.get_remote_sender_id()
+	if is_game_active:
+		connection_rejected.rpc_id(sender_id, tr("NET_MATCH_STARTED_REJECT"))
+		return
 	if players.has(sender_id):
-		connection_rejected.rpc_id(sender_id, "Este jogador já está registrado na sala.")
+		connection_rejected.rpc_id(sender_id, tr("NET_ALREADY_REGISTERED"))
 		return
 	if players.size() >= MAX_PLAYERS:
-		connection_rejected.rpc_id(sender_id, "Sala cheia: o limite é de quatro jogadores.")
+		connection_rejected.rpc_id(sender_id, tr("NET_ROOM_FULL"))
 		return
 	var safe_name: String = str(info.get("name", "Jogador")).strip_edges().substr(0, 20)
 	info["name"] = safe_name if not safe_name.is_empty() else "Jogador"
@@ -351,7 +354,7 @@ func register_player(info: Dictionary) -> void:
 @rpc("authority", "call_remote", "reliable")
 func connection_rejected(reason: String) -> void:
 	disconnect_from_server(false)
-	status_message.emit(reason, true)
+	status_message.emit(tr(reason), true)
 
 @rpc("authority", "reliable")
 func sync_lobby(lobby_data: Dictionary) -> void:
@@ -366,7 +369,7 @@ func toggle_ready() -> void:
 
 @rpc("any_peer", "reliable")
 func set_ready_state(is_ready: bool) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.is_server() or is_game_active:
 		return
 	var sender_id: int = multiplayer.get_remote_sender_id()
 	if players.has(sender_id):
@@ -389,7 +392,7 @@ func can_start_game() -> bool:
 	return true
 
 func start_game() -> void:
-	if not multiplayer.is_server() or not can_start_game():
+	if not multiplayer.is_server() or is_game_active or not can_start_game():
 		return
 	
 	var map_seed: int = randi()

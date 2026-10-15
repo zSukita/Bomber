@@ -63,6 +63,7 @@ var selected_color_index: int = 0
 var selected_character_index: int = 0
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	selected_color_index = clampi(NetworkManager.preferred_color_index, 0, Player.PLAYER_COLORS.size() - 1)
 	selected_character_index = clampi(NetworkManager.preferred_character_index, 0, BomberAssets.CHARACTER_NAMES.size() - 1)
 	_setup_profile_avatar()
@@ -76,6 +77,7 @@ func _ready() -> void:
 	
 	NetworkManager.lobby_updated.connect(_update_lobby_ui)
 	NetworkManager.status_message.connect(_on_status_message)
+	GameState.locale_changed.connect(_on_locale_changed)
 	NetworkManager.map_selection_updated.connect(_on_map_selection_updated)
 	NetworkManager.server_discovered.connect(_on_server_discovered)
 	if not NetworkManager.pending_status_message.is_empty():
@@ -85,9 +87,9 @@ func _ready() -> void:
 	
 	# Opções de Mapa
 	map_option.clear()
-	map_option.add_item("ALEATÓRIO (RECOMENDADO)", -1)
+	map_option.add_item(tr("LOBBY_RANDOM_MAP"), -1)
 	for map_index in range(GameState.MAP_NAMES.size()):
-		map_option.add_item(GameState.MAP_NAMES[map_index], map_index)
+		map_option.add_item(GameState.tr(GameState.MAP_NAMES[map_index]), map_index)
 	map_option.item_selected.connect(_on_map_option_selected)
 	
 	# Botões de Ação
@@ -294,7 +296,7 @@ func _refresh_lan_server_list() -> void:
 	
 	if NetworkManager.discovered_servers.is_empty():
 		var searching_lbl := Label.new()
-		searching_lbl.text = "🔍 Buscando salas na mesma rede Wi-Fi/LAN..."
+		searching_lbl.text = tr("LOBBY_SEARCHING")
 		searching_lbl.add_theme_font_size_override("font_size", 11)
 		searching_lbl.add_theme_color_override("font_color", Color(0.6, 0.7, 0.82))
 		lan_servers_list.add_child(searching_lbl)
@@ -339,13 +341,13 @@ func _update_mode_button_state() -> void:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.set_corner_radius_all(8)
 	if GameState.is_enhanced():
-		mode_toggle_btn.text = "⚡ MELHORADO [F10]"
+		mode_toggle_btn.text = tr("LOBBY_ENHANCED_MODE")
 		style.bg_color = Color(0.1, 0.35, 0.28, 0.85)
 		style.border_color = Color(0.3, 0.95, 0.68, 0.8)
 		style.set_border_width_all(1)
 		mode_toggle_btn.modulate = Color(0.9, 1.0, 0.95)
 	else:
-		mode_toggle_btn.text = "⚙ BASE [F10]"
+		mode_toggle_btn.text = tr("⚙ BASE [F10]")
 		style.bg_color = Color(0.12, 0.16, 0.22, 0.7)
 		style.border_color = Color(0.3, 0.38, 0.5, 0.6)
 		style.set_border_width_all(1)
@@ -437,7 +439,7 @@ func _style_button(button: Button, color: Color, hover_color: Color, is_bold: bo
 func _show_connection_view() -> void:
 	connection_panel.visible = true
 	room_panel.visible = false
-	status_label.text = "Pronto para conectar ou criar sala."
+	status_label.text = tr("LOBBY_READY_TO_CONNECT")
 	status_label.modulate = Color(0.75, 0.85, 0.98)
 
 func _show_room_view() -> void:
@@ -524,7 +526,7 @@ func _update_lobby_ui() -> void:
 	_show_room_view()
 	
 	var is_host: bool = multiplayer.is_server()
-	room_title.text = "SALA DE ESPERA   ·   %d/4 JOGADORES CONECTADOS" % NetworkManager.players.size()
+	room_title.text = tr("LOBBY_WAITING_COUNT") % NetworkManager.players.size()
 	
 	# Limpa slots anteriores
 	for child in player_list_container.get_children():
@@ -544,7 +546,7 @@ func _update_lobby_ui() -> void:
 	# Atualiza botão de "Pronto"
 	if NetworkManager.players.has(my_id):
 		var am_ready: bool = NetworkManager.players[my_id].get("is_ready", false)
-		ready_btn.text = "CANCELAR PRONTO" if am_ready else "ESTOU PRONTO"
+		ready_btn.text = tr("LOBBY_CANCEL_READY") if am_ready else tr("LOBBY_READY")
 		ready_btn.modulate = Color(1.0, 0.72, 0.72) if am_ready else Color.WHITE
 	
 	start_btn.visible = is_host
@@ -563,14 +565,25 @@ func _on_map_selection_updated(_map_index: int) -> void:
 		map_option.select(NetworkManager.selected_map_style + 1)
 		_update_map_preview()
 
+func _on_locale_changed(_new_locale: String) -> void:
+	if not is_node_ready():
+		return
+	var selected_id: int = NetworkManager.selected_map_style
+	map_option.clear()
+	map_option.add_item(tr("LOBBY_RANDOM_MAP"), -1)
+	for map_index in range(GameState.MAP_NAMES.size()):
+		map_option.add_item(GameState.tr(GameState.MAP_NAMES[map_index]), map_index)
+	map_option.select(selected_id + 1)
+	_update_map_preview()
+
 func _update_map_preview() -> void:
 	var map_index: int = NetworkManager.selected_map_style
 	if map_index < 0 or map_index >= ArenaMapStyles.PREVIEWS.size():
 		map_preview.texture = null
-		map_preview_label.text = "A próxima arena será escolhida aleatoriamente."
+		map_preview_label.text = tr("LOBBY_MAP_RANDOM")
 		return
 	map_preview.texture = load(ArenaMapStyles.PREVIEWS[map_index]) as Texture2D
-	map_preview_label.text = "Prévia da arena: %s" % GameState.MAP_NAMES[map_index]
+	map_preview_label.text = tr("LOBBY_MAP_PREVIEW") % GameState.tr(GameState.MAP_NAMES[map_index])
 
 func _create_player_card(peer_id: int, player_info: Dictionary, is_you: bool) -> void:
 	var color_idx: int = int(player_info.get("color_index", 0)) % Player.PLAYER_COLORS.size()
@@ -605,13 +618,14 @@ func _create_player_card(peer_id: int, player_info: Dictionary, is_you: bool) ->
 	details.alignment = BoxContainer.ALIGNMENT_CENTER
 	
 	var name_label: Label = Label.new()
+	name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	var name_str: String = player_info.get("name", "Jogador")
-	name_label.text = "%s%s" % [name_str, "  (VOCÊ)" if is_you else ""]
+	name_label.text = "%s%s" % [name_str, tr("LOBBY_PLAYER_YOU") if is_you else ""]
 	name_label.add_theme_font_size_override("font_size", 15)
 	name_label.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
 	
 	var role_label: Label = Label.new()
-	role_label.text = "LÍDER DA SALA (HOST)" if peer_id == 1 else "DESAFIANTE %d" % (color_idx + 1)
+	role_label.text = tr("LOBBY_HOST_ROLE") if peer_id == 1 else tr("LOBBY_CHALLENGER") % (color_idx + 1)
 	role_label.add_theme_font_size_override("font_size", 11)
 	role_label.add_theme_color_override("font_color", Color(0.55, 0.68, 0.85))
 	
@@ -622,7 +636,7 @@ func _create_player_card(peer_id: int, player_info: Dictionary, is_you: bool) ->
 	# Indicador de Pronto
 	var is_player_ready: bool = bool(player_info.get("is_ready", false))
 	var badge: Label = Label.new()
-	badge.text = "PRONTO  ✓" if is_player_ready else "AGUARDANDO..."
+	badge.text = tr("LOBBY_READY_BADGE") if is_player_ready else tr("LOBBY_WAITING_BADGE")
 	badge.add_theme_font_size_override("font_size", 12)
 	badge.add_theme_color_override("font_color", Color(0.35, 0.95, 0.65) if is_player_ready else Color(0.96, 0.72, 0.35))
 	row.add_child(badge)
@@ -659,14 +673,14 @@ func _create_empty_slot(slot_number: int) -> void:
 	row.add_child(portrait)
 	
 	var slot_label: Label = Label.new()
-	slot_label.text = "VAGA #%d DISPONÍVEL" % slot_number
+	slot_label.text = tr("LOBBY_EMPTY_SLOT") % slot_number
 	slot_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slot_label.add_theme_font_size_override("font_size", 13)
 	slot_label.add_theme_color_override("font_color", Color(0.42, 0.52, 0.65))
 	row.add_child(slot_label)
 	
 	var wait_label: Label = Label.new()
-	wait_label.text = "Livre"
+	wait_label.text = tr("LOBBY_FREE")
 	wait_label.add_theme_font_size_override("font_size", 11)
 	wait_label.add_theme_color_override("font_color", Color(0.35, 0.45, 0.55))
 	row.add_child(wait_label)
@@ -682,5 +696,5 @@ func _create_empty_slot(slot_number: int) -> void:
 	player_list_container.add_child(card)
 
 func _on_status_message(text: String, is_error: bool) -> void:
-	status_label.text = text
+	status_label.text = tr(text)
 	status_label.modulate = Color(1.0, 0.4, 0.4) if is_error else Color(0.6, 1.0, 0.8)

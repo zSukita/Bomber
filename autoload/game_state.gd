@@ -140,6 +140,7 @@ var sfx_pitch_variation: bool = true
 
 ## Idioma do jogo (pt, en, es)
 var current_locale: String = "pt"
+const SUPPORTED_LOCALES: PackedStringArray = ["pt", "en", "es"]
 
 signal locale_changed(new_locale: String)
 
@@ -169,18 +170,28 @@ func _setup_translations() -> void:
 		if row.is_empty() or row[0].strip_edges().is_empty():
 			continue
 		var key: String = row[0].strip_edges()
-		for i in range(1, mini(row.size(), header.size())):
-			if translations.has(i):
-				var tr: Translation = translations[i]
-				tr.add_message(key, row[i])
+		for target_column in range(1, mini(row.size(), header.size())):
+			if not translations.has(target_column):
+				continue
+			var target_translation: Translation = translations[target_column]
+			target_translation.add_message(key, row[target_column])
+			# Support both explicit stable keys (tr("BTN_HOST")) and Godot's
+			# automatic translation of Control text properties (source phrase).
+			for source_column in range(1, mini(row.size(), header.size())):
+				var source_phrase: String = row[source_column].strip_edges()
+				if not source_phrase.is_empty():
+					target_translation.add_message(source_phrase, row[target_column])
 	
 	for i in translations:
 		TranslationServer.add_translation(translations[i])
 
 func set_game_locale(new_locale: String) -> void:
-	current_locale = new_locale
-	TranslationServer.set_locale(new_locale)
-	locale_changed.emit(new_locale)
+	var normalized_locale: String = new_locale.to_lower().split("_")[0]
+	if not normalized_locale in SUPPORTED_LOCALES:
+		normalized_locale = "pt"
+	current_locale = normalized_locale
+	TranslationServer.set_locale(current_locale)
+	locale_changed.emit(current_locale)
 	save_user_preferences()
 
 func _load_user_preferences() -> void:
@@ -195,7 +206,8 @@ func _load_user_preferences() -> void:
 		NetworkManager.preferred_color_index = clampi(int(settings.get_value("profile", "color_index", 0)), 0, Player.PLAYER_COLORS.size() - 1)
 		preferred_character_index = clampi(int(settings.get_value("profile", "character_index", 0)), 0, BomberAssets.CHARACTER_NAMES.size() - 1)
 		NetworkManager.preferred_character_index = preferred_character_index
-		current_locale = str(settings.get_value("general", "locale", "pt"))
+		var saved_locale: String = str(settings.get_value("general", "locale", "pt")).to_lower().split("_")[0]
+		current_locale = saved_locale if saved_locale in SUPPORTED_LOCALES else "pt"
 		master_volume_percent = clampf(float(settings.get_value("audio", "master", DEFAULT_MASTER_VOLUME)), 0.0, 100.0)
 		music_volume_percent = clampf(float(settings.get_value("audio", "music", DEFAULT_MUSIC_VOLUME)), 0.0, 100.0)
 		sfx_volume_percent = clampf(float(settings.get_value("audio", "sfx", DEFAULT_SFX_VOLUME)), 0.0, 100.0)
@@ -365,12 +377,12 @@ func get_action_key_text(action: String) -> String:
 			var code: int = ev.physical_keycode if ev.physical_keycode != 0 else ev.keycode
 			var name_str: String = OS.get_keycode_string(code as Key)
 			match code:
-				KEY_UP: name_str = "Seta Cima"
-				KEY_DOWN: name_str = "Seta Baixo"
-				KEY_LEFT: name_str = "Seta Esquerda"
-				KEY_RIGHT: name_str = "Seta Direita"
-				KEY_SPACE: name_str = "Espaço"
-				KEY_ESCAPE: name_str = "Esc"
+				KEY_UP: name_str = tr("KEY_ARROW_UP")
+				KEY_DOWN: name_str = tr("KEY_ARROW_DOWN")
+				KEY_LEFT: name_str = tr("KEY_ARROW_LEFT")
+				KEY_RIGHT: name_str = tr("KEY_ARROW_RIGHT")
+				KEY_SPACE: name_str = tr("KEY_SPACE")
+				KEY_ESCAPE: name_str = tr("KEY_ESCAPE")
 				KEY_ENTER: name_str = "Enter"
 			if not names.has(name_str):
 				names.append(name_str)

@@ -26,10 +26,11 @@ var toast_tween: Tween
 func update_pause_status(is_online: bool) -> void:
 	var title: Label = $PauseOverlay/Panel/Margin/VBox/PauseTitle
 	var note: Label = $PauseOverlay/Panel/Margin/VBox/PauseNote
-	title.text = "⏸ PAUSA LOCAL" if is_online else "⏸ JOGO PAUSADO"
-	note.text = "A partida online continua para os outros jogadores." if is_online else "Cronômetro e inimigos estão pausados."
+	title.text = tr("HUD_PAUSE_LOCAL") if is_online else tr("PAUSE")
+	note.text = tr("HUD_PAUSE_ONLINE_NOTE") if is_online else tr("HUD_PAUSE_NOTE")
 
 func _ready() -> void:
+	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_ALWAYS
 	pause_panel.visible = false
 	var resume_btn: Button = $PauseOverlay/Panel/Margin/VBox/ResumeButton
 	var settings_btn: Button = $PauseOverlay/Panel/Margin/VBox/SettingsButton
@@ -85,10 +86,10 @@ func _update_mode_button_visual(is_enhanced: bool) -> void:
 	if not mode_toggle_btn:
 		return
 	if is_enhanced:
-		mode_toggle_btn.text = "MELHORADO [F10]"
+		mode_toggle_btn.text = tr("HUD_ENHANCED")
 		mode_toggle_btn.modulate = Color(0.65, 1.0, 0.8)
 	else:
-		mode_toggle_btn.text = "BASE [F10]"
+		mode_toggle_btn.text = tr("HUD_BASE")
 		mode_toggle_btn.modulate = Color(0.85, 0.85, 0.85)
 
 func notify_mode_switch(is_enhanced: bool) -> void:
@@ -99,10 +100,10 @@ func notify_mode_switch(is_enhanced: bool) -> void:
 		toast_tween.kill()
 
 	if is_enhanced:
-		toast_label.text = "✨ MODO MELHORADO: Vento, partículas temáticas, faíscas e sinais visuais ativos"
+		toast_label.text = tr("HUD_ENHANCED_TOAST")
 		toast_label.add_theme_color_override("font_color", Color("a8f5b8"))
 	else:
-		toast_label.text = "⚙️ MODO BASE: apresentação visual original restaurada; controles inalterados"
+		toast_label.text = tr("HUD_BASE_TOAST")
 		toast_label.add_theme_color_override("font_color", Color("f0e6b6"))
 
 	toast_label.position.y = 66
@@ -154,6 +155,7 @@ func setup_players(players_data: Dictionary) -> void:
 		header_hbox.add_child(swatch)
 		
 		var name_lbl: Label = Label.new()
+		name_lbl.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		name_lbl.text = p_name
 		name_lbl.name = "NameLbl"
 		name_lbl.add_theme_font_size_override("font_size", 12)
@@ -216,7 +218,7 @@ func update_player_card(peer_id: int, is_alive: bool, max_bombs: int, bomb_range
 			else:
 				stats_lbl.scale = Vector2.ONE
 		else:
-			stats_lbl.text = "ELIMINADO"
+			stats_lbl.text = tr("HUD_ELIMINATED")
 			stats_lbl.modulate = Color(0.9, 0.3, 0.3)
 			stats_lbl.scale = Vector2.ONE
 
@@ -238,21 +240,21 @@ func update_round_info(round_num: int, wins_required: int) -> void:
 	if not round_label:
 		return
 	if GameState.game_mode == GameState.GameMode.CAMPAIGN:
-		round_label.text = "FASE %d DE %d" % [round_num, GameState.MAP_NAMES.size()]
+		round_label.text = tr("HUD_ROUND_STAGE") % [round_num, GameState.MAP_NAMES.size()]
 	else:
-		round_label.text = "RODADA %d (Melhor de %d)" % [round_num, (wins_required * 2) - 1]
+		round_label.text = tr("HUD_ROUND_MATCH") % [round_num, (wins_required * 2) - 1]
 
 func update_map_name(map_name: String) -> void:
 	if map_label:
-		map_label.text = map_name.to_upper()
+		map_label.text = GameState.tr(map_name).to_upper()
 
 func update_campaign_info(stage_number: int, stage_count: int, lives: int, should_show: bool = true) -> void:
 	if campaign_label:
 		campaign_label.visible = should_show
-		campaign_label.text = "FASE %d/%d   ·   VIDAS %d" % [stage_number, stage_count, lives]
+		campaign_label.text = tr("HUD_CAMPAIGN_STAGE") % [stage_number, stage_count, lives]
 	if campaign_help:
 		campaign_help.visible = should_show
-		campaign_help.text = "DERROTE TODOS OS INIMIGOS  ·  WASD/SETAS/ANALÓGICO  ·  ESPAÇO/A BOMBA"
+		campaign_help.text = tr("HUD_CAMPAIGN_HELP")
 
 func update_campaign_objective(text: String) -> void:
 	if campaign_help and campaign_help.visible:

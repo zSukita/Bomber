@@ -40,6 +40,8 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		pivot_offset = size * 0.5
+	elif what == NOTIFICATION_TRANSLATION_CHANGED:
+		queue_redraw()
 
 func _on_mouse_entered() -> void:
 	_is_btn_hovered = true
@@ -167,12 +169,12 @@ func _draw() -> void:
 	var main_size: int = 17
 	var text_x: float = 64.0
 	var pri_y: float = h * 0.44 + 4.0
-	draw_string(font_main, Vector2(text_x, pri_y), primary_text, HORIZONTAL_ALIGNMENT_LEFT, -1, main_size, text_pri_color)
+	draw_string(font_main, Vector2(text_x, pri_y), tr(primary_text), HORIZONTAL_ALIGNMENT_LEFT, -1, main_size, text_pri_color)
 	
 	# 7. Texto Secundário (Legenda Tática)
 	var sec_size: int = 10
 	var sec_y: float = h * 0.76 + 2.0
-	draw_string(font_main, Vector2(text_x, sec_y), secondary_text.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, sec_size, text_sec_color)
+	draw_string(font_main, Vector2(text_x, sec_y), tr(secondary_text).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, sec_size, text_sec_color)
 	
 	# 8. Borda de foco para Teclado/Controle
 	if has_focus():

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.3-stable"
+  GODOT_VERSION: "4.7.2-stable"
 
 jobs:
   export:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Godot Engine & Templates
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wget unzip
-          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable
           
           # Download Godot Headless Engine
           wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip
@@ -35,14 +35,21 @@ jobs:
           # Download Export Templates
           wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz
           unzip -q Godot_v${GODOT_VERSION}_export_templates.tpz
-          mv templates/* ~/.local/share/godot/export_templates/4.3.stable/
-          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}
-          cp -r ~/.local/share/godot/export_templates/4.3.stable/* ~/.local/share/godot/export_templates/${GODOT_VERSION}/ || true
+          mv templates/* ~/.local/share/godot/export_templates/4.7.2.stable/
           rm -f *.zip *.tpz
 
       - name: Import Project Assets
         run: |
-          godot --headless --editor --quit || true
+          godot --headless --editor --path . --quit
+
+      - name: Check Project Consistency
+        run: python3 tests/check_project_consistency.py
+
+      - name: Run Main Menu Self-Test
+        run: godot --headless --path . -- --run-test
+
+      - name: Run Lobby Self-Test
+        run: godot --headless --path . res://scenes/lobby.tscn -- --run-test
 
       - name: Prepare Build Output Directories
         run: |

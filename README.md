@@ -53,12 +53,12 @@ O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e 
   - Três níveis de dificuldade configuráveis: **Fácil**, **Médio** e **Difícil (Mestre)**.
   - Bots no modo difícil avaliam risco em tempo real, chutam bombas perigosas para longe e posicionam armadilhas mais agressivas.
 - **Áudio Dinâmico & Juice:**
-  - Trilhas musicais temáticas dinâmicas por bioma de mapa (`music_adventure`, `music_dungeon`, `music_battle_2`) e tema de vitória (`music_victory_theme`).
+  - Trilhas musicais diferentes por arena e tema de vitória, com efeitos sonoros sintetizados durante o jogo.
   - Slow-motion cinematográfico no golpe decisivo de rodada ou perda de vida.
   - Estatísticas de partida enriquecidas com concessão de medalhas e títulos comemorativos ("Demolidor de Paredes", "Mestre da Pólvora", etc.).
 - **Multiplayer & Rede:**
   - **UPnP Automático Assíncrono:** Abre portas UDP automaticamente no roteador do host via UPnP em background, facilitando partidas online sem necessidade de abrir portas manualmente no NAT.
-  - **Client-Side Prediction:** Predição local imediata no cliente remoto com reconciliação suave autoritativa, eliminando sensação de atraso (input-lag) nos comandos.
+  - **Client-Side Prediction:** Predição local imediata no cliente remoto com reconciliação autoritativa; correções do servidor podem ser percebidas conforme a latência da conexão.
 - **Internacionalização & CI/CD:**
   - Suporte multilíngue com seletor em tempo real (**Português**, **Inglês** e **Espanhol**) em `assets/translations.csv`.
   - Workflow de CI/CD automatizado no GitHub Actions (`.github/workflows/build.yml`) para compilar executáveis de Windows Desktop, Linux e construir a imagem Docker.
