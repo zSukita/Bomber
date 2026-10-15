@@ -20,6 +20,11 @@ func drop_bomb(player: Player) -> void:
 		return
 	bomb.is_pierce = player.has_pierce if "has_pierce" in player else false
 	bomb.is_remote = player.has_remote if "has_remote" in player else false
+	# place_bomb adiciona a cena à árvore imediatamente, então _ready() da
+	# bomba já pode ter iniciado o pavio antes de receber esta configuração.
+	if bomb.is_remote:
+		bomb.fuse_timer.stop()
+		bomb.visual_root.modulate = Color(1.25, 0.5, 0.5, 1.0)
 	if "has_ice_bomb" in player and player.has_ice_bomb:
 		bomb.element_type = 1
 	elif "has_thunder_bomb" in player and player.has_thunder_bomb:

@@ -10,8 +10,9 @@ As licenças são específicas de cada origem. A pasta `assets/legal/` não sign
 | `assets/legal/bomb.png` e parte de `assets/legal/tiles/tileset.png` (bomba, tijolos e destruição de tijolos) | Bomber Bots — Game Asset Pack (versão Free oficial), Yahallo Games | **Pacote gratuito oficial ("Name your own price" / Free Version)**. A licença autoriza expressamente o uso e modificação em projetos pessoais ou comerciais (*"Use and edit this asset in personal or commercial projects"*). A licença apenas proíbe revender, redistribuir ou reempacotar os arquivos brutos do asset isoladamente. [Licença e página do pacote](https://yahallogames.itch.io/bomber-bots-assetpack). |
 | `assets/legal/explosion.png` | “Bomberman Explosion Effect”, Satik64 | **CC0**, conforme a página do OpenGameArt. A menção ao autor é opcional. [Página do asset](https://opengameart.org/content/bomberman-explosion-effect). |
 | Partes de pedra de `assets/legal/tiles/tileset.png` | Kenney Sokoban, segundo o crédito anterior | A página do pacote declara **Creative Commons CC0**. [Página oficial do Sokoban](https://kenney.nl/assets/sokoban). O atlas combina tiles de mais de uma origem; a separação exata dos tiles deve ser confirmada no arquivo original. |
-| `assets/legal/previews/stage_01.png` a `stage_12.png` | Pré-visualizações incluídas no projeto | Referenciadas pela campanha e pelo lobby. A origem/autoria independente não está registrada; não presumir CC0. |
-| `assets/menu/background_arena.png`, `character_hero.png`, `logo_bombastico.png`, `avatar_robot.png`, `map_preview_1.png` e `icon.svg` | Origem não registrada nos arquivos do projeto | São usados pela interface/ícone. Autor, origem e licença não foram identificados; confirmar os direitos antes de publicar. |
+| `assets/legal/previews/stage_01.png` a `stage_12.png` | Geradas por IA pelo desenvolvedor, conforme informação do autor | Referenciadas pela campanha e pelo lobby. A ferramenta/modelo e os registros de geração não foram anotados. |
+| `assets/menu/background_arena.png`, `character_hero.png`, `logo_bombastico.png`, `avatar_robot.png` e `map_preview_1.png` | Geradas por IA pelo desenvolvedor, conforme informação do autor | Usadas na interface. A ferramenta/modelo e os registros de geração não foram anotados. |
+| `icon.svg` | Origem não registrada nos arquivos do projeto | Usado como ícone do jogo. Autor, origem e licença precisam ser confirmados antes da publicação. |
 
 Os efeitos sonoros de interface e jogabilidade são sintetizados em tempo de execução por `autoload/audio_manager.gd`; não são arquivos de terceiros.
 
@@ -23,7 +24,7 @@ Os efeitos sonoros de interface e jogabilidade são sintetizados em tempo de exe
 
 ## Pendências de proveniência para publicação
 
-1. Identificar e registrar a origem/licença dos cinco assets ativos em `assets/menu/`, do ícone e das prévias das fases.
+1. Confirmar a origem/licença do `icon.svg` e registrar, se disponíveis, a ferramenta/modelo usados para gerar as artes de menu e as prévias das fases.
 2. Conferir os arquivos originais/manifests dos pacotes declarados e associar cada arquivo renomeado à origem correta.
 3. Para publicação pública do repositório de código-fonte aberto, atentar à cláusula de não redistribuição dos arquivos brutos do pacote Bomber Bots Free (embora o uso no jogo final compilado seja 100% autorizado).
 4. Conferir no pacote exportado se os assets LPC não usados são incluídos; se forem, filtrar a exportação ou resolver as licenças antes de distribuir.

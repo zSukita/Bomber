@@ -65,7 +65,7 @@ O arquivo `export_presets.cfg` define presets para Windows Desktop, Linux/X11 e 
 
 ## Estrutura do código
 
-- Consulte [CREDITS.md](CREDITS.md) para a lista de assets em uso e suas fontes/licenças conhecidas. O pacote Bomber Bots utiliza a versão Free oficial do Yahallo Games (uso comercial e pessoal liberado no jogo). A arte principal do menu e algumas prévias não têm origem/licença documentadas; confirme antes da publicação.
+- Consulte [CREDITS.md](CREDITS.md) para a lista de assets em uso e suas fontes/licenças conhecidas. O pacote Bomber Bots utiliza a versão Free oficial do Yahallo Games (uso comercial e pessoal liberado no jogo). As artes do menu e as prévias da campanha foram geradas por IA pelo desenvolvedor, conforme informação do autor; a origem do `icon.svg` ainda precisa ser confirmada.
 - `assets/lpc_characters/` e `assets/lpc_monsters/` contêm arte LPC não referenciada pelas cenas/scripts atuais. Seus créditos listam OGA-BY 3.0, CC-BY-SA 3.0 e GPL 3.0 para componentes diferentes; não são assets CC0. Os PNGs foram preservados no projeto e excluídos dos três presets de publicação; confirme a ausência nos pacotes gerados.
 
 - `scripts/game.gd` conecta os sistemas e controla as transições entre lobby, partida e campanha.

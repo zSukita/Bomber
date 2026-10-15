@@ -1,6 +1,7 @@
 # Godot editor cache and generated files
 .godot/
 .import/
+/Godot_v4.7.2-stable_win64.exe
 
 # Exported builds
 /builds/

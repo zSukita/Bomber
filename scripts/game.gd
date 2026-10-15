@@ -441,7 +441,11 @@ func _spawn_bots(count: int, mock_players: Dictionary, peer_ids: Array[int]) -> 
 	spawned_bots.clear()
 
 	# Coleta jogadores humanos para que os bots os persigam
-	var human_players: Array[Player] = spawned_players.values()
+	var human_players: Array[Player] = []
+	for player_value: Variant in spawned_players.values():
+		var human_player: Player = player_value as Player
+		if is_instance_valid(human_player):
+			human_players.append(human_player)
 
 	for i in range(count):
 		var bot_index: int = 1 + i  # índice de spawn: 1, 2, 3 (0 = jogador humano)
