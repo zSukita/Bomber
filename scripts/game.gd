@@ -548,33 +548,21 @@ func _on_player_bomb_drop_requested(player: Player, _world_pos: Vector2) -> void
 func sync_spawn_bomb(cell: Vector2i, owner_peer_id: int, b_range: int, is_pierce: bool = false, is_remote: bool = false) -> void:
 	bomb_system.call("spawn_bomb_replica", cell, owner_peer_id, b_range, is_pierce, is_remote)
 
-func _roll_powerup_drop_type() -> int:
+func _roll_powerup_drop_type(cell: Vector2i = Vector2i(-1, -1)) -> int:
 	stat_blocks_broken += 1
 	var is_campaign: bool = GameState.game_mode == GameState.GameMode.CAMPAIGN
 	if is_campaign:
 		campaign_blocks_broken += 1
-		if not campaign_heart_spawned and campaign_blocks_broken >= CampaignRules.GUARANTEED_HEART_BLOCK_COUNT:
+	
+	if cell != Vector2i(-1, -1) and grid_map:
+		var p_type: int = grid_map.pop_hidden_powerup(cell)
+		if is_campaign and p_type == GameState.PowerUpType.HEART:
 			campaign_heart_spawned = true
-			GameState.campaign_heart_stages.append(GameState.campaign_stage_index)
-			return GameState.PowerUpType.HEART
-	if randf() > grid_map.powerup_drop_chance:
-		return -1
-	var power_types: Array[int] = [
-		GameState.PowerUpType.BOMB,
-		GameState.PowerUpType.RANGE,
-		GameState.PowerUpType.SPEED,
-		GameState.PowerUpType.KICK,
-		GameState.PowerUpType.PIERCE,
-		GameState.PowerUpType.REMOTE,
-		GameState.PowerUpType.SKULL
-	]
-	if is_campaign and not campaign_heart_spawned:
-		power_types.append(GameState.PowerUpType.HEART)
-	var p_type: int = power_types.pick_random()
-	if is_campaign and p_type == GameState.PowerUpType.HEART:
-		campaign_heart_spawned = true
-		GameState.campaign_heart_stages.append(GameState.campaign_stage_index)
-	return p_type
+			if not GameState.campaign_heart_stages.has(GameState.campaign_stage_index):
+				GameState.campaign_heart_stages.append(GameState.campaign_stage_index)
+		return p_type
+	
+	return -1
 
 @rpc("authority", "call_remote", "reliable")
 func sync_explosion(center: Vector2i, flame_cells: Array, destroyed_blocks: Array, dropped_powerups: Array, burned_powerups: Array, owner_peer_id: int) -> void:

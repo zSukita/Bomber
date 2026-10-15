@@ -14,12 +14,13 @@ var grid_position: Vector2i = Vector2i.ZERO
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 var is_collected: bool = false
+var is_spawning: bool = true
 var float_tween: Tween
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 	_setup_visual()
-	_start_floating_animation()
+	_start_spawn_pop_animation()
 
 func _setup_visual() -> void:
 	if not item_sprite:
@@ -28,6 +29,17 @@ func _setup_visual() -> void:
 		visual_root.add_child(item_sprite)
 	BomberAssets.configure_powerup_sprite(item_sprite, type)
 
+func _start_spawn_pop_animation() -> void:
+	is_spawning = true
+	visual_root.scale = Vector2.ZERO
+	var pop_tween: Tween = create_tween()
+	pop_tween.tween_property(visual_root, "scale", Vector2.ONE * 1.25, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop_tween.tween_property(visual_root, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pop_tween.chain().tween_callback(func():
+		is_spawning = false
+		_start_floating_animation()
+	)
+
 func _start_floating_animation() -> void:
 	float_tween = create_tween().set_loops()
 	float_tween.tween_property(visual_root, "position:y", -4.0, 0.45).set_trans(Tween.TRANS_SINE)
@@ -35,7 +47,8 @@ func _start_floating_animation() -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	# Só o servidor decide se fogo remove o item; os clientes recebem a RPC.
-	if is_collected or (multiplayer.has_multiplayer_peer() and not multiplayer.is_server()):
+	# Itens recém-surgidos possuem breve tolerância de pop para não serem destruídos pela mesma explosão que os revelou.
+	if is_collected or is_spawning or (multiplayer.has_multiplayer_peer() and not multiplayer.is_server()):
 		return
 	if area.is_in_group("explosions"):
 		destroy_by_fire()
@@ -44,6 +57,7 @@ func destroy_by_fire() -> void:
 	if is_collected:
 		return
 	is_collected = true
+	is_spawning = false
 	collision_shape.set_deferred("disabled", true)
 	if float_tween and float_tween.is_valid():
 		float_tween.kill()

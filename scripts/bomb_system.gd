@@ -74,8 +74,8 @@ func resolve_explosion(bomb: Bomb, center_cell: Vector2i, flame_range: int) -> v
 				break
 			if cell_type == GameState.CellType.BLOCK_DESTRUCTIBLE:
 				destroyed_blocks.append(target_cell)
+				var powerup_type: int = game._roll_powerup_drop_type(target_cell)
 				game.grid_map.destroy_block_at(target_cell, false)
-				var powerup_type: int = game._roll_powerup_drop_type()
 				if powerup_type >= 0:
 					dropped_powerups.append({"cell": target_cell, "type": powerup_type})
 					game.grid_map.spawn_powerup(target_cell, powerup_type)

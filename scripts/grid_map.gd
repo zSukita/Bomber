@@ -38,6 +38,8 @@ var grid_state: Dictionary[Vector2i, GameState.CellType] = {}
 var destructible_blocks: Dictionary[Vector2i, BlockDestructible] = {}
 var active_bombs: Dictionary[Vector2i, Bomb] = {}
 var active_powerups: Dictionary[Vector2i, PowerUp] = {}
+## Armazena os power-ups pré-alocados dentro dos blocos (modelo clássico de Super Bomberman 3)
+var hidden_powerups: Dictionary[Vector2i, int] = {}
 var map_style: int = 0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -65,6 +67,7 @@ func clear_map() -> void:
 	destructible_blocks.clear()
 	active_bombs.clear()
 	active_powerups.clear()
+	hidden_powerups.clear()
 	
 	for child in walls_container.get_children():
 		child.queue_free()
@@ -77,7 +80,7 @@ func clear_map() -> void:
 	for child in explosions_container.get_children():
 		child.queue_free()
 
-## Gera o mapa completo com suporte a seed determinística.
+## Gera o mapa completo com suporte a seed determinística e cesta fixa de itens (SB3).
 func generate_map(map_seed: int = -1, map_style_override: int = -1) -> void:
 	clear_map()
 	var layout: ArenaMapLayout = map_generator.generate(map_seed, map_style_override, block_density)
@@ -90,6 +93,79 @@ func generate_map(map_seed: int = -1, map_style_override: int = -1) -> void:
 		_spawn_wall(cell)
 	for cell in layout.block_cells:
 		_spawn_block(cell)
+	
+	_distribute_sb3_items(layout.block_cells)
+
+## Distribui a cesta clássica de itens de Super Bomberman 3 nos blocos destruíveis
+func _distribute_sb3_items(block_cells: Array[Vector2i]) -> void:
+	hidden_powerups.clear()
+	if block_cells.is_empty():
+		return
+	
+	var candidates: Array[Vector2i] = block_cells.duplicate()
+	_shuffle_array_deterministic(candidates)
+	
+	var item_bag: Array[int] = []
+	var is_campaign: bool = (GameState.game_mode == GameState.GameMode.CAMPAIGN)
+	
+	if is_campaign:
+		# Modo Campanha: 5 a 6 itens por fase (progressão contínua entre fases)
+		item_bag.append(GameState.PowerUpType.BOMB)
+		item_bag.append(GameState.PowerUpType.BOMB)
+		item_bag.append(GameState.PowerUpType.RANGE)
+		item_bag.append(GameState.PowerUpType.RANGE)
+		item_bag.append(GameState.PowerUpType.SPEED)
+		
+		# Coração garantido na fase caso não tenha sido gerado anteriormente
+		if not GameState.campaign_heart_stages.has(GameState.campaign_stage_index):
+			item_bag.append(GameState.PowerUpType.HEART)
+		
+		# Item tático rotativo baseado no estágio
+		var stage_idx: int = GameState.campaign_stage_index
+		if CampaignRules.BOSS_STAGES.has(stage_idx):
+			item_bag.append(GameState.PowerUpType.BOMB)
+			item_bag.append(GameState.PowerUpType.HEART)
+		else:
+			match stage_idx % 3:
+				0: item_bag.append(GameState.PowerUpType.KICK)
+				1: item_bag.append(GameState.PowerUpType.PIERCE)
+				2: item_bag.append(GameState.PowerUpType.REMOTE)
+	else:
+		# Modo Batalha: Cesta clássica equilibrada de Super Bomberman 3 (~15 itens por arena)
+		# Proporções: ~35% Bomba, ~28% Fogo, ~14% Patins, especiais raros e 1 Caveira
+		for _i in range(5):
+			item_bag.append(GameState.PowerUpType.BOMB)
+		for _i in range(4):
+			item_bag.append(GameState.PowerUpType.RANGE)
+		for _i in range(2):
+			item_bag.append(GameState.PowerUpType.SPEED)
+		
+		item_bag.append(GameState.PowerUpType.KICK)
+		item_bag.append(GameState.PowerUpType.PIERCE)
+		item_bag.append(GameState.PowerUpType.REMOTE)
+		item_bag.append(GameState.PowerUpType.SKULL)
+	
+	# Distribui a cesta nas células sorteadas
+	for item_type in item_bag:
+		if candidates.is_empty():
+			break
+		var cell: Vector2i = candidates.pop_back()
+		hidden_powerups[cell] = item_type
+
+func _shuffle_array_deterministic(arr: Array) -> void:
+	for i in range(arr.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var temp = arr[i]
+		arr[i] = arr[j]
+		arr[j] = temp
+
+## Consulta e remove o item oculto da célula (se houver)
+func pop_hidden_powerup(cell: Vector2i) -> int:
+	if hidden_powerups.has(cell):
+		var p_type: int = hidden_powerups[cell]
+		hidden_powerups.erase(cell)
+		return p_type
+	return -1
 
 func get_map_name() -> String:
 	return MAP_NAMES[map_style]
@@ -123,7 +199,7 @@ func _on_block_destroyed(cell: Vector2i) -> void:
 	grid_state[cell] = CellType.EMPTY
 	destructible_blocks.erase(cell)
 
-## Destroi o bloco e tem chance de sortear um Power-up na célula
+## Destroi o bloco e tem chance de revelar um Power-up pré-alocado na célula
 func destroy_block_at(cell: Vector2i, can_drop_powerup: bool = true) -> bool:
 	if destructible_blocks.has(cell):
 		var block: Node2D = destructible_blocks[cell]
@@ -132,10 +208,13 @@ func destroy_block_at(cell: Vector2i, can_drop_powerup: bool = true) -> bool:
 		if block and is_instance_valid(block) and block.has_method("destroy"):
 			block.destroy()
 		
-		# Sorteia Power-up se aplicável
-		if can_drop_powerup and rng.randf() <= powerup_drop_chance:
-			var random_type: int = [GameState.PowerUpType.BOMB, GameState.PowerUpType.RANGE, GameState.PowerUpType.SPEED].pick_random()
-			spawn_powerup(cell, random_type)
+		# Revela item da cesta do Super Bomberman 3
+		if can_drop_powerup:
+			var item_type: int = pop_hidden_powerup(cell)
+			if item_type >= 0:
+				spawn_powerup(cell, item_type)
+		else:
+			hidden_powerups.erase(cell)
 		
 		return true
 	return false
