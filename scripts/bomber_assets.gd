@@ -117,12 +117,17 @@ static func configure_character_sprite(sprite: Sprite2D, character_index: int, f
 	var index := posmod(character_index, CHARACTER_TEXTURES.size())
 	sprite.texture = load(CHARACTER_TEXTURES[index]) as Texture2D
 	sprite.region_enabled = true
-	var clamped_frame := clampi(frame, 0, 3)
-	var clamped_row := clampi(direction_row, 0, 2)
-	sprite.region_rect = Rect2(clamped_frame * 16, clamped_row * 16, 16, 16)
+	# As colunas do spritesheet são direções (baixo, cima, esquerda, direita)
+	# e as linhas são os três quadros da animação.
+	var animation_frame := clampi(frame, 0, 2)
+	var facing_row := clampi(direction_row, 0, 2)
+	var direction_column: int = facing_row
+	if facing_row == 2:
+		direction_column = 3 if flip_horizontal else 2
+	sprite.region_rect = Rect2(direction_column * 16, animation_frame * 16, 16, 16)
 	sprite.position = Vector2(0, -18)
 	sprite.scale = Vector2.ONE * 3.8
-	sprite.flip_h = direction_row == 2 and flip_horizontal
+	sprite.flip_h = false
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.material = null
 

@@ -20,6 +20,9 @@ extends Control
 @onready var player_panel: PanelContainer = $UI/PlayerPanel
 @onready var player_name_label: Label = $UI/PlayerPanel/Margin/VBox/ProfileRow/InfoVBox/NameLabel
 @onready var color_swatches_box: HBoxContainer = $UI/PlayerPanel/Margin/VBox/SuitColorsBox/SwatchesRow
+@onready var character_name_label: Label = $UI/PlayerPanel/Margin/VBox/CharacterSelectionBox/CharacterRow/CharacterName
+@onready var previous_character_btn: Button = $UI/PlayerPanel/Margin/VBox/CharacterSelectionBox/CharacterRow/PreviousCharacter
+@onready var next_character_btn: Button = $UI/PlayerPanel/Margin/VBox/CharacterSelectionBox/CharacterRow/NextCharacter
 @onready var avatar_frame: PanelContainer = $UI/PlayerPanel/Margin/VBox/ProfileRow/AvatarFrame
 @onready var avatar_rect: TextureRect = $UI/PlayerPanel/Margin/VBox/ProfileRow/AvatarFrame/AvatarRect
 @onready var profile_click_btn: Button = $UI/PlayerPanel/Margin/VBox/ProfileRow/ProfileClickBtn
@@ -50,6 +53,7 @@ var current_news_page: int = 0
 var news_timer: float = 0.0
 var color_buttons: Array[Button] = []
 var selected_suit_idx: int = 0
+var selected_character_idx: int = 0
 
 const NEWS_PAGES: Array[Dictionary] = [
 	{
@@ -86,6 +90,7 @@ func _ready() -> void:
 	_setup_player_data()
 	_set_continue_available(GameState.has_campaign_save())
 	_setup_suit_color_buttons()
+	_setup_character_selection()
 	_setup_interactions()
 	GameState.user_preferences_loaded.connect(_refresh_player_identity)
 	settings_modal.closed.connect(_on_settings_closed)
@@ -120,9 +125,8 @@ func _update_character_layout() -> void:
 	if _intro_finished:
 		character_node.position = _base_char_pos
 	var target_scale: float = clampf(vp_size.y / 920.0, 0.40, 0.68)
-	var sprite: Sprite2D = character_node.get_node_or_null("Sprite")
-	if sprite:
-		sprite.scale = Vector2.ONE * target_scale
+	if character_node.has_method("set_preview_scale"):
+		character_node.set_preview_scale(8.0 * target_scale / 0.52)
 
 func _run_menu_screenshot() -> void:
 	await get_tree().create_timer(0.9).timeout
@@ -203,6 +207,29 @@ func _set_continue_available(available: bool) -> void:
 func _refresh_player_identity() -> void:
 	player_name_label.text = NetworkManager.local_player_name.to_upper()
 	_select_suit_color(NetworkManager.preferred_color_index, false)
+	_select_character(NetworkManager.preferred_character_index, false)
+
+func _setup_character_selection() -> void:
+	previous_character_btn.pressed.connect(func():
+		_select_character(selected_character_idx - 1)
+	)
+	next_character_btn.pressed.connect(func():
+		_select_character(selected_character_idx + 1)
+	)
+	_select_character(GameState.preferred_character_index, false)
+
+func _select_character(index: int, persist: bool = true) -> void:
+	if BomberAssets.CHARACTER_NAMES.is_empty():
+		return
+	selected_character_idx = posmod(index, BomberAssets.CHARACTER_NAMES.size())
+	NetworkManager.preferred_character_index = selected_character_idx
+	GameState.preferred_character_index = selected_character_idx
+	character_name_label.text = tr(BomberAssets.CHARACTER_NAMES[selected_character_idx]).to_upper()
+	if character_node and character_node.has_method("set_character"):
+		character_node.set_character(selected_character_idx)
+	if persist:
+		GameState.save_user_preferences()
+	AudioManager.play_button_hover()
 
 func _setup_suit_color_buttons() -> void:
 	for child in color_swatches_box.get_children():
@@ -298,6 +325,8 @@ func _setup_interactions() -> void:
 	profile_modal.closed.connect(_refresh_player_identity)
 	how_to_play_modal.closed.connect(_on_how_to_play_closed)
 	footer_exit_btn.pressed.connect(_on_exit_pressed)
+	previous_character_btn.focus_neighbor_right = next_character_btn.get_path()
+	next_character_btn.focus_neighbor_left = previous_character_btn.get_path()
 
 func _on_how_to_play_closed() -> void:
 	how_to_play_top_btn.grab_focus()
@@ -391,6 +420,7 @@ func _run_menu_self_test() -> void:
 	assert(multiplayer_btn != null, "MultiplayerButton não encontrado")
 	assert(player_panel != null, "PlayerPanel não encontrado")
 	assert(color_buttons.size() == 4, "Esperado 4 botões de traje")
+	assert(BomberAssets.CHARACTER_NAMES.size() == 8, "Esperado 8 personagens selecionáveis")
 	var original_locale: String = GameState.current_locale
 	GameState.set_game_locale("en")
 	assert(tr("BTN_NEW_CAMPAIGN") == "NEW CAMPAIGN", "Tradução inglesa não carregada")
@@ -401,6 +431,10 @@ func _run_menu_self_test() -> void:
 	_select_suit_color(1)
 	assert(selected_suit_idx == 1, "Índice de traje não atualizado")
 	assert(NetworkManager.preferred_color_index == 1, "Cor não replicada para NetworkManager")
+	_select_character(3, false)
+	assert(selected_character_idx == 3, "Índice do personagem não atualizado")
+	assert(GameState.preferred_character_index == 3, "Personagem não persistido no estado do jogo")
+	assert(character_node.get("preview_frame") == 0, "Prévia do menu deve permanecer na pose neutra")
 	
 	print("[Menu Test] Testando ciclo do card de novidades...")
 	_cycle_news()

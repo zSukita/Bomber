@@ -15,6 +15,7 @@ const ENEMY_COLORS: Array[Color] = [
 	Color(0.91, 0.54, 0.16)
 ]
 const HURT_INVULNERABILITY: float = 0.42
+const BOSS_CONTROLLER_SCRIPT: Script = preload("res://scripts/campaign_boss_controller.gd")
 
 var target_player: Player
 var arena_grid: ArenaGrid
@@ -66,6 +67,7 @@ var freeze_timer: float = 0.0
 
 
 @onready var appearance: Node2D = $Appearance
+var boss_controller: RefCounted
 
 func setup(target: Player, stage_idx: int, grid: ArenaGrid, selected_archetype: int = Archetype.WANDERER) -> void:
 	target_player = target
@@ -113,6 +115,8 @@ func setup(target: Player, stage_idx: int, grid: ArenaGrid, selected_archetype: 
 		$CollisionShape2D.shape = shape
 
 func _ready() -> void:
+	boss_controller = BOSS_CONTROLLER_SCRIPT.new()
+	boss_controller.call("setup", self)
 	add_to_group("enemies")
 	last_decision_cell = Vector2i(-999, -999)
 	direction = Vector2.ZERO
@@ -626,378 +630,16 @@ func freeze_enemy(duration: float = 3.0) -> void:
 # ----------------- HABILIDADES EXCLUSIVAS DE CHEFES -----------------
 
 func _update_boss(delta: float, player_is_valid: bool) -> void:
-	match boss_state:
-		BossState.PATROL:
-			_update_regular_movement(player_is_valid)
-			boss_attack_cooldown -= delta
-			if boss_attack_cooldown <= 0.0 and player_is_valid:
-				_start_next_boss_attack()
-
-		BossState.TELEGRAPH:
-			velocity = Vector2.ZERO
-			is_winding_up = true
-			is_boss_vulnerable = false
-			boss_state_timer -= delta
-			if boss_state_timer <= 0.0:
-				_execute_boss_attack()
-
-		BossState.ATTACKING:
-			velocity = Vector2.ZERO
-			is_winding_up = false
-			is_boss_vulnerable = false
-			boss_state_timer -= delta
-			if boss_state_timer <= 0.0:
-				_transition_to_vulnerable()
-
-		BossState.VULNERABLE:
-			velocity = Vector2.ZERO
-			is_winding_up = false
-			is_boss_vulnerable = true
-			boss_state_timer -= delta
-			if boss_state_timer <= 0.0:
-				# Recuperação: volta a patrulhar
-				boss_state = BossState.PATROL
-				is_boss_vulnerable = false
-				boss_danger_cells.clear()
-				boss_attack_cooldown = 2.8 if boss_phase_two else 3.6
-				last_decision_cell = Vector2i(-999, -999)
-				_select_next_direction(player_is_valid)
-
-func _start_next_boss_attack() -> void:
-	if not is_instance_valid(target_player) or not arena_grid:
-		return
-	boss_attack_id = (boss_attack_id + 1) % 2
-
-	if stage_index == 4:
-		# Chefe 1: Golem das Ruínas
-		if boss_attack_id == 0:
-			_golem_start_seismic_slam()
-		else:
-			_golem_start_fissure_punch()
-	elif stage_index == 9:
-		# Chefe 2: Espectro Dimensional
-		if boss_attack_id == 0:
-			_espectro_start_dimensional_rifts()
-		else:
-			_espectro_start_blink_pulse()
-	elif stage_index == 11:
-		# Chefe 3: Cronos, o Lorde Temporal
-		if boss_attack_id == 0:
-			_cronos_start_time_mine()
-		else:
-			_cronos_start_chrono_ray()
-	else:
-		# Fallback para outros estágios caso chefe genérico
-		_golem_start_fissure_punch()
-
-func _execute_boss_attack() -> void:
-	if stage_index == 4:
-		if boss_attack_id == 0:
-			_golem_execute_slam()
-		else:
-			_golem_execute_punch()
-	elif stage_index == 9:
-		if boss_attack_id == 0:
-			_espectro_execute_rifts()
-		else:
-			_espectro_execute_blink()
-	elif stage_index == 11:
-		if boss_attack_id == 0:
-			_cronos_execute_mine()
-		else:
-			_cronos_execute_ray()
-	else:
-		_golem_execute_punch()
-
-func _transition_to_vulnerable() -> void:
-	boss_state = BossState.VULNERABLE
-	is_boss_vulnerable = true
-	is_winding_up = false
-	boss_leap_height = 0.0
-
-	# Tempo de vulnerabilidade generoso para contra-ataque do jogador
-	if stage_index == 4:
-		boss_state_timer = 1.4 if boss_phase_two else 1.8
-	elif stage_index == 9:
-		boss_state_timer = 1.3 if boss_phase_two else 1.7
-	elif stage_index == 11:
-		boss_state_timer = 1.4 if boss_phase_two else 1.8
-	else:
-		boss_state_timer = 1.5
+	boss_controller.call("update", delta, player_is_valid)
 
 func _on_boss_damaged() -> void:
-	if not boss_phase_two and health <= int(ceil(float(max_health) * 0.5)):
-		boss_phase_two = true
-		get_tree().call_group("game_orchestrator", "add_screen_shake", 0.55)
-		AudioManager.play_enemy_alert()
+	boss_controller.call("on_damaged")
 
-		if stage_index == 4:
-			# Golem: Fúria Sísmica (mais veloz e avermelhado)
-			move_speed = 72.0
-			modulate = Color(1.3, 0.6, 0.35)
-		elif stage_index == 9:
-			# Espectro: Invocação de cópia ilusória e pulso astral
-			move_speed = 82.0
-			modulate = Color(0.9, 0.45, 1.4)
-			if not boss_illusion_spawned:
-				_boss_spawn_illusion()
-		elif stage_index == 11:
-			# Cronos: Fúria Temporal acelerada
-			_boss_trigger_enrage()
-
-# ==================== CHEFE 1: GOLEM DAS RUÍNAS (FASE 5) ====================
-
-func _golem_start_seismic_slam() -> void:
-	boss_state = BossState.TELEGRAPH
-	boss_state_timer = 1.1 if boss_phase_two else 1.4
-	is_winding_up = true
-	is_boss_vulnerable = false
-
-	var p_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
-	boss_target_cell = Vector2i(clampi(p_cell.x, 2, ArenaGrid.WIDTH - 3), clampi(p_cell.y, 2, ArenaGrid.HEIGHT - 3))
-
-	# Área de perigo em cruz 3x3 no ponto de impacto
-	boss_danger_cells = [
-		boss_target_cell,
-		boss_target_cell + Vector2i.UP,
-		boss_target_cell + Vector2i.DOWN,
-		boss_target_cell + Vector2i.LEFT,
-		boss_target_cell + Vector2i.RIGHT
-	]
-
-	# Salto no ar (eleva a altura visual)
-	var leap_tween: Tween = create_tween()
-	leap_tween.tween_property(self, "boss_leap_height", 46.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	AudioManager.play_enemy_alert()
-
-func _golem_execute_slam() -> void:
-	boss_state = BossState.ATTACKING
-	boss_state_timer = 0.28
-	boss_leap_height = 0.0
-	global_position = arena_grid.grid_to_world(boss_target_cell)
-
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.6)
-	AudioManager.play_bump()
-
-	for cell in boss_danger_cells:
-		if arena_grid.is_in_bounds(cell):
-			if arena_grid.get_cell_type(cell) == GameState.CellType.BLOCK_DESTRUCTIBLE:
-				arena_grid.destroy_block_at(cell, false)
-			if is_instance_valid(target_player) and arena_grid.world_to_grid(target_player.global_position) == cell:
-				target_player.die()
-
-func _golem_start_fissure_punch() -> void:
-	boss_state = BossState.TELEGRAPH
-	boss_state_timer = 1.0 if boss_phase_two else 1.3
-	is_winding_up = true
-	is_boss_vulnerable = false
-
-	var diff: Vector2 = target_player.global_position - global_position
-	if absf(diff.x) > absf(diff.y):
-		boss_telegraph_dir = Vector2(sign(diff.x), 0.0)
-	else:
-		boss_telegraph_dir = Vector2(0.0, sign(diff.y))
-	direction = boss_telegraph_dir
-
-	var c_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var step: Vector2i = Vector2i(roundi(boss_telegraph_dir.x), roundi(boss_telegraph_dir.y))
-	boss_danger_cells.clear()
-	for dist in range(1, 4):
-		var target_c: Vector2i = c_cell + step * dist
-		if arena_grid.is_in_bounds(target_c) and arena_grid.get_cell_type(target_c) != GameState.CellType.WALL_INDESTRUCTIBLE:
-			boss_danger_cells.append(target_c)
-
-	AudioManager.play_enemy_alert()
-
-func _golem_execute_punch() -> void:
-	boss_state = BossState.ATTACKING
-	boss_state_timer = 0.25
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.45)
-	AudioManager.play_bump()
-
-	for cell in boss_danger_cells:
-		if arena_grid.is_in_bounds(cell):
-			if arena_grid.get_cell_type(cell) == GameState.CellType.BLOCK_DESTRUCTIBLE:
-				arena_grid.destroy_block_at(cell, false)
-			if is_instance_valid(target_player) and arena_grid.world_to_grid(target_player.global_position) == cell:
-				target_player.die()
-
-# ==================== CHEFE 2: ESPECTRO DIMENSIONAL (FASE 10) ====================
-
-func _espectro_start_dimensional_rifts() -> void:
-	boss_state = BossState.TELEGRAPH
-	boss_state_timer = 1.2 if boss_phase_two else 1.5
-	is_winding_up = true
-	is_boss_vulnerable = false
-
-	boss_danger_cells.clear()
-	var p_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
-	boss_danger_cells.append(p_cell)
-
-	# Adiciona 1 ou 2 fendas adicionais nas proximidades do jogador
-	var count: int = 3 if boss_phase_two else 2
-	for step in DIRECTIONS:
-		if boss_danger_cells.size() >= count:
-			break
-		var cand: Vector2i = p_cell + step * 2
-		if arena_grid.is_in_bounds(cand) and arena_grid.get_cell_type(cand) != GameState.CellType.WALL_INDESTRUCTIBLE:
-			boss_danger_cells.append(cand)
-
-	AudioManager.play_enemy_alert()
-
-func _espectro_execute_rifts() -> void:
-	boss_state = BossState.ATTACKING
-	boss_state_timer = 0.35
-	AudioManager.play_explosion()
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.4)
-
-	for cell in boss_danger_cells:
-		if is_instance_valid(target_player) and arena_grid.world_to_grid(target_player.global_position) == cell:
-			target_player.die()
-
-func _espectro_start_blink_pulse() -> void:
-	boss_state = BossState.TELEGRAPH
-	boss_state_timer = 1.0 if boss_phase_two else 1.3
-	is_winding_up = true
-	is_boss_vulnerable = false
-
-	var player_cell: Vector2i = arena_grid.world_to_grid(target_player.global_position)
-	var candidates: Array[Vector2i] = []
-	for x in range(2, ArenaGrid.WIDTH - 2):
-		for y in range(2, ArenaGrid.HEIGHT - 2):
-			var cell := Vector2i(x, y)
-			if arena_grid.is_walkable(cell) and not imminent_danger.has(cell):
-				var dist: int = absi(cell.x - player_cell.x) + absi(cell.y - player_cell.y)
-				if dist >= 4:
-					candidates.append(cell)
-
-	if candidates.is_empty():
-		candidates.append(player_cell + Vector2i(2, 0))
-
-	boss_target_cell = candidates.pick_random()
-	boss_danger_cells = [
-		boss_target_cell,
-		boss_target_cell + Vector2i.UP,
-		boss_target_cell + Vector2i.DOWN,
-		boss_target_cell + Vector2i.LEFT,
-		boss_target_cell + Vector2i.RIGHT
-	]
-
-	# Desvanece enquanto canaliza o teleporte
-	var fade_tween: Tween = create_tween()
-	fade_tween.tween_property(self, "modulate:a", 0.25, 0.2)
-	AudioManager.play_enemy_alert()
-
-func _espectro_execute_blink() -> void:
-	boss_state = BossState.ATTACKING
-	boss_state_timer = 0.3
-	global_position = arena_grid.grid_to_world(boss_target_cell)
-	modulate.a = 1.0
-	AudioManager.play_enemy_alert()
-
-	for cell in boss_danger_cells:
-		if is_instance_valid(target_player) and arena_grid.world_to_grid(target_player.global_position) == cell:
-			target_player.die()
-
-func _boss_spawn_illusion() -> void:
-	boss_illusion_spawned = true
-	if arena_grid == null or get_parent() == null:
-		return
-	var current_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var spawn_cell: Vector2i = Vector2i(-1, -1)
-	for d in DIRECTIONS:
-		var c: Vector2i = current_cell + d
-		if arena_grid.is_walkable(c):
-			spawn_cell = c
-			break
-	if spawn_cell == Vector2i(-1, -1):
-		return
-	var enemy_scene: PackedScene = load("res://scenes/campaign_enemy.tscn")
-	var minion: CampaignEnemy = enemy_scene.instantiate() as CampaignEnemy
-	minion.setup(target_player, stage_index, arena_grid, Archetype.WANDERER)
-	minion.modulate = Color(0.65, 0.85, 1.3, 0.75)
-	minion.global_position = arena_grid.grid_to_world(spawn_cell)
-	get_parent().add_child(minion)
-
-# ==================== CHEFE 3: CRONOS, O LORDE TEMPORAL (FASE 12) ====================
+func _transition_to_vulnerable() -> void:
+	boss_controller.call("transition_to_vulnerable")
 
 func _cronos_start_time_mine() -> void:
-	if not arena_grid:
-		return
-	var c_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var drop_cell: Vector2i = c_cell
-	for d in DIRECTIONS:
-		var cand: Vector2i = c_cell + d
-		if arena_grid.is_in_bounds(cand) and arena_grid.get_cell_type(cand) == GameState.CellType.EMPTY and not arena_grid.has_bomb_at(cand):
-			drop_cell = cand
-			break
-
-	var mine: Bomb = arena_grid.place_bomb(drop_cell, self as CharacterBody2D)
-	if mine:
-		mine.bomb_range = 3
-		mine.fuse_time = 2.0
-		if mine.fuse_timer:
-			mine.fuse_timer.start(2.0)
-		mine.exploded.connect(func(b: Bomb, c: Vector2i, r: int):
-			arena_grid.unregister_bomb(c)
-			var game = get_tree().get_first_node_in_group("game_orchestrator")
-			if game and game.get("bomb_system"):
-				game.bomb_system.call("resolve_explosion", b, c, r)
-		)
-		AudioManager.play_bomb_drop()
-
-	# Entra imediatamente em vulnerabilidade enquanto a mina faz a contagem
-	boss_state = BossState.VULNERABLE
-	boss_state_timer = 1.4 if boss_phase_two else 1.7
-	is_boss_vulnerable = true
-	is_winding_up = false
-
-func _cronos_execute_mine() -> void:
-	# A mina temporal é detonada pelo próprio timer/sistema de bombas
-	_transition_to_vulnerable()
-
-func _cronos_start_chrono_ray() -> void:
-	boss_state = BossState.TELEGRAPH
-	boss_state_timer = 1.1 if boss_phase_two else 1.4
-	is_winding_up = true
-	is_boss_vulnerable = false
-
-	var diff: Vector2 = target_player.global_position - global_position
-	if absf(diff.x) > absf(diff.y):
-		boss_telegraph_dir = Vector2(sign(diff.x), 0.0)
-	else:
-		boss_telegraph_dir = Vector2(0.0, sign(diff.y))
-	direction = boss_telegraph_dir
-
-	var c_cell: Vector2i = arena_grid.world_to_grid(global_position)
-	var step: Vector2i = Vector2i(roundi(boss_telegraph_dir.x), roundi(boss_telegraph_dir.y))
-	boss_danger_cells.clear()
-	for dist in range(1, 9):
-		var target_c: Vector2i = c_cell + step * dist
-		if not arena_grid.is_in_bounds(target_c) or arena_grid.get_cell_type(target_c) == GameState.CellType.WALL_INDESTRUCTIBLE:
-			break
-		boss_danger_cells.append(target_c)
-
-	AudioManager.play_enemy_alert()
-
-func _cronos_execute_ray() -> void:
-	boss_state = BossState.ATTACKING
-	boss_state_timer = 0.35
-	AudioManager.play_explosion()
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.4)
-
-	for cell in boss_danger_cells:
-		if is_instance_valid(target_player) and arena_grid.world_to_grid(target_player.global_position) == cell:
-			target_player.die()
-
-func _boss_trigger_enrage() -> void:
-	boss_enraged = true
-	boss_phase_two = true
-	move_speed = 90.0
-	get_tree().call_group("game_orchestrator", "add_screen_shake", 0.55)
-	AudioManager.play_enemy_alert()
-	modulate = Color(1.4, 0.45, 0.35)
-
+	boss_controller.call("start_time_mine")
 
 func die() -> void:
 	if not is_alive:

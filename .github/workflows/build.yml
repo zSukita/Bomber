@@ -51,6 +51,9 @@ jobs:
       - name: Run Lobby Self-Test
         run: godot --headless --path . res://scenes/lobby.tscn -- --run-test
 
+      - name: Run Mechanics Integration Tests
+        run: godot --headless --path . res://tests/mechanics_test.tscn -- --run-test
+
       - name: Prepare Build Output Directories
         run: |
           mkdir -p builds/windows

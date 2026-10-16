@@ -172,6 +172,7 @@ func check_powerup_pickups() -> void:
 		game.grid_map.unregister_powerup(cell)
 		powerup.queue_free()
 		AudioManager.play_powerup()
+		game.hud.notify_powerup_collected(powerup_type)
 		if multiplayer.has_multiplayer_peer():
 			game.sync_powerup_collected.rpc(cell, peer_id, powerup_type)
 		game._refresh_player_hud(peer_id)
@@ -201,6 +202,7 @@ func apply_powerup_collected(cell: Vector2i, collector_id: int, powerup_type: in
 	if player:
 		player.apply_power_up(powerup_type)
 		AudioManager.play_powerup()
+		game.hud.notify_powerup_collected(powerup_type)
 		game._refresh_player_hud(collector_id)
 
 func _check_players_in_cell(cell: Vector2i, hit_list: Array[int], elem_type: int = 0) -> void:

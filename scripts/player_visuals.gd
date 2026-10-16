@@ -2,6 +2,11 @@ class_name PlayerVisuals
 extends Node2D
 
 ## Visual autêntico dos personagens de Super Bomberman 3 com controle de animação, direção e equipe.
+const CHARACTER_ACCENT_COLORS: Array[Color] = [
+	Color("#69e7ff"), Color("#ff704f"), Color("#a6ef62"), Color("#e76aff"),
+	Color("#ffbd45"), Color("#54a9ff"), Color("#ff546d"), Color("#d9e4f2")
+]
+
 @export var player_color: Color = Color(0.25, 0.65, 1.0)
 var facing_direction: Vector2 = Vector2.DOWN
 var is_moving: bool = false
@@ -72,7 +77,7 @@ func set_mount(type: int) -> void:
 func _update_mount_visual() -> void:
 	if not mount_sprite or current_mount == GameState.MountType.NONE:
 		return
-	var frame: int = int(walk_time * 8.0) % 4 if is_moving else 0
+	var frame: int = int(walk_time * 8.0) % 3 if is_moving else 0
 	var dir_col: int = _mount_direction_col()
 	BomberAssets.configure_mount_sprite(mount_sprite, current_mount, frame, dir_col)
 
@@ -104,7 +109,7 @@ func _process(delta: float) -> void:
 	else:
 		walk_time = 0.0
 	if character_sprite:
-		var next_frame: int = int(walk_time * 8.0) % 4 if is_moving else 0
+		var next_frame: int = int(walk_time * 8.0) % 3 if is_moving else 0
 		var next_row: int = _direction_row()
 		var next_flip: bool = facing_direction.x > 0
 		if next_frame != sprite_frame or next_row != sprite_row or next_flip != sprite_flip:
@@ -132,6 +137,9 @@ func _draw() -> void:
 	_draw_ellipse(Vector2(0, 14), shadow_radii, Color(0.02, 0.03, 0.06, 0.45))
 	# Indicador circular de equipe / cor do jogador
 	draw_arc(Vector2(0, 14), circle_radius, 0.0, TAU, 24, Color(player_color.r, player_color.g, player_color.b, 0.85), 2.5)
+	# Cada personagem tem um pequeno acento visual próprio, sem alterar atributos.
+	var accent: Color = CHARACTER_ACCENT_COLORS[posmod(character_index, CHARACTER_ACCENT_COLORS.size())]
+	draw_arc(Vector2(0, 14), circle_radius + 4.0, -PI * 0.78, -PI * 0.22, 12, accent, 2.0)
 
 func _draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points: PackedVector2Array = PackedVector2Array()

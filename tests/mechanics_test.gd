@@ -16,6 +16,8 @@ func _ready() -> void:
 func _run() -> void:
 	print("[MECANICAS] Iniciando testes de integração...")
 	_test_match_rules()
+	_test_character_sprite_directions()
+	_test_arena_ambience_themes()
 	await _prepare_game()
 	if game == null or player == null:
 		_finish()
@@ -72,6 +74,51 @@ func _test_match_rules() -> void:
 	_check(clock.advance(0.5) == 1, "relógio atualiza segundo restante")
 	clock.advance(2.0)
 	_check(clock.is_expired(), "relógio encerra ao chegar a zero")
+
+func _test_character_sprite_directions() -> void:
+	var sprite: Sprite2D = Sprite2D.new()
+	BomberAssets.configure_character_sprite(sprite, 0, 0, 0, false)
+	_check(sprite.region_rect == Rect2(0, 0, 16, 16), "sprite usa a coluna de frente ao olhar para baixo")
+	BomberAssets.configure_character_sprite(sprite, 0, 0, 1, false)
+	_check(sprite.region_rect == Rect2(16, 0, 16, 16), "sprite usa a coluna correta ao olhar para cima")
+	BomberAssets.configure_character_sprite(sprite, 0, 0, 2, false)
+	_check(sprite.region_rect == Rect2(32, 0, 16, 16), "sprite usa a coluna lateral esquerda")
+	BomberAssets.configure_character_sprite(sprite, 0, 0, 2, true)
+	_check(sprite.region_rect == Rect2(48, 0, 16, 16), "sprite usa a coluna lateral direita sem girar")
+	BomberAssets.configure_character_sprite(sprite, 0, 2, 0, false)
+	_check(sprite.region_rect == Rect2(0, 32, 16, 16), "animação percorre as linhas do spritesheet")
+	sprite.free()
+
+func _test_arena_ambience_themes() -> void:
+	var ambience: ArenaAmbience = ArenaAmbience.new()
+	add_child(ambience)
+	var pool_size: int = ambience.particles.size()
+	var expected_palette: Dictionary = {
+		0: [Color("8cd669"), Color("f7e26b")],
+		1: [Color("ff6c3b"), Color("ffd152")],
+		2: [Color("b9f4ec"), Color("79c9dc")],
+		3: [Color("aab3ad"), Color("d2c6a7")],
+		4: [Color("d9f3ff"), Color("8de1f7")],
+		5: [Color("70e9ff"), Color("c4f7ff")],
+		6: [Color("f3cf88"), Color("d6ad66")],
+		7: [Color("ff6c3b"), Color("ffd152")],
+		8: [Color("f4dba4"), Color("d5e4e8")],
+		9: [Color("a9e46f"), Color("d0ef83")],
+		10: [Color("b9b5ff"), Color("f3e9a4")],
+		11: [Color("ffd477"), Color("e7b881")]
+	}
+	var themes_match: bool = pool_size == ArenaAmbience.MAX_PARTICLES
+	for style: int in expected_palette:
+		ambience.set_theme(style)
+		var allowed_colors: Array = expected_palette[style]
+		for particle: ArenaAmbience.AmbientParticle in ambience.particles:
+			if not allowed_colors.has(particle.color):
+				themes_match = false
+				break
+		if ambience.particles.size() != pool_size:
+			themes_match = false
+	_check(themes_match, "temas ambientais usam paletas próprias sem aumentar o pool de partículas")
+	ambience.free()
 
 func _prepare_game() -> void:
 	GameState.game_mode = GameState.GameMode.BATTLE

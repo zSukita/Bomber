@@ -30,6 +30,12 @@ var toast_label: Label
 var toast_tween: Tween
 var current_enemy_count: int = -1
 
+const POWERUP_TRANSLATION_KEYS: Array[String] = [
+	"HUD_POWERUP_BOMB", "HUD_POWERUP_RANGE", "HUD_POWERUP_SPEED", "HUD_POWERUP_HEART",
+	"HUD_POWERUP_KICK", "HUD_POWERUP_PIERCE", "HUD_POWERUP_REMOTE", "HUD_POWERUP_SKULL",
+	"HUD_POWERUP_MOUNT", "HUD_POWERUP_ICE", "HUD_POWERUP_THUNDER"
+]
+
 func update_pause_status(is_online: bool) -> void:
 	var title: Label = $PauseOverlay/Panel/Margin/VBox/PauseTitle
 	var note: Label = $PauseOverlay/Panel/Margin/VBox/PauseNote
@@ -114,18 +120,27 @@ func _update_mode_button_visual(is_enhanced: bool) -> void:
 
 func notify_mode_switch(is_enhanced: bool) -> void:
 	_update_mode_button_visual(is_enhanced)
+	if is_enhanced:
+		_show_toast(tr("HUD_ENHANCED_TOAST"), Color("a8f5b8"))
+	else:
+		_show_toast(tr("HUD_BASE_TOAST"), Color("f0e6b6"))
+
+
+func notify_powerup_collected(powerup_type: int) -> void:
+	if powerup_type < 0 or powerup_type >= POWERUP_TRANSLATION_KEYS.size():
+		return
+	var item_name: String = tr(POWERUP_TRANSLATION_KEYS[powerup_type])
+	_show_toast(tr("HUD_POWERUP_COLLECTED") % item_name, Color("a8f5b8"))
+	if GameState.is_enhanced():
+		trigger_screen_shake(1.6)
+
+func _show_toast(message: String, color: Color) -> void:
 	if not toast_label:
 		return
 	if toast_tween and toast_tween.is_valid():
 		toast_tween.kill()
-
-	if is_enhanced:
-		toast_label.text = tr("HUD_ENHANCED_TOAST")
-		toast_label.add_theme_color_override("font_color", Color("a8f5b8"))
-	else:
-		toast_label.text = tr("HUD_BASE_TOAST")
-		toast_label.add_theme_color_override("font_color", Color("f0e6b6"))
-
+	toast_label.text = message
+	toast_label.add_theme_color_override("font_color", color)
 	toast_label.position.y = 66
 	toast_tween = create_tween()
 	toast_tween.tween_property(toast_label, "modulate:a", 1.0, 0.18)

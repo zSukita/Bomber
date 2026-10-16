@@ -11,6 +11,9 @@ extends Node2D
 var time_accum: float = 0.0
 var base_position: Vector2
 var shader_material: ShaderMaterial
+var character_index: int = 0
+var preview_scale: float = 8.0
+var preview_frame: int = -1
 
 # Partículas de faísca do pavio da bomba
 class FuseSpark:
@@ -27,6 +30,7 @@ var spark_spawn_timer: float = 0.0
 func _ready() -> void:
 	base_position = position
 	_setup_shader()
+	_refresh_character_sprite()
 	set_process(true)
 
 func _setup_shader() -> void:
@@ -40,11 +44,31 @@ func set_suit_color(color_idx: int) -> void:
 	if shader_material:
 		shader_material.set_shader_parameter("color_index", color_idx)
 
+func set_character(index: int) -> void:
+	character_index = posmod(index, BomberAssets.CHARACTER_TEXTURES.size())
+	preview_frame = -1
+	_refresh_character_sprite()
+
+func set_preview_scale(value: float) -> void:
+	preview_scale = value
+	if sprite:
+		sprite.scale = Vector2.ONE * preview_scale
+
+func _refresh_character_sprite() -> void:
+	if not sprite:
+		return
+	# A prévia fica em pose neutra; o ciclo de caminhada só toca quando o
+	# personagem realmente se move durante uma partida.
+	BomberAssets.configure_character_sprite(sprite, character_index, 0)
+	sprite.scale = Vector2.ONE * preview_scale
+	sprite.position = Vector2.ZERO
+	preview_frame = 0
+
 func _process(delta: float) -> void:
 	time_accum += delta
 	
 	if sprite:
-		sprite.scale = Vector2.ONE
+		sprite.scale = Vector2.ONE * preview_scale
 		sprite.position = Vector2.ZERO
 		
 	if shadow:

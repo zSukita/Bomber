@@ -87,6 +87,15 @@ func _physics_process(delta: float) -> void:
 				}
 				discovered_servers[s_key] = s_info
 				server_discovered.emit(s_info)
+		_prune_discovered_servers()
+
+func _prune_discovered_servers() -> void:
+	var now_msec: int = Time.get_ticks_msec()
+	for server_key in discovered_servers.keys():
+		var server_info: Dictionary = discovered_servers[server_key]
+		if now_msec - int(server_info.get("last_seen", 0)) > 5000:
+			discovered_servers.erase(server_key)
+			server_discovered.emit({"key": server_key, "expired": true})
 
 func _send_lan_broadcast() -> void:
 	if udp_broadcaster == null:
@@ -210,6 +219,7 @@ func disconnect_from_server(show_status_message: bool = true) -> void:
 	
 	multiplayer.multiplayer_peer = null
 	players.clear()
+	scores.clear()
 	is_game_active = false
 	selected_map_style = -1
 	if show_status_message:
@@ -223,6 +233,10 @@ func _exit_tree() -> void:
 
 func _setup_upnp_async(port: int) -> void:
 	if upnp_thread and upnp_thread.is_started():
+		# Nunca pare a thread principal esperando pela descoberta do roteador.
+		# Se ela já terminou, basta coletar o resultado antes de reutilizar a variável.
+		if upnp_thread.is_alive():
+			return
 		upnp_thread.wait_to_finish()
 	upnp_thread = Thread.new()
 	upnp_thread.start(_upnp_worker.bind(port))
@@ -249,6 +263,9 @@ func _upnp_worker(port: int) -> void:
 func _on_upnp_success(ext_ip: String, port: int) -> void:
 	upnp_external_ip = ext_ip
 	upnp_mapped_port = port
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		_cleanup_upnp()
+		return
 	print("[Rede] UPnP mapeado com sucesso! IP Externo: %s:%d" % [ext_ip, port])
 	status_message.emit(tr("NET_UPNP_OK") % [ext_ip, port], false)
 
@@ -257,6 +274,10 @@ func _on_upnp_failed(reason: String) -> void:
 
 func _cleanup_upnp() -> void:
 	if upnp_thread and upnp_thread.is_started():
+		# Se a descoberta ainda estiver em andamento, o callback de sucesso fará a
+		# limpeza assim que a thread terminar. Isso evita congelar a interface.
+		if upnp_thread.is_alive():
+			return
 		upnp_thread.wait_to_finish()
 		upnp_thread = null
 	if upnp_mapped_port > 0:
@@ -416,6 +437,7 @@ func sync_map_selection(map_index: int) -> void:
 func notify_start_game(map_seed: int) -> void:
 	is_game_active = true
 	current_match_seed = map_seed
+	scores.clear()
 	for id in players:
 		scores[id] = 0
 	game_started.emit(map_seed)

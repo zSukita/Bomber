@@ -217,6 +217,8 @@ func _physics_process(delta: float) -> void:
 			
 			# Predição de movimento local imediata para resposta sem latência
 			var effective_speed: float = base_speed * speed_multiplier
+			if current_mount != GameState.MountType.NONE:
+				effective_speed *= 1.15
 			if freeze_timer > 0.0:
 				effective_speed *= 0.25
 			elif skull_curse == 0:

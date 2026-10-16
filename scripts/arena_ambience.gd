@@ -94,30 +94,66 @@ func _respawn_particle(p: AmbientParticle, random_initial_pos: bool = false) -> 
 	p.rotation = rng.randf_range(0.0, TAU)
 	p.rot_speed = rng.randf_range(-1.5, 1.5)
 
-	# Cores e comportamentos contextuais por estilo de mapa (0 a 9)
+# Cada tema define uma assinatura visual legível em pixel art. Os efeitos são
+# decorativos: não alteram colisões, visibilidade dos avisos nem regras do jogo.
 	match map_style:
-		0, 6: # Prado Brilhante / Ilhas Gêmeas (folhas verdes, pólen dourado)
+		0: # Arena Clássica: pólen e pequenas folhas
 			p.color = Color("8cd669") if rng.randf() > 0.35 else Color("f7e26b")
 			p.size = Vector2(4.0, 4.0) if rng.randf() > 0.5 else Vector2(3.0, 2.0)
 			p.wind_influence = 1.0
 			p.velocity = Vector2(rng.randf_range(-10.0, 10.0), rng.randf_range(10.0, 24.0))
-		1, 9: # Cratera Vulcânica / Pátio das Chamas (brasas, cinzas quentes)
+		1, 7: # Carrossel de Fogo / Vulcão: brasas ascendentes
 			p.color = Color("ff6c3b") if rng.randf() > 0.4 else Color("ffd152")
 			p.size = Vector2(3.0, 3.0) if rng.randf() > 0.6 else Vector2(2.0, 2.0)
 			p.wind_influence = 0.4
 			p.velocity = Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-35.0, -15.0))
-		2, 7: # Geleira Azul / Labirinto de Cristal (cristais de gelo, geada)
+		2: # Costa Tropical: partículas leves de névoa marítima
+			p.color = Color("b9f4ec") if rng.randf() > 0.45 else Color("79c9dc")
+			p.size = Vector2(3.0, 2.0)
+			p.wind_influence = 1.2
+			p.velocity = Vector2(rng.randf_range(-5.0, 5.0), rng.randf_range(-7.0, 5.0))
+		3: # Labirinto Oculto: poeira fria em corredores
+			p.color = Color("aab3ad") if rng.randf() > 0.5 else Color("d2c6a7")
+			p.size = Vector2(2.0, 2.0)
+			p.wind_influence = 0.45
+			p.velocity = Vector2(rng.randf_range(-5.0, 5.0), rng.randf_range(-3.0, 8.0))
+		4: # Tundra Congelada: flocos e cristais de gelo
 			p.color = Color("d9f3ff") if rng.randf() > 0.3 else Color("8de1f7")
 			p.size = Vector2(2.0, 2.0) if rng.randf() > 0.5 else Vector2(3.0, 3.0)
 			p.wind_influence = 0.7
 			p.velocity = Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(15.0, 30.0))
-		3, 8: # Dunas do Crepúsculo / Ruínas Antigas (grãos de poeira e areia)
+		5: # Usina Eletrizante: fagulhas curtas e azuladas
+			p.color = Color("70e9ff") if rng.randf() > 0.45 else Color("c4f7ff")
+			p.size = Vector2(2.0, 3.0)
+			p.wind_influence = 0.2
+			p.velocity = Vector2(rng.randf_range(-12.0, 12.0), rng.randf_range(-10.0, 10.0))
+		6: # Ruínas do Deserto: areia dourada
 			p.color = Color("f3cf88") if rng.randf() > 0.5 else Color("d6ad66")
 			p.size = Vector2(3.0, 2.0)
 			p.wind_influence = 1.3
 			p.velocity = Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-5.0, 10.0))
-		_: # Fortaleza Central / Corredores (poeira atmosférica suave de masmorra)
-			p.color = Color(0.85, 0.9, 0.95, 0.65)
+		8: # Girocrusader: poeira clara movida pelo giro do cenário
+			p.color = Color("f4dba4") if rng.randf() > 0.5 else Color("d5e4e8")
+			p.size = Vector2(2.0, 2.0)
+			p.wind_influence = 0.9
+			p.velocity = Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-6.0, 6.0))
+		9: # Pântano Tóxico: esporos verdes lentos
+			p.color = Color("a9e46f") if rng.randf() > 0.4 else Color("d0ef83")
+			p.size = Vector2(3.0, 3.0) if rng.randf() > 0.6 else Vector2(2.0, 2.0)
+			p.wind_influence = 0.35
+			p.velocity = Vector2(rng.randf_range(-6.0, 6.0), rng.randf_range(-10.0, -2.0))
+		10: # Templo Estelar: pontos de luz frios, sem pós-processamento
+			p.color = Color("b9b5ff") if rng.randf() > 0.45 else Color("f3e9a4")
+			p.size = Vector2(2.0, 2.0)
+			p.wind_influence = 0.15
+			p.velocity = Vector2(rng.randf_range(-4.0, 4.0), rng.randf_range(-6.0, 6.0))
+		11: # Coliseu Bombástico: pó dourado de arena
+			p.color = Color("ffd477") if rng.randf() > 0.45 else Color("e7b881")
+			p.size = Vector2(3.0, 2.0)
+			p.wind_influence = 0.8
+			p.velocity = Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-2.0, 12.0))
+		_: # Proteção para futuros temas: poeira neutra
+			p.color = Color("d9e5e8")
 			p.size = Vector2(2.0, 2.0)
 			p.wind_influence = 0.5
 			p.velocity = Vector2(rng.randf_range(-6.0, 6.0), rng.randf_range(-8.0, 8.0))

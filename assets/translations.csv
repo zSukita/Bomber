@@ -269,3 +269,24 @@ NEWS_SERVER_DESC,Exporte um servidor dedicado para hospedar partidas de arena.,E
 HUD_ENEMIES_COUNT,👾 INIMIGOS: %d,👾 ENEMIES: %d,👾 ENEMIGOS: %d
 HUD_PORTAL_OPEN,✨ PORTAL ABERTO!,✨ PORTAL OPEN!,✨ ¡PORTAL ABIERTO!
 HUD_LIVES,VIDAS: %d,LIVES: %d,VIDAS: %d
+HUD_POWERUP_COLLECTED,ITEM COLETADO: %s,POWER-UP COLLECTED: %s,MEJORA RECOGIDA: %s
+HUD_POWERUP_BOMB,Bomba extra,Extra bomb,Bomba extra
+HUD_POWERUP_RANGE,Alcance da explosão,Blast range,Alcance de explosión
+HUD_POWERUP_SPEED,Velocidade,Speed,Velocidad
+HUD_POWERUP_HEART,Vida extra,Extra life,Vida extra
+HUD_POWERUP_KICK,Chute de bomba,Bomb kick,Patada de bomba
+HUD_POWERUP_PIERCE,Bomba perfurante,Piercing bomb,Bomba perforante
+HUD_POWERUP_REMOTE,Detonador remoto,Remote detonator,Detonador remoto
+HUD_POWERUP_SKULL,Maldição,Curse,Maldición
+HUD_POWERUP_MOUNT,Montaria,Mount,Montura
+HUD_POWERUP_ICE,Bomba de gelo,Ice bomb,Bomba de hielo
+HUD_POWERUP_THUNDER,Bomba elétrica,Thunder bomb,Bomba eléctrica
+PERSONAGEM,PERSONAGEM,CHARACTER,PERSONAJE
+ROBÔ BETA,Robô Beta,Beta Robot,Robot Beta
+ROBÔ ALFA,Robô Alfa,Alpha Robot,Robot Alfa
+ROBÔ TÁTICO,Robô Tático,Tactical Robot,Robot Táctico
+NINJA BOMB,Ninja Bomb,Ninja Bomb,Ninja Bomba
+NINJA FOGO,Ninja Fogo,Fire Ninja,Ninja de Fuego
+SAMURAI AZUL,Samurai Azul,Blue Samurai,Samurái Azul
+SAMURAI RUBRO,Samurai Rubro,Crimson Samurai,Samurái Carmesí
+CAVALEIRO,Cavaleiro,Knight,Caballero
